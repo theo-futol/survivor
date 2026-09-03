@@ -44,7 +44,7 @@ jobs:
 
         - name: Install Dependencies
           if: steps.cache-node-modules.outputs.cache-hit != 'true'
-          run: npm ci --prefer-offline --no-audit --no-fund
+          run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
 
   build:
     name: Build
@@ -73,10 +73,10 @@ jobs:
 
         - name: Install Dependencies
           if: steps.cache-node-modules.outputs.cache-hit != 'true'
-          run: npm ci --prefer-offline --no-audit --no-fund
+          run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
 
         - name: Build Project
-          run: npm rebuild && npm run build
+          run: cd Ticket\ Tout && npm rebuild && npm run build
 
         - name: Upload build artifacts
           uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # Version: 7.0.1
@@ -112,7 +112,7 @@ jobs:
 
         - name: Install Dependencies
           if: steps.cache-node-modules.outputs.cache-hit != 'true'
-          run: npm ci --prefer-offline --no-audit --no-fund
+          run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
 
         - name: Run tests
-          run: npm rebuild && JWT_SECRET=${{ secrets.JWT_SECRET }} npm run ci:test:backend:unit
+          run: cd Ticket\ Tout && npm rebuild && JWT_SECRET=${{ secrets.JWT_SECRET }} npm run ci:test:backend:unit
