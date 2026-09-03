@@ -91,12 +91,6 @@ export default function ConditionsGeneralesPage() {
         </p>
         <p className="font-semibold text-foreground">Dernière mise à jour : 3 septembre 2026.</p>
       </LegalSection>
-
-      <div className="flex flex-wrap gap-3">
-        <a href="/projet-cgu.pdf" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
-          Ouvrir la version PDF existante
-        </a>
-      </div>
     </LegalShell>
   )
 }
