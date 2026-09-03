@@ -1383,6 +1383,10 @@
                 },
                 "id": {
                   "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
                   "nativeType": "int4",
                   "nullable": false
                 }
@@ -1406,6 +1410,11 @@
                 }
               ],
               "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
               "uniques": [
                 {
                   "columns": [
@@ -1826,7 +1835,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b2851c47cd1117227efd86e96cee8ee96e29028980e5dbf6948cfb863fb08514"
+    "storageHash": "30c1017425cecd9047c5ed0f84e3019e743699849dc73f5263da621585909b02"
   },
   "execution": {
     "executionHash": "cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038",

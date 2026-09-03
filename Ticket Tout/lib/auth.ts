@@ -34,9 +34,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  account: {
-    identityStrategy: "provider-id",
-  },
   user: {
     additionalFields: {
       accountType: {
