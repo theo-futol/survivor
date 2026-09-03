@@ -96,3 +96,12 @@ jobs:
                 tags: |
                   ghcr.io/${{ github.repository }}:${{ needs.create_release.outputs.version }}
                   ghcr.io/${{ github.repository }}:latest
+
+            - name: Build and push garage-config image
+              uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # Version: 7.3.0
+              with:
+                context: ./garage-init
+                push: true
+                tags: |
+                  ghcr.io/${{ github.repository }}/garage-config:${{ needs.create_release.outputs.version }}
+                  ghcr.io/${{ github.repository }}/garage-config:latest

@@ -34,6 +34,7 @@ services:
 
   app-prod:
     container_name: ticket_tout_app_prod
+    image: ghcr.io/theo-futol/survivor:${RELEASE_TAG:-latest}
     depends_on:
       - db
     profiles: [prod]
@@ -70,6 +71,7 @@ services:
     restart: unless-stopped
 
   garage-config:
+    image: ghcr.io/theo-futol/survivor/garage-config:${RELEASE_TAG:-latest}
     build:
       context: ./garage-init
     container_name: garage_config

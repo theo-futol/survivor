@@ -1,4 +1,3 @@
-purge-docker.sh
 .env*
 CLAUDE.md
 design/
@@ -8,3 +7,4 @@ note.md
 garage/
 CartePro
 .DS_Store
+*tanagaru*
