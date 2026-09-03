@@ -1,8 +1,6 @@
 purge-docker.sh
 .env*
 CLAUDE.md
-.github/workflows/ci.yml
-.github/workflows/release.yml
 design/
 *.sql
 note.md

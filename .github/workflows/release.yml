@@ -1,0 +1,49 @@
+name: RELEASE
+
+on:
+    workflow_run:
+        workflows: ["MIRROR"]
+        types:
+            - completed
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    create_release:
+        name: Create Release
+        permissions: {
+          contents: write,
+          issues: write,
+          pull-requests: write,
+          id-token: write
+        }
+        timeout-minutes: 10
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Version: 7.0.1
+
+            - name: Setup Node
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # Version: 7.0.0
+              with:
+                node-version: 24
+
+            - name: Cache node_modules
+              id: cache-node-modules
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # Version: 6.1.0
+              with:
+                path: node_modules
+                key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
+
+            - name: Install Dependencies
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
+              run: npm ci --prefer-offline --no-audit --no-fund
+
+            - name: Run semantic-release
+              run: npm rebuild && npx semantic-release
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

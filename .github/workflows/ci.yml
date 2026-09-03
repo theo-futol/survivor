@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install_dependencies:
+    name: Install Dependencies
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    if: github.repository == 'theo-futol/survivor'
+    runs-on: ubuntu-24.04
+    steps:
+        - name: Checkout Repository
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Version: 7.0.1
+          with:
+            persist-credentials: false
+
+        - name: Setup Node
+          uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # Version: 7.0.0
+          with:
+            node-version: 24
+            cache: npm
+            cache-dependency-path: package-lock.json
+
+        - name: Cache node_modules
+          id: cache-node-modules
+          uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # Version: 6.1.0
+          with:
+            path: node_modules
+            key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
+
+        - name: Install Dependencies
+          if: steps.cache-node-modules.outputs.cache-hit != 'true'
+          run: npm ci --prefer-offline --no-audit --no-fund
+
+  build:
+    name: Build
+    needs: install_dependencies
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+        - name: Checkout Repository
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Version: 7.0.1 
+          with:
+            persist-credentials: false
+
+        - name: Setup Node
+          uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # Version: 7.0.0
+          with:
+            node-version: 24
+
+        - name: Cache node_modules
+          id: cache-node-modules
+          uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # Version: 6.1.0
+          with:
+            path: node_modules
+            key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
+
+        - name: Install Dependencies
+          if: steps.cache-node-modules.outputs.cache-hit != 'true'
+          run: npm ci --prefer-offline --no-audit --no-fund
+
+        - name: Build Project
+          run: npm rebuild && npm run build
+
+        - name: Upload build artifacts
+          uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # Version: 7.0.1
+          with:
+            name: dist-production
+            path: dist/
+            retention-days: 1
+
+  tests:
+    name: Tests backend - unit
+    needs: build
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+        - name: Checkout Repository
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Version: 7.0.1
+          with:
+            persist-credentials: false
+      
+        - name: Setup Node
+          uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # Version: 7.0.0
+          with:
+            node-version: 24
+
+        - name: Cache node_modules
+          id: cache-node-modules
+          uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # Version: 6.1.0
+          with:
+            path: node_modules
+            key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
+
+        - name: Install Dependencies
+          if: steps.cache-node-modules.outputs.cache-hit != 'true'
+          run: npm ci --prefer-offline --no-audit --no-fund
+
+        - name: Run tests
+          run: npm rebuild && JWT_SECRET=${{ secrets.JWT_SECRET }} npm run ci:test:backend:unit
