@@ -94,8 +94,14 @@ export default function RootLayout({
       <body
         className={`${marianne.variable} ${spectral.variable} antialiased`}
       >
-        {children}
+        <a
+          href="#contenu-principal"
+          className="fixed left-4 top-4 z-[200] -translate-y-24 rounded-lg bg-background px-4 py-3 font-bold shadow-lg transition-transform focus:translate-y-0"
+        >
+          Aller au contenu principal
+        </a>
         <PrivacyNotice />
+        {children}
       </body>
     </html>
   )

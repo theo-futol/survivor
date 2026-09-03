@@ -40,7 +40,7 @@ export default function TransactionsPage() {
   return (
     <div className="min-h-svh bg-background">
       <AccountHeader />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Historique</p>

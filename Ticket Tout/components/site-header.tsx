@@ -15,9 +15,9 @@ export function SiteHeader() {
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
+          aria-label="Ouvrir ou fermer le menu"
         >
-          <PanelLeftIcon
-          />
+          <PanelLeftIcon aria-hidden="true" />
         </Button>
       </div>
     </header>

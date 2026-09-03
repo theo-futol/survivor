@@ -67,7 +67,7 @@ export function PrivacyNotice() {
         <button
           type="button"
           onClick={acknowledge}
-          className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           aria-label="Fermer l'information"
         >
           <X className="size-4" aria-hidden="true" />

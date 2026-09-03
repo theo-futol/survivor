@@ -17,7 +17,7 @@ export function LegalShell({
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <PublicHeader />
-      <main className="flex-1">
+      <main id="contenu-principal" tabIndex={-1} className="flex-1">
         <section className="border-b bg-gradient-to-b from-secondary/70 to-background">
           <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
             <p className="text-sm font-black uppercase tracking-[0.16em] text-brand-red">{eyebrow}</p>
