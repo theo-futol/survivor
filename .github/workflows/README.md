@@ -26,15 +26,20 @@ The workflow runs three jobs in sequence, each on `ubuntu-24.04` with a 5 minute
 
 ## CD (`release.yml`)
 
-**Trigger:** `workflow_run` — runs after the `CI` workflow completes.
+**Trigger:** `workflow_run` — runs after the `MIRROR` workflow completes.
 
-Single job, **`create_release`**, on `ubuntu-24.04` with a 10 minute timeout, granted `contents: write`, `issues: write`, `pull-requests: write`, and `id-token: write` permissions:
+Two jobs:
 
-- Checks out the repository.
-- Sets up Node 24.
-- Restores/rebuilds the `node_modules` cache (same key/strategy as CI).
-- Runs `npm rebuild && npx semantic-release`, with `GITHUB_TOKEN` supplied from `secrets.GITHUB_TOKEN`.
+1. **`create_release`**, on `ubuntu-24.04` with a 10 minute timeout, granted `contents: write`, `issues: write`, `pull-requests: write`, and `id-token: write` permissions:
+   - Checks out the repository.
+   - Sets up Node 24.
+   - Restores/rebuilds the `node_modules` cache (same key/strategy as CI).
+   - Runs `npm rebuild && npx semantic-release`, with `GITHUB_TOKEN` supplied from `secrets.GITHUB_TOKEN`. Since the app's `package.json` is `private: true`, the `@semantic-release/npm` plugin only bumps the local version (no `npm publish`); `@semantic-release/github` creates the GitHub release and changelog.
+   - Compares `package.json`'s version before/after running `semantic-release` to detect whether a release actually happened, and exposes `released` (`'true'`/`'false'`) and `version` as job outputs.
 
----
+2. **`build_and_push_image`** (needs `create_release`, only runs if `released == 'true'`), on `ubuntu-24.04` with a 15 minute timeout, granted `contents: read` and `packages: write` permissions:
+   - Checks out the repository.
+   - Sets up Docker Buildx and logs into `ghcr.io` using `github.actor` / `secrets.GITHUB_TOKEN`.
+   - Builds the `prod-stage` target of `Ticket Tout/Dockerfile` and pushes it to `ghcr.io/theo-futol/survivor`, tagged with the released version and `latest`.
 
-The project doesn't require a deployment at this stage, so the CD workflow is only responsible for creating a GitHub release and changelog via `semantic-release` — there is no deploy/publish step.
+The `prod-stage` image runs Prisma migrations at **container startup** (via `Ticket Tout/docker-entrypoint.sh`), not at build time — this is what makes it possible to build and publish the image without a database available in CI, and it's the same image consumers pull to run standalone: `docker run -e DATABASE_URL=... -e JWT_SECRET=... -p 3000:3000 ghcr.io/theo-futol/survivor:<version>`.

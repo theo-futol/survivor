@@ -12,6 +12,8 @@ services:
     volumes:
       - data_sql:/var/lib/postgresql
 
+
+
   app-dev:
     container_name: ticket_tout_app_dev
     depends_on:
@@ -28,6 +30,7 @@ services:
       - /Ticket Tout/node_modules
     ports:
       - "3000:3000"
+    restart: unless-stopped
 
   app-prod:
     container_name: ticket_tout_app_prod
@@ -42,6 +45,7 @@ services:
       target: prod-stage
     ports:
       - "3000:3000"
+    restart: unless-stopped
 
   redis:
     image: redis:7
@@ -105,3 +109,4 @@ volumes:
   redis_data:
   garage_meta:
   garage_data:
+  tanaguru_mysql_data:
