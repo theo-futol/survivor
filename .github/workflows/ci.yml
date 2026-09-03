@@ -76,7 +76,12 @@ jobs:
           run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
 
         - name: Build Project
-          run: cd Ticket\ Tout && npm rebuild && npm run build
+          run: |
+            cd Ticket\ Tout && npm rebuild && npm run build
+            mkdir -p ../dist
+            cp -r .next/standalone/. ../dist/
+            cp -r .next/static ../dist/.next/static
+            cp -r public ../dist/public
 
         - name: Upload build artifacts
           uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # Version: 7.0.1
