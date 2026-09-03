@@ -1,0 +1,5 @@
+Identifant du compte d'un salarié permettant de se connecter à l'application.
+
+name: "Julie Marchand"
+email: "julie.marchand@demo.local"
+password: "Demo2026!"

@@ -1,0 +1,110 @@
+services:
+  db:
+    image: postgres:18
+    container_name: ticket_tout_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - data_sql:/var/lib/postgresql
+
+  app-dev:
+    container_name: ticket_tout_app_dev
+    depends_on:
+      - db
+    profiles: [dev]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+    build:
+      context: ./Ticket Tout
+      target: dev-stage
+    volumes:
+      - ./Ticket Tout:/Ticket Tout
+      - /Ticket Tout/node_modules
+    ports:
+      - "3000:3000"
+
+  app-prod:
+    container_name: ticket_tout_app_prod
+    depends_on:
+      - db
+    profiles: [prod]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+    build:
+      context: ./Ticket Tout
+      target: prod-stage
+    volumes:
+      - ./Ticket Tout:/Ticket Tout
+      - /Ticket Tout/node_modules
+    ports:
+      - "3000:3000"
+
+  redis:
+    image: redis:7
+    container_name: redis_cache
+    environment:
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --port ${REDIS_PORT}
+      --dir ${REDIS_DATA_DIR}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory-policy noeviction
+      --maxmemory 64mb
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - redis_data:${REDIS_DATA_DIR}
+    restart: unless-stopped
+
+  garage-config:
+    build:
+      context: ./garage-init
+    container_name: garage_config
+    environment:
+      - GARAGE_DEFAULT_ACCESS_KEY=${GARAGE_DEFAULT_ACCESS_KEY}
+      - GARAGE_DEFAULT_SECRET_KEY=${GARAGE_DEFAULT_SECRET_KEY}
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      - GARAGE_METRICS_TOKEN=${GARAGE_METRICS_TOKEN}
+    volumes:
+      - ./garage:/output
+
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage
+    depends_on:
+      garage-config:
+        condition: service_completed_successfully
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    environment:
+      - GARAGE_DEFAULT_ACCESS_KEY=${GARAGE_DEFAULT_ACCESS_KEY}
+      - GARAGE_DEFAULT_SECRET_KEY=${GARAGE_DEFAULT_SECRET_KEY}
+      - GARAGE_DEFAULT_BUCKET=${GARAGE_DEFAULT_BUCKET}
+    expose:
+      - "3900"   # S3 API
+      - "3901"   # RPC interne
+      - "3902"   # Web serving
+      - "3903"   # Admin API
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    restart: unless-stopped
+
+volumes:
+  data_sql:
+  redis_data:
+  garage_meta:
+  garage_data:

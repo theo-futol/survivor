@@ -1,0 +1,72 @@
+{
+  "partners": [
+    {
+      "id": "poney-dream-78",
+      "name": "Poney Dream 78",
+      "category": "Loisirs & bien-être",
+      "city": "Saint-Paul",
+      "address": "18 rue des Pétrels, 97460 Saint-Paul, La Réunion",
+      "coordinates": {
+        "latitude": -21.0094,
+        "longitude": 55.2708
+      },
+      "description": "Club équestre pour petits et grands. Balades, stages et cours de poney dans un cadre nature.",
+      "officialBadge": true,
+      "ministerFavorite": true,
+      "featured": true,
+      "averageSpendingAmount": 45.0,
+      "image": "https://picsum.photos/seed/poney-dream/400/300"
+    },
+    {
+      "id": "kostumparty",
+      "name": "KostumParty",
+      "category": "Mode & déguisements",
+      "city": "Saint-Denis",
+      "address": "42 rue de Paris, 97400 Saint-Denis, La Réunion",
+      "coordinates": {
+        "latitude": -20.8789,
+        "longitude": 55.4487
+      },
+      "description": "Location et vente de déguisements et accessoires festifs pour toutes les occasions.",
+      "officialBadge": true,
+      "ministerFavorite": false,
+      "featured": false,
+      "averageSpendingAmount": 32.5,
+      "image": "https://picsum.photos/seed/kostumparty/400/300"
+    },
+    {
+      "id": "glaces-artisanales-correze",
+      "name": "Glaces Artisanales Corrèze",
+      "category": "Gastronomie",
+      "city": "Saint-Pierre",
+      "address": "7 rue des Glaciers, 97410 Saint-Pierre, La Réunion",
+      "coordinates": {
+        "latitude": -21.3393,
+        "longitude": 55.4721
+      },
+      "description": "Glaces et sorbets artisanaux fabriqués en Corrèze, à commander en ligne ou à retirer en boutique.",
+      "officialBadge": true,
+      "ministerFavorite": true,
+      "featured": false,
+      "averageSpendingAmount": 12.9,
+      "image": "https://picsum.photos/seed/glaces-correze/400/300"
+    },
+    {
+      "id": "chapelier-fontaine",
+      "name": "Chapelier Fontaine",
+      "category": "Mode & accessoires",
+      "city": "Le Tampon",
+      "address": "26 chemin des Mimosas, 97430 Le Tampon, La Réunion",
+      "coordinates": {
+        "latitude": -21.2756,
+        "longitude": 55.5186
+      },
+      "description": "Chapelier traditionnel spécialisé dans les chapeaux en feutre fabriqués à la main.",
+      "officialBadge": true,
+      "ministerFavorite": false,
+      "featured": false,
+      "averageSpendingAmount": 89.0,
+      "image": "https://picsum.photos/seed/chapelier-fontaine/400/300"
+    }
+  ]
+}

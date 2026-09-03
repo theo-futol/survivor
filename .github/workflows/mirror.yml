@@ -1,0 +1,34 @@
+name: MIRROR
+on:
+    workflow_run:
+        workflows: ["CI"]
+        types:
+            - completed
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    mirror:
+      name: Mirror repository
+      permissions: {
+        contents: write,
+        issues: write,
+        pull-requests: write,
+        id-token: write
+      }
+      timeout-minutes: 10
+      runs-on: ubuntu-24.04
+      steps:
+        - name: check
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Version: 7.0.1
+          with:
+            fetch-depth: 0
+        - name: mirror
+          uses: pixta-dev/repository-mirroring-action@674e65a7d483ca28dafaacba0d07351bdcc8bd75 # Version: 1.1.1
+          with:
+            target_repo_url: git@https://github.com/EpitechPGE3-2026/G-SVR-500-RUN-5-1-survivor-3.git
+            ssh_private_key: ${{secrets.GIT_SSH_PRIVATE_KEY}}

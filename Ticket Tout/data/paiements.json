@@ -1,0 +1,183 @@
+{
+  "entreprises": [
+    {
+      "id": "emp-001",
+      "raisonSociale": "Atelier Numérique SARL",
+      "siret": "812345678900012",
+      "totalDistribueCumule": 7200.0,
+      "abondements": [
+        {
+          "id": "abo-1001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 150.0,
+          "salariesBeneficiaires": ["sal-100", "sal-101"],
+          "montantTotal": 3600.0,
+          "statut": "validé"
+        },
+        {
+          "id": "abo-1002",
+          "periode": "Septembre 2026",
+          "date": "2026-09-01",
+          "montantParSalarie": 150.0,
+          "salariesBeneficiaires": ["sal-100", "sal-101"],
+          "montantTotal": 3600.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-002",
+      "raisonSociale": "Boulangerie Fournil du Coin",
+      "siret": "798765432100021",
+      "totalDistribueCumule": 480.0,
+      "abondements": [
+        {
+          "id": "abo-2001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 80.0,
+          "salariesBeneficiaires": ["sal-102"],
+          "montantTotal": 480.0,
+          "statut": "validé"
+        }
+      ]
+    }
+  ],
+
+  "salaries": [
+    {
+      "id": "sal-100",
+      "nom": "Julie Marchand",
+      "entrepriseId": "emp-001",
+      "creditsRecus": [
+        { "abondementId": "abo-1001", "date": "2026-08-01", "montant": 150.0 },
+        { "abondementId": "abo-1002", "date": "2026-09-01", "montant": 150.0 }
+      ],
+      "totalRecu": 300.0,
+      "soldeActuel": 238.6,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5001",
+          "date": "2026-08-05T12:32:00",
+          "partenaireId": "poney-dream-78",
+          "partenaireNom": "Poney Dream 78",
+          "montant": 45.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5002",
+          "date": "2026-08-14T18:10:00",
+          "partenaireId": "glaces-artisanales-correze",
+          "partenaireNom": "Glaces Artisanales Corrèze",
+          "montant": 16.4,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-101",
+      "nom": "Karim Benzahra",
+      "entrepriseId": "emp-001",
+      "creditsRecus": [
+        { "abondementId": "abo-1001", "date": "2026-08-01", "montant": 150.0 },
+        { "abondementId": "abo-1002", "date": "2026-09-01", "montant": 150.0 }
+      ],
+      "totalRecu": 300.0,
+      "soldeActuel": 300.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5003",
+          "date": "2026-08-10T09:45:00",
+          "partenaireId": "chapelier-fontaine",
+          "partenaireNom": "Chapelier Fontaine",
+          "montant": 89.0,
+          "statut": "annulée par admin"
+        }
+      ]
+    },
+    {
+      "id": "sal-102",
+      "nom": "Léa Fontanel",
+      "entrepriseId": "emp-002",
+      "creditsRecus": [
+        { "abondementId": "abo-2001", "date": "2026-08-01", "montant": 80.0 }
+      ],
+      "totalRecu": 80.0,
+      "soldeActuel": 47.5,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5004",
+          "date": "2026-08-20T15:00:00",
+          "partenaireId": "kostumparty",
+          "partenaireNom": "KostumParty",
+          "montant": 32.5,
+          "statut": "validée"
+        }
+      ]
+    }
+  ],
+
+  "partenaires": [
+    {
+      "id": "poney-dream-78",
+      "nom": "Poney Dream 78",
+      "totalEncaisse": 45.0,
+      "transactionsRecues": [
+        {
+          "id": "txn-5001",
+          "date": "2026-08-05T12:32:00",
+          "salarieId": "sal-100",
+          "salarieNom": "Julie Marchand",
+          "montant": 45.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "glaces-artisanales-correze",
+      "nom": "Glaces Artisanales Corrèze",
+      "totalEncaisse": 16.4,
+      "transactionsRecues": [
+        {
+          "id": "txn-5002",
+          "date": "2026-08-14T18:10:00",
+          "salarieId": "sal-100",
+          "salarieNom": "Julie Marchand",
+          "montant": 16.4,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "chapelier-fontaine",
+      "nom": "Chapelier Fontaine",
+      "totalEncaisse": 0.0,
+      "transactionsRecues": [
+        {
+          "id": "txn-5003",
+          "date": "2026-08-10T09:45:00",
+          "salarieId": "sal-101",
+          "salarieNom": "Karim Benzahra",
+          "montant": 89.0,
+          "statut": "annulée par admin"
+        }
+      ]
+    },
+    {
+      "id": "kostumparty",
+      "nom": "KostumParty",
+      "totalEncaisse": 32.5,
+      "transactionsRecues": [
+        {
+          "id": "txn-5004",
+          "date": "2026-08-20T15:00:00",
+          "salarieId": "sal-102",
+          "salarieNom": "Léa Fontanel",
+          "montant": 32.5,
+          "statut": "validée"
+        }
+      ]
+    }
+  ]
+}

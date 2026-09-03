@@ -1,0 +1,99 @@
+/*
+ * PALETTE UNIQUE DE L'APPLICATION
+ * Modifiez les valeurs ici : toute l'interface suit automatiquement.
+ */
+:root {
+  --background: #f7f9fc;
+  --foreground: #13253f;
+  --card: #ffffff;
+  --card-foreground: #13253f;
+  --popover: #ffffff;
+  --popover-foreground: #13253f;
+
+  --primary: #1b3a6b;
+  --primary-foreground: #ffffff;
+  --brand-navy-deep: #102b52;
+  --brand-blue-bright: #2f6fb2;
+  --brand-red: #d7263d;
+  --brand-red-dark: #c51f34;
+  --brand-red-soft: #fff0f2;
+  --brand-gold: #e6c36a;
+  --brand-gold-dark: #b78a2f;
+  --brand-success: #147a4b;
+  --brand-success-soft: #e9f8f0;
+
+  --secondary: #eaf1fb;
+  --secondary-foreground: #1b3a6b;
+  --muted: #eef3f8;
+  --muted-foreground: #49627f;
+  --accent: #dce9f8;
+  --accent-foreground: #1b3a6b;
+  --destructive: #d7263d;
+  --border: #7086a1;
+  --input: #7086a1;
+  --ring: #2f6fb2;
+
+  --chart-1: #1b3a6b;
+  --chart-2: #d7263d;
+  --chart-3: #2f6fb2;
+  --chart-4: #6d8fba;
+  --chart-5: #c51f34;
+
+  --radius: 0.75rem;
+
+  --sidebar: #f2f6fc;
+  --sidebar-foreground: #13253f;
+  --sidebar-primary: #1b3a6b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eaf1fb;
+  --sidebar-accent-foreground: #1b3a6b;
+  --sidebar-border: #7086a1;
+  --sidebar-ring: #2f6fb2;
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #edf4ff;
+  --card: #111c2e;
+  --card-foreground: #edf4ff;
+  --popover: #111c2e;
+  --popover-foreground: #edf4ff;
+
+  --primary: #7eade8;
+  --primary-foreground: #08111f;
+  --brand-navy-deep: #07101e;
+  --brand-blue-bright: #73aaf0;
+  --brand-red: #ff6075;
+  --brand-red-dark: #ff7d8e;
+  --brand-red-soft: #35141c;
+  --brand-gold: #f1cf79;
+  --brand-gold-dark: #bd8f35;
+  --brand-success: #65d39b;
+  --brand-success-soft: #102c21;
+
+  --secondary: #172943;
+  --secondary-foreground: #dbeaff;
+  --muted: #172337;
+  --muted-foreground: #9fb3cc;
+  --accent: #203758;
+  --accent-foreground: #eef6ff;
+  --destructive: #ff6075;
+  --border: #354b67;
+  --input: #405877;
+  --ring: #7eade8;
+
+  --chart-1: #7eade8;
+  --chart-2: #ff6075;
+  --chart-3: #73aaf0;
+  --chart-4: #9dbce4;
+  --chart-5: #ff94a2;
+
+  --sidebar: #0e192a;
+  --sidebar-foreground: #edf4ff;
+  --sidebar-primary: #7eade8;
+  --sidebar-primary-foreground: #08111f;
+  --sidebar-accent: #172943;
+  --sidebar-accent-foreground: #edf4ff;
+  --sidebar-border: #354b67;
+  --sidebar-ring: #7eade8;
+}

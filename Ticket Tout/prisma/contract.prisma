@@ -1,0 +1,132 @@
+// use prisma-next
+
+enum Role {
+  EMPLOYEE
+  COMPANY
+  PARTNER
+  ADMIN
+}
+
+model CompanyCategory {
+  id        Int       @id @default(autoincrement())
+  category  String    @unique
+  companies Company[]
+}
+
+model CompanyValidationReason {
+  id        Int       @id @default(autoincrement())
+  reason    String
+  companies Company[]
+}
+
+model Administration {
+  id        Int       @id @default(autoincrement())
+  name      String
+  companies Company[]
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  storageKey String   @unique
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+  company    Company?
+  user       Users?
+
+  @@index([createdAt])
+  @@index([storageKey])
+}
+
+model Users {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  surname      String
+  name         String
+  role         Role
+  balance      Int
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    temporal.updatedAt()
+  expiredAt    DateTime?
+  documentId   String        @unique
+  document     Document?     @relation(fields: [documentId], references: [id])
+  transactions Transaction[]
+
+  @@index([role])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model Company {
+  id           String                  @id @default(uuid())
+  name         String
+  email        String                  @unique
+  siret        String                  @unique
+  kbisId       String                  @unique
+  kbis         Document                @relation(fields: [kbisId], references: [id])
+  address      String
+  postalCode   String
+  agentId      Int
+  agent        Administration          @relation(fields: [agentId], references: [id])
+  reasonId     Int
+  reason       CompanyValidationReason @relation(fields: [reasonId], references: [id])
+  verified     Boolean
+  isFeatured   Boolean
+  categoryId   Int
+  category     CompanyCategory         @relation(fields: [categoryId], references: [id])
+  isPartner    Boolean
+  createdAt    DateTime                @default(now())
+  updatedAt    temporal.updatedAt()
+  transactions Transaction[]
+
+  @@index([verified])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([agentId])
+  @@index([reasonId])
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+}
+
+model Transaction {
+  id                     String           @id @default(uuid())
+  type                   TransactionType
+  userId                 String
+  user                   Users             @relation(fields: [userId], references: [id])
+  companyId              String
+  company                Company          @relation(fields: [companyId], references: [id])
+  amount                 Int
+  originalTransactionId  String?          @unique
+  originalTransaction    Transaction?     @relation("RefundOf", fields: [originalTransactionId], references: [id])
+  refund                 Transaction?     @relation("RefundOf")
+  createdAt              DateTime         @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model MinisterFavorite {
+  id Int            @id @default(autoincrement())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id])
+}
+
+model QrCode {
+  id        Int @id  @default(autoincrement())
+  content   String
+  expiredAt DateTime
+  userId    String
+  users     Users    @relation(fields: [userId], references: [id])
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+
+  @@index([content])
+  @@index([userId])
+  @@index([companyId])
+}
