@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Heart, History, MapPin, QrCode, Sparkles, X } from "lucide-react"
 
@@ -28,6 +28,8 @@ export default function Page() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [paymentPartner, setPaymentPartner] = useState<Partner | null>(null)
+  const qrTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const closeQrButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     fetch("/data/partenaires.json")
@@ -38,6 +40,21 @@ export default function Page() {
       .then((data) => setPartners(data.partners ?? []))
       .catch((error) => console.error(error))
   }, [])
+
+  useEffect(() => {
+    if (!paymentPartner) return
+
+    window.requestAnimationFrame(() => {
+      closeQrButtonRef.current?.focus()
+    })
+  }, [paymentPartner])
+
+  function closePaymentQr() {
+    setPaymentPartner(null)
+    window.requestAnimationFrame(() => {
+      qrTriggerRef.current?.focus()
+    })
+  }
 
   const visiblePartners = useMemo(
     () => (favoritesOnly ? partners.filter((partner) => partner.ministerFavorite) : partners),
@@ -52,7 +69,7 @@ export default function Page() {
     <div className="min-h-svh bg-background">
       <AccountHeader />
 
-      <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.22fr)_minmax(340px,.78fr)]">
           <div className="rounded-3xl border bg-card p-5 shadow-sm sm:p-8 lg:p-10">
             <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
@@ -64,7 +81,7 @@ export default function Page() {
                 </p>
               </div>
               {paymentPartner && (
-                <Button variant="outline" onClick={() => setPaymentPartner(null)}>
+                <Button ref={closeQrButtonRef} variant="outline" onClick={closePaymentQr}>
                   <X aria-hidden="true" /> Fermer le QR
                 </Button>
               )}
@@ -141,7 +158,13 @@ export default function Page() {
                       </p>
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                         <strong className="text-sm">Dépense simulée type : {partner.averageSpendingAmount.toFixed(2)} €</strong>
-                        <Button size="sm" onClick={() => setPaymentPartner(partner)}>
+                        <Button
+                          size="sm"
+                          onClick={(event) => {
+                            qrTriggerRef.current = event.currentTarget
+                            setPaymentPartner(partner)
+                          }}
+                        >
                           <QrCode aria-hidden="true" /> QR
                         </Button>
                       </div>

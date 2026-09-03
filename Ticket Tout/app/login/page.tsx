@@ -14,7 +14,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <PublicHeader />
-      <main className="mx-auto grid w-full max-w-6xl flex-1 items-stretch gap-6 px-4 py-8 sm:px-6 md:grid-cols-[.92fr_1.08fr] md:py-12 lg:px-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto grid w-full max-w-6xl flex-1 items-stretch gap-6 px-4 py-8 sm:px-6 md:grid-cols-[.92fr_1.08fr] md:py-12 lg:px-8">
         <section className="flex flex-col justify-between overflow-hidden rounded-3xl bg-primary p-7 text-primary-foreground sm:p-9">
           <div>
             <BrandLogo inverse />

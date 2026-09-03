@@ -1,12 +1,19 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { MapPin, QrCode, Search, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
 import CreditCard from "@/components/credit-card"
 import { ReunionMap } from "@/components/reunion-map"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import payments from "@/data/paiements.json"
 
@@ -31,6 +38,7 @@ export default function PartnersPage() {
   const [category, setCategory] = useState("all")
   const [selected, setSelected] = useState<Partner | undefined>()
   const [paymentPartner, setPaymentPartner] = useState<Partner | null>(null)
+  const lastQrTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     fetch("/data/partenaires.json")
@@ -56,10 +64,24 @@ export default function PartnersPage() {
     })
   }, [category, partners, query])
 
+  function openPaymentDialog(partner: Partner, trigger: HTMLButtonElement) {
+    lastQrTriggerRef.current = trigger
+    setPaymentPartner(partner)
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    if (open) return
+
+    setPaymentPartner(null)
+    window.requestAnimationFrame(() => {
+      lastQrTriggerRef.current?.focus()
+    })
+  }
+
   return (
     <div className="min-h-svh bg-background">
       <AccountHeader />
-      <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Où dépenser ?</p>
@@ -97,7 +119,7 @@ export default function PartnersPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
               {visible.map((partner) => (
-                <article key={partner.id} className="overflow-hidden rounded-3xl border bg-card shadow-sm" onMouseEnter={() => setSelected(partner)} onFocus={() => setSelected(partner)} tabIndex={0}>
+                <article key={partner.id} className="overflow-hidden rounded-3xl border bg-card shadow-sm" onMouseEnter={() => setSelected(partner)} onFocus={() => setSelected(partner)}>
                   <div className="grid sm:grid-cols-[150px_1fr]">
                     <img src={partner.image} alt="" className="h-44 w-full object-cover sm:h-full" />
                     <div className="p-5">
@@ -117,7 +139,7 @@ export default function PartnersPage() {
                         <Button variant="outline" onClick={() => setSelected(partner)}>
                           <MapPin aria-hidden="true" /> Localiser
                         </Button>
-                        <Button onClick={() => setPaymentPartner(partner)}>
+                        <Button onClick={(event) => openPaymentDialog(partner, event.currentTarget)}>
                           <QrCode aria-hidden="true" /> Générer le QR
                         </Button>
                       </div>
@@ -133,23 +155,47 @@ export default function PartnersPage() {
         </div>
       </main>
 
-      {paymentPartner && (
-        <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/55 p-4" role="dialog" aria-modal="true" aria-label="QR code de paiement">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-card p-4 shadow-2xl sm:p-6">
-            <Button variant="outline" size="icon" className="absolute right-4 top-4 z-10" onClick={() => setPaymentPartner(null)} aria-label="Fermer">
+      <Dialog open={paymentPartner !== null} onOpenChange={handleDialogOpenChange}>
+        {paymentPartner && (
+          <DialogContent
+            showCloseButton={false}
+            className="max-h-[calc(100svh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl bg-card p-4 shadow-2xl sm:max-w-2xl sm:p-6"
+          >
+            <DialogClose
+              render={
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-4 top-4 z-10"
+                  aria-label="Fermer le QR code de paiement"
+                />
+              }
+            >
               <X aria-hidden="true" />
-            </Button>
+            </DialogClose>
+
             <div className="pr-12">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Paiement</p>
-              <h2 className="mt-1 text-2xl font-black">Présentez ce QR chez {paymentPartner.name}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Le QR affiché est un vrai QR code scannable, utilisé ici avec une donnée statique de démonstration.</p>
+              <DialogTitle className="mt-1 text-2xl font-black leading-tight">
+                Présentez ce QR chez {paymentPartner.name}
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                Le QR affiché est un vrai QR code scannable, utilisé ici avec une donnée statique de démonstration.
+              </DialogDescription>
             </div>
-            <div className="mt-6">
-              <CreditCard name={employee.nom} balance={employee.soldeActuel} mode="payment" merchantName={paymentPartner.name} paymentAmount={paymentPartner.averageSpendingAmount} />
+
+            <div className="mt-2">
+              <CreditCard
+                name={employee.nom}
+                balance={employee.soldeActuel}
+                mode="payment"
+                merchantName={paymentPartner.name}
+                paymentAmount={paymentPartner.averageSpendingAmount}
+              />
             </div>
-          </div>
-        </div>
-      )}
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   )
 }

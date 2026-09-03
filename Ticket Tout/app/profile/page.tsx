@@ -39,7 +39,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-svh bg-background">
       <AccountHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Mon compte</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Profil</h1>
 

@@ -40,10 +40,17 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
     let cancelled = false
     void import("leaflet").then((L) => {
       if (cancelled) return
-      const map = L.map(container, { center: REUNION_CENTER, zoom: 10, scrollWheelZoom: false })
+
+      const map = L.map(container, {
+        center: REUNION_CENTER,
+        zoom: 10,
+        scrollWheelZoom: false,
+      })
+
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map)
+
       mapRef.current = map
       markersLayerRef.current = L.layerGroup().addTo(map)
       setMapReady(true)
@@ -68,9 +75,16 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
     void import("leaflet").then((L) => {
       const layer = markersLayerRef.current
       if (!layer) return
+
       layer.clearLayers()
+
       partners.forEach((partner) => {
-        L.circleMarker([partner.coordinates.latitude, partner.coordinates.longitude], {
+        const coordinates: [number, number] = [
+          partner.coordinates.latitude,
+          partner.coordinates.longitude,
+        ]
+
+        const marker = L.circleMarker(coordinates, {
           radius: 7,
           color: markerColor,
           fillColor: markerFill,
@@ -80,22 +94,64 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
           .bindTooltip(partner.name, { direction: "top" })
           .bindPopup(`<strong>${partner.name}</strong><br>${partner.address}`)
           .addTo(layer)
+
+        const markerElement = marker.getElement()
+        if (!markerElement) return
+
+        markerElement.setAttribute("tabindex", "0")
+        markerElement.setAttribute("role", "button")
+        markerElement.setAttribute(
+          "aria-label",
+          `${partner.name}, ${partner.address}. Appuyez sur Entrée ou Espace pour afficher l'adresse.`
+        )
+
+        markerElement.addEventListener("focus", () => {
+          marker.openTooltip()
+          marker.setRadius(9)
+          marker.setStyle({ weight: 4 })
+        })
+
+        markerElement.addEventListener("blur", () => {
+          marker.closeTooltip()
+          marker.setRadius(7)
+          marker.setStyle({ weight: 2 })
+        })
+
+        markerElement.addEventListener("keydown", (event: KeyboardEvent) => {
+          if (event.key !== "Enter" && event.key !== " ") return
+
+          event.preventDefault()
+          mapRef.current?.panTo(coordinates)
+          marker.openPopup()
+        })
       })
     })
   }, [mapReady, partners, themeRevision])
 
   useEffect(() => {
     if (!partnersSelected || !mapRef.current) return
-    mapRef.current.flyTo([partnersSelected.coordinates.latitude, partnersSelected.coordinates.longitude], 14, { duration: 0.8 })
+
+    mapRef.current.flyTo(
+      [partnersSelected.coordinates.latitude, partnersSelected.coordinates.longitude],
+      14,
+      { duration: 0.8 }
+    )
   }, [partnersSelected])
 
   return (
     <section className={cn("overflow-hidden rounded-3xl border bg-card shadow-sm", className)}>
       <div className="border-b px-4 py-3 sm:px-5">
         <h2 className="font-black">Carte des partenaires</h2>
-        <p className="text-sm text-muted-foreground">La Réunion · cliquez sur un marqueur pour voir l&apos;adresse</p>
+        <p id="map-instructions" className="text-sm text-muted-foreground">
+          La Réunion · utilisez Tab pour parcourir les marqueurs, puis Entrée ou Espace pour afficher l&apos;adresse.
+        </p>
       </div>
-      <div ref={containerRef} className="h-[420px] w-full sm:h-[540px]" aria-label="Carte interactive centrée sur La Réunion" />
+      <div
+        ref={containerRef}
+        className="h-[420px] w-full sm:h-[540px]"
+        aria-label="Carte interactive centrée sur La Réunion"
+        aria-describedby="map-instructions"
+      />
     </section>
   )
 }

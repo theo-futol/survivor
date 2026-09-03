@@ -13,7 +13,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-brand-red">Créer un compte professionnel</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Choisissez votre profil</h1>

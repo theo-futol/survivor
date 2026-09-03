@@ -38,7 +38,7 @@ export default function Page() {
           <AppSidebar />
 
           <SidebarInset>
-            <div className="p-6">
+            <main id="contenu-principal" tabIndex={-1} className="p-6">
 
               <h1 className="text-2xl font-bold mb-6">
                 Historique de mes consommations
@@ -81,7 +81,7 @@ export default function Page() {
                 </TableBody>
               </Table>
 
-            </div>
+            </main>
           </SidebarInset>
         </div>
       </SidebarProvider>
