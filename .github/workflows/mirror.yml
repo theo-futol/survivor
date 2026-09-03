@@ -20,6 +20,7 @@ jobs:
         pull-requests: write,
         id-token: write
       }
+      if: github.repository == 'theo-futol/survivor'
       timeout-minutes: 10
       runs-on: ubuntu-24.04
       steps:
