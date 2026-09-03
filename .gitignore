@@ -7,3 +7,4 @@ note.md
 .venv/
 garage/
 CartePro
+.DS_Store
