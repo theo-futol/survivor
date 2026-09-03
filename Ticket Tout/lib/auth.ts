@@ -24,9 +24,27 @@ database.exec("PRAGMA busy_timeout = 5000;")
 database.exec("PRAGMA foreign_keys = ON;")
 
 const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
-const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS
+
+const configuredTrustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS
   ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : [baseURL]
+  : []
+
+// En développement, Next.js peut basculer automatiquement de 3000 vers 3001
+// si le port 3000 est déjà occupé. On autorise donc les deux ports locaux
+// (localhost + 127.0.0.1) sans élargir la liste en production.
+const localDevelopmentOrigins =
+  process.env.NODE_ENV === "production"
+    ? []
+    : [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+      ]
+
+const trustedOrigins = Array.from(
+  new Set([baseURL, ...configuredTrustedOrigins, ...localDevelopmentOrigins])
+)
 
 export const auth = betterAuth({
   baseURL,

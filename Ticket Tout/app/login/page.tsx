@@ -43,20 +43,20 @@ export default function LoginPage() {
             <p className="font-black">Pas encore de compte professionnel ?</p>
             <p className="mt-1 text-sm text-muted-foreground">L&apos;inscription publique est réservée aux entreprises et aux partenaires.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {/* <Link href="/signup?type=company" className={buttonVariants({ variant: "outline", className: "h-auto justify-start py-4" })}>
+              <Link href="/signup?type=company" className={buttonVariants({ variant: "outline", className: "h-auto justify-start py-4" })}>
                 <Building2 aria-hidden="true" />
                 <span className="text-left">
                   <span className="block font-black">Entreprise</span>
                   <span className="block text-xs font-normal text-muted-foreground">Créditer les salariés</span>
                 </span>
-              </Link> */}
-              {/* <Link href="/signup?type=partner" className={buttonVariants({ variant: "outline", className: "h-auto justify-start py-4" })}>
+              </Link>
+              <Link href="/signup?type=partner" className={buttonVariants({ variant: "outline", className: "h-auto justify-start py-4" })}>
                 <Handshake aria-hidden="true" />
                 <span className="text-left">
                   <span className="block font-black">Partenaire</span>
                   <span className="block text-xs font-normal text-muted-foreground">Simuler les paiements</span>
                 </span>
-              </Link> */}
+              </Link>
             </div>
           </div>
         </section>

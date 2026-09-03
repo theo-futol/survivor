@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
 
-./migration.sh
+npm run db:migrate
 
 exec "$@"

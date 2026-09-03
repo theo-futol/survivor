@@ -3,6 +3,7 @@ import localFont from "next/font/local"
 import { Spectral } from "next/font/google"
 
 import "./globals.css"
+import { PrivacyNotice } from "@/components/privacy-notice"
 
 const marianne = localFont({
   src: [
@@ -94,6 +95,7 @@ export default function RootLayout({
         className={`${marianne.variable} ${spectral.variable} antialiased`}
       >
         {children}
+        <PrivacyNotice />
       </body>
     </html>
   )
