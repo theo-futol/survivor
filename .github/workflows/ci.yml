@@ -33,7 +33,7 @@ jobs:
           with:
             node-version: 24
             cache: npm
-            cache-dependency-path: package-lock.json
+            cache-dependency-path: ../../Ticket\ Tout/package-lock.json
 
         - name: Cache node_modules
           id: cache-node-modules
@@ -74,21 +74,6 @@ jobs:
         - name: Install Dependencies
           if: steps.cache-node-modules.outputs.cache-hit != 'true'
           run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
-
-        - name: Build Project
-          run: |
-            cd Ticket\ Tout && npm rebuild && npm run build
-            mkdir -p ../dist
-            cp -r .next/standalone/. ../dist/
-            cp -r .next/static ../dist/.next/static
-            cp -r public ../dist/public
-
-        - name: Upload build artifacts
-          uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # Version: 7.0.1
-          with:
-            name: dist-production
-            path: dist/
-            retention-days: 1
 
   tests:
     name: Tests backend - unit

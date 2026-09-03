@@ -1,4 +1,4 @@
-name: RELEASE
+name: DEPLOY
 
 on:
     workflow_run:
