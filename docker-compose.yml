@@ -40,9 +40,6 @@ services:
     build:
       context: ./Ticket Tout
       target: prod-stage
-    volumes:
-      - ./Ticket Tout:/Ticket Tout
-      - /Ticket Tout/node_modules
     ports:
       - "3000:3000"
 

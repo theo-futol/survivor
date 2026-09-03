@@ -11,6 +11,7 @@ const config: Config = {
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^@/lib/prisma/db$': '<rootDir>/tests/mocks/mock-db.ts',
+    '^@/lib/services/redis_service$': '<rootDir>/tests/mocks/mock-redis.ts',
     '^@/(.*)$': '<rootDir>/$1',
   },
   transform: {
