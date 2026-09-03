@@ -46,7 +46,7 @@ Les employeurs doivent fournir des informations exactes et à jour pour prouver 
 
 ## Droit de la propriété intellectuelle
 
-Ticket Tout est la propriété exclusive de l'éditeur et protégé par le droit de la propriété intellectuelle. Toute reproduction, distribution ou utilisation non autorisée du site ou de son contenu est strictement interdite. Les partenaires sont autorisés à utiliser le site uniquement dans le cadre de leur activité professionnelle et conformément aux présentes conditions.
+Ticket Tout est la propriété exclusive de l'éditeur et protégé par le droit de la propriété intellectuelle. Toute reproduction, distribution ou utilisation non autorisée du site ou de son contenu est strictement interdite. Les partenaires sont autorisés à utiliser le site uniquement dans le cadre de leur activité professionnelle et conformément aux présentes conditions. Les sources et marques tiers utilisés sur le site sont la propriété de leurs détenteurs respectifs et sont utilisés avec leur permission.
 
 ## Modalités de règlement et de résolution des litiges
 
@@ -64,4 +64,4 @@ Ticket Tout est la propriété exclusive de l'éditeur et protégé par le droit
 
 ---
 
-**Dernière mise à jour : 1er septembre 2026**
+**Dernière mise à jour : 2er septembre 2026**

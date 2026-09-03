@@ -165,3 +165,5 @@ QR code de paiement généré côté salarié pour valider une transaction ; cou
 |---|---|---|---|
 | id | integer | Non (identifiant technique) | — |
 | name | text | Oui (nom de l'agent/service administratif) | Accès restreint aux comptes administration |
+
+*Les tables de données sont toujours sujet à modification en fonction des besoins et des évolutions du service, c'est pourquoi ce document est régulièrement révisé et mis à jour.*
