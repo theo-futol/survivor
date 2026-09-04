@@ -9,3 +9,5 @@ garage/
 .DS_Store
 Ticket Tout/certificate/
 Ticket Tout/certificates/
+package-lock.json
+node_modules/
