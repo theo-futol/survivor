@@ -1,0 +1,96 @@
+# Render Blueprint for Ticket Tout.
+#
+# Diverges from docker-compose.yml in three deliberate ways:
+#  - Postgres and Redis are Render-managed (databases: / type: keyvalue)
+#    instead of self-hosted postgres:18 / redis:7 containers.
+#  - tickettout-app is built directly from Ticket Tout/Dockerfile on
+#    Render (runtime: docker), not pulled from ghcr.io — avoids the
+#    private-registry "unauthorized" pull failure already hit on
+#    Cloudflare when no registry credentials are configured. No `target`
+#    override is needed: prod-stage is the LAST stage in that Dockerfile,
+#    and Docker builds the last stage by default.
+#  - Garage (S3-compatible storage for KBIS/documents) is a single
+#    service that both renders its config and runs the server, since
+#    Render services can't share a volume the way docker-compose's
+#    garage-config -> garage init pattern does. See
+#    garage-init/Dockerfile.render + garage-init/render-entrypoint.sh.
+
+databases:
+  - name: tickettout-db
+    plan: starter
+    postgresMajorVersion: "18"
+
+envVarGroups:
+  # Shared between the garage service (configures the running server)
+  # and tickettout-app (consumed as S3 client credentials in
+  # lib/services/s3_client.ts) — must stay identical on both sides.
+  - name: garage-credentials
+    envVars:
+      - key: GARAGE_RPC_SECRET
+        sync: false
+      - key: GARAGE_ADMIN_TOKEN
+        sync: false
+      - key: GARAGE_METRICS_TOKEN
+        sync: false
+      - key: GARAGE_DEFAULT_ACCESS_KEY
+        sync: false
+      - key: GARAGE_DEFAULT_SECRET_KEY
+        sync: false
+      - key: GARAGE_DEFAULT_BUCKET
+        value: kbis-documents
+
+services:
+  - type: keyvalue
+    name: tickettout-redis
+    plan: starter
+    maxmemoryPolicy: noeviction
+
+  - type: pserv
+    # Must be named exactly "garage": lib/services/s3_client.ts hardcodes
+    # endpoint "http://garage:3900", and Render private services are
+    # reachable from other services by their service name as hostname.
+    name: garage
+    runtime: docker
+    dockerContext: ./garage-init
+    dockerfilePath: ./garage-init/Dockerfile.render
+    plan: starter
+    disk:
+      name: garage-data
+      mountPath: /var/lib/garage
+      sizeGB: 10
+    envVarGroups:
+      - garage-credentials
+
+  - type: web
+    name: tickettout-app
+    runtime: docker
+    dockerContext: ./Ticket Tout
+    dockerfilePath: ./Ticket Tout/Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVarGroups:
+      - garage-credentials
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        # NOTE: verify this connection string works as-is for
+        # `npm run db:migrate` at container startup — if Prisma Next
+        # needs the `?schema=public` suffix that .env.example's
+        # DATABASE_URL carries and Render's connectionString omits it,
+        # override this with a static value (copy Render's string +
+        # append `?schema=public`) instead of the dynamic binding below.
+        fromDatabase:
+          name: tickettout-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: tickettout-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_TTL_SECONDS
+        value: "1800"
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
