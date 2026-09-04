@@ -33,6 +33,9 @@ services:
     name: tickettout-redis
     plan: free
     maxmemoryPolicy: noeviction
+    # No external access needed — only tickettout-app talks to this,
+    # over Render's private network.
+    ipAllowList: []
 
   - type: web
     name: tickettout-app
