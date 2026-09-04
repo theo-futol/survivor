@@ -1,5 +1,21 @@
 import { db } from '@/lib/prisma/db';
 
+/**
+ * @openapi
+ * /admin/transactions.csv:
+ *   get:
+ *     summary: Export CSV de l'ensemble des transactions
+ *     description: Retourne toutes les transactions au format CSV (`id;date_iso8601;employee_id;partner_id;amount_cents;status`), en pièce jointe téléchargeable.
+ *     responses:
+ *       '200':
+ *         description: Fichier CSV généré avec succès.
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       '500':
+ *         description: Erreur serveur interne.
+ */
 export async function GET(request: Request) {
   try {
     const transactions = await db.orm.public.Transaction.all();

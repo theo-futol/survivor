@@ -13,6 +13,32 @@ const loginSchema = z.object({
   .regex(/[^A-Za-z0-9]/, { message: "Le mot de passe doit contenir au moins un caractère spécial." })
 });
 
+/**
+ * @openapi
+ * /login:
+ *   post:
+ *     summary: Authentification par email et mot de passe
+ *     description: "Vérifie les identifiants et retourne un token JWT valide 1 heure, contenant le rôle de l'utilisateur. Ce token doit être transmis via le header `Authorization: Bearer <token>` pour toutes les requêtes authentifiées suivantes."
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       '200':
+ *         description: Authentification réussie.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       '400':
+ *         description: Corps de requête invalide.
+ *       '401':
+ *         description: Identifiants invalides.
+ *       '500':
+ *         description: Erreur serveur interne.
+ */
 export async function POST(request: Request)
 {
   const body = await request.json().catch(() => null);
