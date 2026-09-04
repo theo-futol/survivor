@@ -31,6 +31,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import paiementsData from "../../data/paiements.json"
+import { authClient } from "@/lib/auth-client"
 
 // Types for navigation selections
 export type AdminTab = "employee" | "account" | "business"
@@ -201,14 +202,25 @@ const dbService = {
   },
 
   async getAdminAccount(): Promise<AdminAccount> {
-    // paiements.json has no admin-account data source.
-    // Returns an empty shell until one is wired in.
+    // The admin account isn't in paiements.json — it comes from the
+    // logged-in session instead.
+    const session = await authClient.getSession()
+    const user = session.data?.user as
+      | { id?: string; name?: string; email?: string; phone?: string; accountType?: string }
+      | undefined
+
+    if (!user) {
+      return { id: "", name: "", email: "", phone: "", role: "", lastLogin: "" }
+    }
+
     return {
-      id: "",
-      name: "",
-      email: "",
-      phone: "",
-      role: "",
+      id: user.id ?? "",
+      name: user.name ?? "",
+      email: user.email ?? "",
+      phone: user.phone ?? "",
+      role: user.accountType ?? "",
+      // Better Auth's default session doesn't expose a last-login
+      // timestamp — leaving this empty rather than inventing one.
       lastLogin: "",
     }
   },
