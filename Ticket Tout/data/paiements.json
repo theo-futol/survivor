@@ -42,6 +42,144 @@
           "statut": "validé"
         }
       ]
+    },
+    {
+      "id": "emp-003",
+      "raisonSociale": "Librairie Les Trois Chênes",
+      "siret": "534217896000019",
+      "totalDistribueCumule": 600.0,
+      "abondements": [
+        {
+          "id": "abo-3001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 100.0,
+          "salariesBeneficiaires": ["sal-103", "sal-104", "sal-105"],
+          "montantTotal": 300.0,
+          "statut": "validé"
+        },
+        {
+          "id": "abo-3002",
+          "periode": "Septembre 2026",
+          "date": "2026-09-01",
+          "montantParSalarie": 100.0,
+          "salariesBeneficiaires": ["sal-103", "sal-104", "sal-105"],
+          "montantTotal": 300.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-004",
+      "raisonSociale": "Garage Moreau & Fils",
+      "siret": "672198453000027",
+      "totalDistribueCumule": 240.0,
+      "abondements": [
+        {
+          "id": "abo-4001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 60.0,
+          "salariesBeneficiaires": ["sal-106", "sal-107"],
+          "montantTotal": 120.0,
+          "statut": "validé"
+        },
+        {
+          "id": "abo-4002",
+          "periode": "Septembre 2026",
+          "date": "2026-09-01",
+          "montantParSalarie": 60.0,
+          "salariesBeneficiaires": ["sal-106", "sal-107"],
+          "montantTotal": 120.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-005",
+      "raisonSociale": "Cabinet Dentaire Sourire du Sud",
+      "siret": "451236789000045",
+      "totalDistribueCumule": 480.0,
+      "abondements": [
+        {
+          "id": "abo-5001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 120.0,
+          "salariesBeneficiaires": ["sal-108", "sal-109", "sal-110", "sal-111"],
+          "montantTotal": 480.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-006",
+      "raisonSociale": "Épicerie Bio La Racine",
+      "siret": "389654127000033",
+      "totalDistribueCumule": 100.0,
+      "abondements": [
+        {
+          "id": "abo-6001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 50.0,
+          "salariesBeneficiaires": ["sal-112"],
+          "montantTotal": 50.0,
+          "statut": "validé"
+        },
+        {
+          "id": "abo-6002",
+          "periode": "Septembre 2026",
+          "date": "2026-09-01",
+          "montantParSalarie": 50.0,
+          "salariesBeneficiaires": ["sal-112"],
+          "montantTotal": 50.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-007",
+      "raisonSociale": "Studio Graphique Pixel & Plume",
+      "siret": "912874365000018",
+      "totalDistribueCumule": 300.0,
+      "abondements": [
+        {
+          "id": "abo-7001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 100.0,
+          "salariesBeneficiaires": ["sal-113", "sal-114", "sal-115"],
+          "montantTotal": 300.0,
+          "statut": "validé"
+        }
+      ]
+    },
+    {
+      "id": "emp-008",
+      "raisonSociale": "Menuiserie Artisanale Lacaze",
+      "siret": "267419538000024",
+      "totalDistribueCumule": 280.0,
+      "abondements": [
+        {
+          "id": "abo-8001",
+          "periode": "Août 2026",
+          "date": "2026-08-01",
+          "montantParSalarie": 70.0,
+          "salariesBeneficiaires": ["sal-116", "sal-117"],
+          "montantTotal": 140.0,
+          "statut": "validé"
+        },
+        {
+          "id": "abo-8002",
+          "periode": "Septembre 2026",
+          "date": "2026-09-01",
+          "montantParSalarie": 70.0,
+          "salariesBeneficiaires": ["sal-116", "sal-117"],
+          "montantTotal": 140.0,
+          "statut": "validé"
+        }
+      ]
     }
   ],
 
@@ -115,6 +253,268 @@
           "statut": "validée"
         }
       ]
+    },
+    {
+      "id": "sal-103",
+      "nom": "Nadia Ouahbi",
+      "entrepriseId": "emp-003",
+      "creditsRecus": [
+        { "abondementId": "abo-3001", "date": "2026-08-01", "montant": 100.0 },
+        { "abondementId": "abo-3002", "date": "2026-09-01", "montant": 100.0 }
+      ],
+      "totalRecu": 200.0,
+      "soldeActuel": 200.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-104",
+      "nom": "Thomas Rivière",
+      "entrepriseId": "emp-003",
+      "creditsRecus": [
+        { "abondementId": "abo-3001", "date": "2026-08-01", "montant": 100.0 },
+        { "abondementId": "abo-3002", "date": "2026-09-01", "montant": 100.0 }
+      ],
+      "totalRecu": 200.0,
+      "soldeActuel": 200.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-105",
+      "nom": "Sophie Delmas",
+      "entrepriseId": "emp-003",
+      "creditsRecus": [
+        { "abondementId": "abo-3001", "date": "2026-08-01", "montant": 100.0 },
+        { "abondementId": "abo-3002", "date": "2026-09-01", "montant": 100.0 }
+      ],
+      "totalRecu": 200.0,
+      "soldeActuel": 145.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5005",
+          "date": "2026-08-08T10:15:00",
+          "partenaireId": "yoga-detente-92",
+          "partenaireNom": "Yoga Détente 92",
+          "montant": 25.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5006",
+          "date": "2026-08-15T20:00:00",
+          "partenaireId": "cinema-le-rex",
+          "partenaireNom": "Cinéma Le Rex",
+          "montant": 30.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-106",
+      "nom": "Antoine Garcia",
+      "entrepriseId": "emp-004",
+      "creditsRecus": [
+        { "abondementId": "abo-4001", "date": "2026-08-01", "montant": 60.0 },
+        { "abondementId": "abo-4002", "date": "2026-09-01", "montant": 60.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 100.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5008",
+          "date": "2026-08-09T11:20:00",
+          "partenaireId": "pressing-eclair",
+          "partenaireNom": "Pressing Éclair",
+          "montant": 20.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-107",
+      "nom": "Camille Perrot",
+      "entrepriseId": "emp-004",
+      "creditsRecus": [
+        { "abondementId": "abo-4001", "date": "2026-08-01", "montant": 60.0 },
+        { "abondementId": "abo-4002", "date": "2026-09-01", "montant": 60.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 120.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-108",
+      "nom": "Elise Njoku",
+      "entrepriseId": "emp-005",
+      "creditsRecus": [
+        { "abondementId": "abo-5001", "date": "2026-08-01", "montant": 120.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 65.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5007",
+          "date": "2026-08-06T14:00:00",
+          "partenaireId": "institut-beaute-emeraude",
+          "partenaireNom": "Institut Beauté Émeraude",
+          "montant": 55.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-109",
+      "nom": "Hugo Castellani",
+      "entrepriseId": "emp-005",
+      "creditsRecus": [
+        { "abondementId": "abo-5001", "date": "2026-08-01", "montant": 120.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 120.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-110",
+      "nom": "Manon Duval",
+      "entrepriseId": "emp-005",
+      "creditsRecus": [
+        { "abondementId": "abo-5001", "date": "2026-08-01", "montant": 120.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 108.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5009",
+          "date": "2026-08-18T17:30:00",
+          "partenaireId": "cinema-le-rex",
+          "partenaireNom": "Cinéma Le Rex",
+          "montant": 12.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-111",
+      "nom": "Yanis Belkacem",
+      "entrepriseId": "emp-005",
+      "creditsRecus": [
+        { "abondementId": "abo-5001", "date": "2026-08-01", "montant": 120.0 }
+      ],
+      "totalRecu": 120.0,
+      "soldeActuel": 120.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5010",
+          "date": "2026-08-22T13:05:00",
+          "partenaireId": "institut-beaute-emeraude",
+          "partenaireNom": "Institut Beauté Émeraude",
+          "montant": 30.0,
+          "statut": "annulée par admin"
+        }
+      ]
+    },
+    {
+      "id": "sal-112",
+      "nom": "Fatou Diarra",
+      "entrepriseId": "emp-006",
+      "creditsRecus": [
+        { "abondementId": "abo-6001", "date": "2026-08-01", "montant": 50.0 },
+        { "abondementId": "abo-6002", "date": "2026-09-01", "montant": 50.0 }
+      ],
+      "totalRecu": 100.0,
+      "soldeActuel": 81.5,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5013",
+          "date": "2026-08-25T16:40:00",
+          "partenaireId": "pressing-eclair",
+          "partenaireNom": "Pressing Éclair",
+          "montant": 18.5,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-113",
+      "nom": "Lucas Faivre",
+      "entrepriseId": "emp-007",
+      "creditsRecus": [
+        { "abondementId": "abo-7001", "date": "2026-08-01", "montant": 100.0 }
+      ],
+      "totalRecu": 100.0,
+      "soldeActuel": 86.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5012",
+          "date": "2026-08-19T19:20:00",
+          "partenaireId": "cinema-le-rex",
+          "partenaireNom": "Cinéma Le Rex",
+          "montant": 14.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-114",
+      "nom": "Inès Chevrier",
+      "entrepriseId": "emp-007",
+      "creditsRecus": [
+        { "abondementId": "abo-7001", "date": "2026-08-01", "montant": 100.0 }
+      ],
+      "totalRecu": 100.0,
+      "soldeActuel": 100.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-115",
+      "nom": "Baptiste Renard",
+      "entrepriseId": "emp-007",
+      "creditsRecus": [
+        { "abondementId": "abo-7001", "date": "2026-08-01", "montant": 100.0 }
+      ],
+      "totalRecu": 100.0,
+      "soldeActuel": 60.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5011",
+          "date": "2026-08-11T09:00:00",
+          "partenaireId": "yoga-detente-92",
+          "partenaireNom": "Yoga Détente 92",
+          "montant": 40.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "sal-116",
+      "nom": "Romain Guyot",
+      "entrepriseId": "emp-008",
+      "creditsRecus": [
+        { "abondementId": "abo-8001", "date": "2026-08-01", "montant": 70.0 },
+        { "abondementId": "abo-8002", "date": "2026-09-01", "montant": 70.0 }
+      ],
+      "totalRecu": 140.0,
+      "soldeActuel": 140.0,
+      "transactionsUtilisation": []
+    },
+    {
+      "id": "sal-117",
+      "nom": "Chloé Marchetti",
+      "entrepriseId": "emp-008",
+      "creditsRecus": [
+        { "abondementId": "abo-8001", "date": "2026-08-01", "montant": 70.0 },
+        { "abondementId": "abo-8002", "date": "2026-09-01", "montant": 70.0 }
+      ],
+      "totalRecu": 140.0,
+      "soldeActuel": 118.0,
+      "transactionsUtilisation": [
+        {
+          "id": "txn-5014",
+          "date": "2026-08-27T12:00:00",
+          "partenaireId": "pressing-eclair",
+          "partenaireNom": "Pressing Éclair",
+          "montant": 22.0,
+          "statut": "validée"
+        }
+      ]
     }
   ],
 
@@ -178,6 +578,197 @@
           "statut": "validée"
         }
       ]
+    },
+    {
+      "id": "yoga-detente-92",
+      "nom": "Yoga Détente 92",
+      "totalEncaisse": 65.0,
+      "transactionsRecues": [
+        {
+          "id": "txn-5005",
+          "date": "2026-08-08T10:15:00",
+          "salarieId": "sal-105",
+          "salarieNom": "Sophie Delmas",
+          "montant": 25.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5011",
+          "date": "2026-08-11T09:00:00",
+          "salarieId": "sal-115",
+          "salarieNom": "Baptiste Renard",
+          "montant": 40.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "cinema-le-rex",
+      "nom": "Cinéma Le Rex",
+      "totalEncaisse": 56.0,
+      "transactionsRecues": [
+        {
+          "id": "txn-5006",
+          "date": "2026-08-15T20:00:00",
+          "salarieId": "sal-105",
+          "salarieNom": "Sophie Delmas",
+          "montant": 30.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5009",
+          "date": "2026-08-18T17:30:00",
+          "salarieId": "sal-110",
+          "salarieNom": "Manon Duval",
+          "montant": 12.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5012",
+          "date": "2026-08-19T19:20:00",
+          "salarieId": "sal-113",
+          "salarieNom": "Lucas Faivre",
+          "montant": 14.0,
+          "statut": "validée"
+        }
+      ]
+    },
+    {
+      "id": "institut-beaute-emeraude",
+      "nom": "Institut Beauté Émeraude",
+      "totalEncaisse": 55.0,
+      "transactionsRecues": [
+        {
+          "id": "txn-5007",
+          "date": "2026-08-06T14:00:00",
+          "salarieId": "sal-108",
+          "salarieNom": "Elise Njoku",
+          "montant": 55.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5010",
+          "date": "2026-08-22T13:05:00",
+          "salarieId": "sal-111",
+          "salarieNom": "Yanis Belkacem",
+          "montant": 30.0,
+          "statut": "annulée par admin"
+        }
+      ]
+    },
+    {
+      "id": "pressing-eclair",
+      "nom": "Pressing Éclair",
+      "totalEncaisse": 60.5,
+      "transactionsRecues": [
+        {
+          "id": "txn-5008",
+          "date": "2026-08-09T11:20:00",
+          "salarieId": "sal-106",
+          "salarieNom": "Antoine Garcia",
+          "montant": 20.0,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5013",
+          "date": "2026-08-25T16:40:00",
+          "salarieId": "sal-112",
+          "salarieNom": "Fatou Diarra",
+          "montant": 18.5,
+          "statut": "validée"
+        },
+        {
+          "id": "txn-5014",
+          "date": "2026-08-27T12:00:00",
+          "salarieId": "sal-117",
+          "salarieNom": "Chloé Marchetti",
+          "montant": 22.0,
+          "statut": "validée"
+        }
+      ]
+    }
+  ],
+
+  "demandesInscription": [
+    {
+      "id": "demande-9001",
+      "entrepriseId": "emp-001",
+      "employeeName": "Marion Salviati",
+      "employeeEmail": "marion.salviati@atelier-numerique.fr",
+      "ceoName": "Denis Lambert",
+      "position": "Développeuse Web",
+      "requestedAt": "2026-08-28",
+      "statut": "en attente"
+    },
+    {
+      "id": "demande-9002",
+      "entrepriseId": "emp-003",
+      "employeeName": "Younes Belaïd",
+      "employeeEmail": "younes.belaid@librairie3chenes.fr",
+      "ceoName": "Isabelle Chauveau",
+      "position": "Libraire",
+      "requestedAt": "2026-08-30",
+      "statut": "en attente"
+    },
+    {
+      "id": "demande-9003",
+      "entrepriseId": "emp-005",
+      "employeeName": "Clara Fontanel",
+      "employeeEmail": "clara.fontanel@dentaire-sourire.fr",
+      "ceoName": "Dr. Vincent Rambert",
+      "position": "Assistante dentaire",
+      "requestedAt": "2026-09-01",
+      "statut": "en attente"
+    },
+    {
+      "id": "demande-9004",
+      "entrepriseId": "emp-007",
+      "employeeName": "Nolan Petitjean",
+      "employeeEmail": "nolan.petitjean@pixelplume.fr",
+      "ceoName": "Sarah Guillemin",
+      "position": "Graphiste",
+      "requestedAt": "2026-08-20",
+      "statut": "acceptée"
+    },
+    {
+      "id": "demande-9005",
+      "entrepriseId": "emp-002",
+      "employeeName": "Idris Bouchareb",
+      "employeeEmail": "idris.bouchareb@fourniducoin.fr",
+      "ceoName": "Marc Ferrand",
+      "position": "Boulanger",
+      "requestedAt": "2026-08-25",
+      "statut": "refusée"
+    },
+    {
+      "id": "demande-9006",
+      "entrepriseId": "emp-008",
+      "employeeName": "Léna Tissier",
+      "employeeEmail": "lena.tissier@menuiserie-lacaze.fr",
+      "ceoName": "Julien Lacaze",
+      "position": "Ébéniste",
+      "requestedAt": "2026-09-02",
+      "statut": "en attente"
+    },
+    {
+      "id": "demande-9007",
+      "entrepriseId": "emp-004",
+      "employeeName": "Bilal Amrani",
+      "employeeEmail": "bilal.amrani@garage-moreau.fr",
+      "ceoName": "Pierre Moreau",
+      "position": "Mécanicien",
+      "requestedAt": "2026-08-15",
+      "statut": "acceptée"
+    },
+    {
+      "id": "demande-9008",
+      "entrepriseId": "emp-006",
+      "employeeName": "Awa Cissé",
+      "employeeEmail": "awa.cisse@epicerie-laracine.fr",
+      "ceoName": "Nadège Bréchet",
+      "position": "Vendeuse",
+      "requestedAt": "2026-09-03",
+      "statut": "en attente"
     }
   ]
 }

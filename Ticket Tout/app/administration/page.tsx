@@ -30,6 +30,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import paiementsData from "../../data/paiements.json"
 
 // Types for navigation selections
 export type AdminTab = "employee" | "account" | "business"
@@ -60,7 +61,7 @@ export default function Page() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Database Interfaces & Modular Schema Definitions                    */
+/* UI-facing interfaces (unchanged — this is what the views render)    */
 /* ------------------------------------------------------------------ */
 
 export type RequestStatus = "pending" | "accepted" | "refused"
@@ -92,6 +93,7 @@ export interface Business {
   address: string
   ceoName: string
   employees: Person[]
+  pendingEmployeesCount: number
 }
 
 export interface AdminAccount extends Person {
@@ -99,97 +101,120 @@ export interface AdminAccount extends Person {
 }
 
 /* ------------------------------------------------------------------ */
-/* Modular Database Service Mock (Replace with Prisma/Supabase/API)  */
+/* Raw shape of paiements.json (only the fields this page consumes)    */
+/* ------------------------------------------------------------------ */
+
+interface RawSalarie {
+  id: string
+  nom: string
+  entrepriseId: string
+}
+
+interface RawEntreprise {
+  id: string
+  raisonSociale: string
+  siret: string
+}
+
+// A pending (or already-treated) employee registration request submitted by a
+// business's CEO. "en attente" employees are not yet in `salaries` — they only
+// exist here until an admin accepts or refuses the request.
+interface RawDemandeInscription {
+  id: string
+  entrepriseId: string
+  employeeName: string
+  employeeEmail: string
+  ceoName: string
+  position: string
+  requestedAt: string
+  statut: "en attente" | "acceptée" | "refusée"
+}
+
+interface PaiementsFile {
+  entreprises: RawEntreprise[]
+  salaries: RawSalarie[]
+  demandesInscription: RawDemandeInscription[]
+}
+
+const paiements = paiementsData as unknown as PaiementsFile
+
+function mapStatut(statut: RawDemandeInscription["statut"]): RequestStatus {
+  switch (statut) {
+    case "en attente":
+      return "pending"
+    case "acceptée":
+      return "accepted"
+    case "refusée":
+      return "refused"
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Data service — now reads from paiements.json instead of mock data   */
 /* ------------------------------------------------------------------ */
 
 const dbService = {
   async getRequests(): Promise<EmployeeRequest[]> {
-    return [
-      {
-        id: "req-1",
-        employeeName: "Lucas Payet",
-        employeeEmail: "lucas.payet@example.com",
-        businessName: "Boulangerie Hoarau",
-        ceoName: "Jean Hoarau",
-        position: "Vendeur",
-        requestedAt: "2026-08-28",
-        status: "pending",
-      },
-      {
-        id: "req-2",
-        employeeName: "Nina Grondin",
-        employeeEmail: "nina.grondin@example.com",
-        businessName: "Garage Techniplus",
-        ceoName: "Marc Técher",
-        position: "Mécanicienne",
-        requestedAt: "2026-08-30",
-        status: "pending",
-      },
-      {
-        id: "req-3",
-        employeeName: "Enzo Maillot",
-        employeeEmail: "enzo.maillot@example.com",
-        businessName: "Boulangerie Hoarau",
-        ceoName: "Jean Hoarau",
-        position: "Livreur",
-        requestedAt: "2026-09-01",
-        status: "pending",
-      },
-    ]
+    // Built from paiements.json's demandesInscription — employees a chef
+    // d'entreprise has submitted for registration but who aren't (yet) part
+    // of "salaries".
+    return paiements.demandesInscription.map((req): EmployeeRequest => {
+      const ent = paiements.entreprises.find((e) => e.id === req.entrepriseId)
+      return {
+        id: req.id,
+        employeeName: req.employeeName,
+        employeeEmail: req.employeeEmail,
+        businessName: ent?.raisonSociale ?? "",
+        ceoName: req.ceoName,
+        position: req.position,
+        requestedAt: req.requestedAt,
+        status: mapStatut(req.statut),
+      }
+    })
   },
 
   async getBusinesses(): Promise<Business[]> {
-    return [
-      {
-        id: "biz-1",
-        name: "Boulangerie Hoarau",
-        siret: "123 456 789 00012",
-        kbisUrl: "/documents/kbis-boulangerie-hoarau.pdf",
-        address: "12 Rue du Général de Gaulle, Saint-Denis, La Réunion",
-        ceoName: "Jean Hoarau",
-        employees: [
-          { id: "emp-1", name: "Aline Rivière", role: "Boulangère" },
-          { id: "emp-2", name: "Paul Fontaine", role: "Pâtissier" },
-        ],
-      },
-      {
-        id: "biz-2",
-        name: "Garage Techniplus",
-        siret: "987 654 321 00045",
-        kbisUrl: "/documents/kbis-garage-techniplus.pdf",
-        address: "48 Route Nationale 1, Le Port, La Réunion",
-        ceoName: "Marc Técher",
-        employees: [
-          { id: "emp-3", name: "Sofia Payet", role: "Réceptionniste" },
-          { id: "emp-4", name: "Karim Rousseau", role: "Mécanicien" },
-          { id: "emp-5", name: "Léa Dijoux", role: "Apprentie" },
-        ],
-      },
-      {
-        id: "biz-3",
-        name: "Librairie des Filaos",
-        siret: "456 789 123 00078",
-        kbisUrl: "/documents/kbis-librairie-filaos.pdf",
-        address: "5 Avenue de la Victoire, Saint-Pierre, La Réunion",
-        ceoName: "Aïcha Ramassamy",
-        employees: [],
-      },
-    ]
+    // Built from paiements.json's entreprises + salaries + demandesInscription.
+    // Fields paiements.json doesn't provide (kbisUrl, address, ceoName)
+    // are left empty rather than invented.
+    return paiements.entreprises.map(
+      (ent): Business => ({
+        id: ent.id,
+        name: ent.raisonSociale,
+        siret: ent.siret,
+        kbisUrl: "",
+        address: "",
+        ceoName: "",
+        employees: paiements.salaries
+          .filter((sal) => sal.entrepriseId === ent.id)
+          .map(
+            (sal): Person => ({
+              id: sal.id,
+              name: sal.nom,
+            })
+          ),
+        pendingEmployeesCount: paiements.demandesInscription.filter(
+          (req) => req.entrepriseId === ent.id && req.statut === "en attente"
+        ).length,
+      })
+    )
   },
 
   async getAdminAccount(): Promise<AdminAccount> {
+    // paiements.json has no admin-account data source.
+    // Returns an empty shell until one is wired in.
     return {
-      id: "admin-1",
-      name: "Camille Barret",
-      email: "camille.barret@admin-site.re",
-      phone: "+262 692 00 00 00",
-      role: "Administrateur principal",
-      lastLogin: "01/09/2026 à 18:42",
+      id: "",
+      name: "",
+      email: "",
+      phone: "",
+      role: "",
+      lastLogin: "",
     }
   },
 
   async updateRequestStatus(id: string, status: RequestStatus): Promise<boolean> {
-    // Database update query simulation
+    // No persistence layer yet — no-op until requests have a real source.
     return true
   },
 }
@@ -312,6 +337,8 @@ function AccountView() {
 
   if (!adminAccount) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
 
+  const hasAnyData = adminAccount.name || adminAccount.email || adminAccount.phone || adminAccount.role
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <h2 className="text-2xl font-bold tracking-tight">Compte administrateur</h2>
@@ -319,24 +346,36 @@ function AccountView() {
       <div className="rounded-xl border bg-muted/20 p-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-14 w-14">
-            <AvatarFallback className="text-lg">{initials(adminAccount.name)}</AvatarFallback>
+            <AvatarFallback className="text-lg">
+              {adminAccount.name ? initials(adminAccount.name) : "—"}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-lg font-semibold leading-tight">{adminAccount.name}</p>
-            <Badge variant="secondary" className="mt-1">
-              <Shield className="mr-1 h-3 w-3" />
-              {adminAccount.role}
-            </Badge>
+            <p className="text-lg font-semibold leading-tight">
+              {adminAccount.name || "Aucun compte chargé"}
+            </p>
+            {adminAccount.role && (
+              <Badge variant="secondary" className="mt-1">
+                <Shield className="mr-1 h-3 w-3" />
+                {adminAccount.role}
+              </Badge>
+            )}
           </div>
         </div>
 
         <Separator className="my-4" />
 
-        <dl className="grid gap-3 sm:grid-cols-2">
-          {adminAccount.email && <InfoRow icon={Mail} label="Email" value={adminAccount.email} />}
-          {adminAccount.phone && <InfoRow icon={Phone} label="Téléphone" value={adminAccount.phone} />}
-          <InfoRow icon={Clock} label="Dernière connexion" value={adminAccount.lastLogin} />
-        </dl>
+        {hasAnyData ? (
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {adminAccount.email && <InfoRow icon={Mail} label="Email" value={adminAccount.email} />}
+            {adminAccount.phone && <InfoRow icon={Phone} label="Téléphone" value={adminAccount.phone} />}
+            {adminAccount.lastLogin && (
+              <InfoRow icon={Clock} label="Dernière connexion" value={adminAccount.lastLogin} />
+            )}
+          </dl>
+        ) : (
+          <p className="text-muted-foreground text-sm">Aucune donnée de compte disponible pour le moment.</p>
+        )}
       </div>
 
       <div className="grid auto-rows-min gap-4 md:grid-cols-2">
@@ -390,7 +429,7 @@ function BusinessView() {
         </p>
       </div>
 
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+      <div className="grid auto-rows-min gap-4 md:grid-cols-4">
         <StatCard label="Entreprises" value={businesses.length} />
         <StatCard
           label="Employés au total"
@@ -400,56 +439,81 @@ function BusinessView() {
           label="Sans employé"
           value={businesses.filter((b) => b.employees.length === 0).length}
         />
+        <StatCard
+          label="Employés en attente"
+          value={businesses.reduce((sum, b) => sum + b.pendingEmployeesCount, 0)}
+        />
       </div>
 
-      <div className="flex flex-col gap-3">
-        {businesses.map((biz) => (
-          <div
-            key={biz.id}
-            onClick={() => setSelectedBusiness(biz)}
-            className="group relative cursor-pointer rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40 hover:border-primary/50"
-          >
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-              <div>
-                <p className="flex items-center gap-2 font-semibold group-hover:text-primary transition-colors">
-                  <Building2 className="h-4 w-4" />
-                  {biz.name}
-                  <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </p>
-                <p className="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
-                  <MapPin className="h-3.5 w-3.5" /> {biz.address}
-                </p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Chef d'entreprise : {biz.ceoName}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 font-mono">
-                  SIRET : {biz.siret}
-                </p>
-              </div>
-              <Badge variant="secondary" className="w-fit">
-                <Users className="mr-1 h-3 w-3" />
-                {biz.employees.length} employé{biz.employees.length > 1 ? "s" : ""}
-              </Badge>
-            </div>
-
-            {biz.employees.length > 0 && (
-              <>
-                <Separator className="my-3" />
-                <div className="flex flex-wrap gap-2">
-                  {biz.employees.map((emp) => (
-                    <span
-                      key={emp.id}
-                      className="bg-background rounded-full border px-3 py-1 text-xs"
-                    >
-                      {emp.name} {emp.role ? `(${emp.role})` : ""}
-                    </span>
-                  ))}
+      {businesses.length === 0 ? (
+        <div className="rounded-xl border bg-muted/20 p-8 text-center">
+          <p className="text-muted-foreground text-sm">Aucune entreprise disponible pour le moment.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {businesses.map((biz) => (
+            <div
+              key={biz.id}
+              onClick={() => setSelectedBusiness(biz)}
+              className="group relative cursor-pointer rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40 hover:border-primary/50"
+            >
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                <div>
+                  <p className="flex items-center gap-2 font-semibold group-hover:text-primary transition-colors">
+                    <Building2 className="h-4 w-4" />
+                    {biz.name}
+                    <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </p>
+                  {biz.address && (
+                    <p className="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
+                      <MapPin className="h-3.5 w-3.5" /> {biz.address}
+                    </p>
+                  )}
+                  {biz.ceoName && (
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      Chef d'entreprise : {biz.ceoName}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2 font-mono">
+                    SIRET : {biz.siret}
+                  </p>
                 </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="w-fit">
+                    <Users className="mr-1 h-3 w-3" />
+                    {biz.employees.length} employé{biz.employees.length > 1 ? "s" : ""}
+                  </Badge>
+                  {biz.pendingEmployeesCount > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="w-fit border-amber-500/50 text-amber-600 dark:text-amber-400"
+                    >
+                      <Clock className="mr-1 h-3 w-3" />
+                      {biz.pendingEmployeesCount} en attente
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {biz.employees.length > 0 && (
+                <>
+                  <Separator className="my-3" />
+                  <div className="flex flex-wrap gap-2">
+                    {biz.employees.map((emp) => (
+                      <span
+                        key={emp.id}
+                        className="bg-background rounded-full border px-3 py-1 text-xs"
+                      >
+                        {emp.name} {emp.role ? `(${emp.role})` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal Dialog for Partner Details (SIRET + KBIS Download) */}
       <Dialog open={!!selectedBusiness} onOpenChange={() => setSelectedBusiness(null)}>
@@ -471,18 +535,26 @@ function BusinessView() {
                   <span className="text-muted-foreground">Numéro SIRET :</span>
                   <span className="font-mono font-medium">{selectedBusiness.siret}</span>
                 </div>
-                <Separator />
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Dirigeant :</span>
-                  <span className="font-medium">{selectedBusiness.ceoName}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Adresse :</span>
-                  <span className="font-medium text-right max-w-[200px] truncate">
-                    {selectedBusiness.address}
-                  </span>
-                </div>
+                {selectedBusiness.ceoName && (
+                  <>
+                    <Separator />
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Dirigeant :</span>
+                      <span className="font-medium">{selectedBusiness.ceoName}</span>
+                    </div>
+                  </>
+                )}
+                {selectedBusiness.address && (
+                  <>
+                    <Separator />
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Adresse :</span>
+                      <span className="font-medium text-right max-w-[200px] truncate">
+                        {selectedBusiness.address}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -494,14 +566,23 @@ function BusinessView() {
                     <FileText className="h-5 w-5 text-red-500" />
                     <div>
                       <p className="text-sm font-medium">Extrait KBIS</p>
-                      <p className="text-xs text-muted-foreground">Document PDF officiel</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedBusiness.kbisUrl ? "Document PDF officiel" : "Aucun document disponible"}
+                      </p>
                     </div>
                   </div>
-                  <Button size="sm" asChild variant="default">
-                    <a href={selectedBusiness.kbisUrl} download target="_blank" rel="noreferrer">
-                      <Download className="mr-2 h-4 w-4" />
-                      Télécharger
-                    </a>
+                  <Button size="sm" asChild={!!selectedBusiness.kbisUrl} variant="default" disabled={!selectedBusiness.kbisUrl}>
+                    {selectedBusiness.kbisUrl ? (
+                      <a href={selectedBusiness.kbisUrl} download target="_blank" rel="noreferrer">
+                        <Download className="mr-2 h-4 w-4" />
+                        Télécharger
+                      </a>
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        Télécharger
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
