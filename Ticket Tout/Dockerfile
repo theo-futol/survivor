@@ -1,5 +1,7 @@
 FROM node:26.1.0-bookworm-slim AS base
 
+LABEL org.opencontainers.image.source="https://github.com/theo-futol/survivor"
+
 WORKDIR /Ticket Tout
 
 COPY package*.json ./
