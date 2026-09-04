@@ -21,6 +21,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      NODE_ENV: development
+      ENABLE_DEMO_EMPLOYEE: ${ENABLE_DEMO_EMPLOYEE}
     build:
       context: ./Ticket Tout
       target: dev-stage
@@ -42,6 +45,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      NODE_ENV: production
+      ENABLE_DEMO_EMPLOYEE: ${ENABLE_DEMO_EMPLOYEE}
       # APP_HOST_IP: ${APP_HOST_IP}
     build:
       context: ./Ticket Tout
