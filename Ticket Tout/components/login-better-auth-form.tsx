@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+type SessionUser = {
+  employeeAccess?: boolean
+  adminAccess?: boolean
+  partnerAccess?: boolean
+}
+
 export function BetterAuthLoginForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -25,8 +31,17 @@ export function BetterAuthLoginForm() {
     }
 
     const session = await authClient.getSession()
-    const employeeAccess = (session.data?.user as { employeeAccess?: boolean } | undefined)?.employeeAccess === true
-    router.push(employeeAccess ? "/" : "/profile")
+    const user = session.data?.user as { accountType?: string } | undefined
+
+  if (user?.accountType === "employee") {
+    router.push("/")
+  } else if (user?.accountType === "admin") {
+    router.push("/admin")
+  } else if (user?.accountType === "partner") {
+    router.push("/partner")
+  } else {
+    router.push("/")
+  }
     router.refresh()
   }
 
@@ -44,13 +59,39 @@ export function BetterAuthLoginForm() {
     }
   }
 
-  async function openDemo() {
+  async function openEmpDemo() {
     setDemoLoading(true)
     setError(null)
     try {
       const seed = await fetch("/api/demo/employee", { method: "POST" })
       if (!seed.ok) throw new Error("Impossible de préparer le compte de démonstration.")
       await finishLogin(BRAND.demoEmployee.email, BRAND.demoEmployee.password)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "La démonstration n'a pas pu être ouverte.")
+      setDemoLoading(false)
+    }
+  }
+
+  async function openAdminDemo() {
+    setDemoLoading(true)
+    setError(null)
+    try {
+      const seed = await fetch("/api/demo/admin", { method: "POST" })
+      if (!seed.ok) throw new Error("Impossible de préparer le compte de démonstration.")
+      await finishLogin(BRAND.demoAdmin.email, BRAND.demoAdmin.password)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "La démonstration n'a pas pu être ouverte.")
+      setDemoLoading(false)
+    }
+  }
+
+  async function openPartnerDemo() {
+    setDemoLoading(true)
+    setError(null)
+    try {
+      const seed = await fetch("/api/demo/partner", { method: "POST" })
+      if (!seed.ok) throw new Error("Impossible de préparer le compte de démonstration.")
+      await finishLogin(BRAND.demoPartner.email, BRAND.demoPartner.password)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "La démonstration n'a pas pu être ouverte.")
       setDemoLoading(false)
@@ -80,10 +121,26 @@ export function BetterAuthLoginForm() {
         <span className="relative z-10 bg-card px-3">ou</span>
         <span className="absolute left-0 right-0 top-1/2 border-t" aria-hidden="true" />
       </div>
-      <Button type="button" variant="outline" className="w-full" onClick={openDemo} disabled={loading || demoLoading}>
+      <Button type="button" variant="outline" className="w-full" onClick={openEmpDemo} disabled={loading || demoLoading}>
         {demoLoading ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <PlayCircle aria-hidden="true" />}
         Ouvrir la démo salarié
       </Button>
+      <Button type="button" variant="outline" className="w-full" onClick={openAdminDemo} disabled={loading || demoLoading}>
+        {demoLoading ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <PlayCircle aria-hidden="true" />}
+        Ouvrir la démo administrateur
+      </Button>
+      <Button type="button" variant="outline" className="w-full" onClick={openPartnerDemo} disabled={loading || demoLoading}>
+        {demoLoading ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <PlayCircle aria-hidden="true" />}
+        Ouvrir la démo partenaire
+      </Button>
+    </form>
+  )
+}
+
+export function BetterAuthLoginFormWithDemo() {
+  return (
+    <form className="space-y-5">
+      <BetterAuthLoginForm />
     </form>
   )
 }

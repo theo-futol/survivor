@@ -23,7 +23,7 @@ database.exec("PRAGMA journal_mode = WAL;")
 database.exec("PRAGMA busy_timeout = 5000;")
 database.exec("PRAGMA foreign_keys = ON;")
 
-const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
+const baseURL = process.env.BETTER_AUTH_URL ?? "https://localhost:3000"
 const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS
   ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
   : [baseURL]
