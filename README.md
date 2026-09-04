@@ -57,3 +57,24 @@ docker compose down
 ```
 
 This stops and removes the containers. The `data_sql` volume (Postgres data) persists across restarts unless removed explicitly with `docker compose down -v`.
+
+## Seeding the database
+
+A deterministic seed (50 employees with varied balances, 12 partners across
+several categories and régions, and 200 payment/refund transactions spread
+over 90 days, plus the employer top-ups that fund them) can be loaded once
+the dev stack is up:
+
+```bash
+cd "Ticket Tout" && npm run db:seed:generate   # regenerates mocks/seed.sql, mocks/transactions.csv, mocks/justificatif.md
+cd .. && ./dev/seed-db.sh                       # applies pending migrations, then loads mocks/seed.sql
+```
+
+`mocks/seed.sql` is committed, so `dev/seed-db.sh` can be run directly against
+a fresh database without regenerating it first. `npm run db:seed:generate` is
+fully deterministic (fixed random seed and reference date) — running it again
+on an empty database reproduces the exact same ids, amounts, and dates, so
+`mocks/seed.sql` and `mocks/transactions.csv` always match. The seed only
+ever `INSERT`s rows in chronological order (never `UPDATE`s a transaction to
+fix a balance); `mocks/justificatif.md` shows the abondements/débits/total
+reconciliation for one of the three employees seeded at a zero balance.

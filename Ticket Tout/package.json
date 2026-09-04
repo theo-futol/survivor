@@ -11,6 +11,7 @@
     "db:generate": "prisma contract emit",
     "db:migrate": "prisma db migrate",
     "db:verify": "prisma db verify",
+    "db:seed:generate": "tsx dev/generate-seed.ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "ci:test:backend:unit": "npm run test -- --testPathPatterns=tests/api",
     "format": "prettier --write \"**/*.{ts,tsx}\"",

@@ -1,0 +1,255 @@
+[
+  {
+    "id": "dropCheckConstraint.transaction.transaction_type_check_7dc51aca",
+    "label": "Drop check constraint \"transaction_type_check_7dc51aca\" on \"transaction\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_type_check_7dc51aca",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_type_check_7dc51aca\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_check_7dc51aca",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"transaction_type_check_7dc51aca\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" DROP CONSTRAINT \"transaction_type_check_7dc51aca\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_type_check_7dc51aca\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_check_7dc51aca",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.transaction.companyId",
+    "label": "Drop NOT NULL on \"transaction\".\"companyId\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "companyId",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"companyId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "companyId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"companyId\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ALTER COLUMN \"companyId\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"companyId\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "companyId",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.transaction.transaction_type_check_8b1dadb4",
+    "label": "Add check constraint \"transaction_type_check_8b1dadb4\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_type_check_8b1dadb4",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_type_check_8b1dadb4\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_check_8b1dadb4",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"transaction_type_check_8b1dadb4\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD CONSTRAINT \"transaction_type_check_8b1dadb4\" CHECK (\"type\" IN ('PAYMENT', 'REFUND', 'TOPUP'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_type_check_8b1dadb4\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_check_8b1dadb4",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.transaction.transaction_type_matches_original",
+    "label": "Drop check constraint \"transaction_type_matches_original\" on \"transaction\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_type_matches_original",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_type_matches_original\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_original",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"transaction_type_matches_original\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" DROP CONSTRAINT \"transaction_type_matches_original\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_type_matches_original\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_original",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.transaction.transaction_type_matches_original",
+    "label": "Add check constraint \"transaction_type_matches_original\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_type_matches_original",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_type_matches_original\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_original",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"transaction_type_matches_original\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD CONSTRAINT \"transaction_type_matches_original\" CHECK ((\"type\" = 'PAYMENT' AND \"originalTransactionId\" IS NULL) OR (\"type\" = 'REFUND' AND \"originalTransactionId\" IS NOT NULL) OR (\"type\" = 'TOPUP' AND \"originalTransactionId\" IS NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_type_matches_original\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_original",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.transaction.transaction_type_matches_company",
+    "label": "Add check constraint \"transaction_type_matches_company\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_type_matches_company",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_type_matches_company\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_company",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"transaction_type_matches_company\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD CONSTRAINT \"transaction_type_matches_company\" CHECK ((\"type\" = 'TOPUP' AND \"companyId\" IS NULL) OR (\"type\" != 'TOPUP' AND \"companyId\" IS NOT NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_type_matches_company\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_type_matches_company",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  }
+]

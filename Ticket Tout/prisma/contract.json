@@ -93,6 +93,10 @@
               {
                 "name": "REFUND",
                 "value": "REFUND"
+              },
+              {
+                "name": "TOPUP",
+                "value": "TOPUP"
               }
             ]
           }
@@ -764,7 +768,7 @@
                 }
               },
               "companyId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -1668,8 +1672,8 @@
                   "prefix": "transaction_status_check"
                 },
                 {
-                  "expression": "\"type\" IN ('PAYMENT', 'REFUND')",
-                  "name": "transaction_type_check_7dc51aca",
+                  "expression": "\"type\" IN ('PAYMENT', 'REFUND', 'TOPUP')",
+                  "name": "transaction_type_check_8b1dadb4",
                   "prefix": "transaction_type_check"
                 }
               ],
@@ -1682,7 +1686,7 @@
                 "companyId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-temporal@1",
@@ -1995,7 +1999,8 @@
               "kind": "valueSet",
               "values": [
                 "PAYMENT",
-                "REFUND"
+                "REFUND",
+                "TOPUP"
               ]
             }
           }
@@ -2004,7 +2009,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "638124c976294b5adcad32e5948cb2585e64480016c4287a90a3e76b3d73d33b"
+    "storageHash": "ddea35b058943bd356875a9e296d76f5a21fa1b8c244ff4177bbd1d166a05a12"
   },
   "execution": {
     "executionHash": "cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038",

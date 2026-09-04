@@ -90,6 +90,7 @@ model Company {
 enum TransactionType {
   PAYMENT
   REFUND
+  TOPUP
 }
 
 enum TransactionStatus {
@@ -102,8 +103,8 @@ model Transaction {
   type                   TransactionType
   userId                 String
   user                   Users             @relation(fields: [userId], references: [id])
-  companyId              String
-  company                Company          @relation(fields: [companyId], references: [id])
+  companyId              String?
+  company                Company?         @relation(fields: [companyId], references: [id])
   amount                 Int
   originalTransactionId  String?          @unique
   originalTransaction    Transaction?     @relation("RefundOf", fields: [originalTransactionId], references: [id])

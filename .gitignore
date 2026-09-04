@@ -2,6 +2,7 @@
 CLAUDE.md
 design/
 *.sql
+!mocks/*.sql
 note.md
 .venv/
 garage/

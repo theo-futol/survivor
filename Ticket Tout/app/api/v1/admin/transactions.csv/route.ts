@@ -2,7 +2,7 @@ import { db } from '@/lib/prisma/db';
 
 export async function GET(request: Request) {
   try {
-    const transactions = await db.orm.public.Transaction.where({ type: 'PAYMENT' }).all();
+    const transactions = await db.orm.public.Transaction.all();
     console.log(transactions);
     const csvHeader = 'id;date_iso8601;employee_id;partner_id;amount_cents;status\n';
     const csvRows = transactions.map(t => `${t.id};${t.createdAt.toString()};${t.userId};${t.companyId};${t.amount};${t.status}`).join('\n');
