@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "WATCHPACK_POLLING=true next dev --webpack",
     "build": "npm run db:generate && next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "db:generate": "prisma contract emit",
     "db:migrate": "prisma db migrate",

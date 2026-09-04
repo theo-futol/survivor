@@ -12,8 +12,6 @@ services:
     volumes:
       - data_sql:/var/lib/postgresql
 
-
-
   app-dev:
     container_name: ticket_tout_app_dev
     depends_on:
@@ -22,6 +20,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
     build:
       context: ./Ticket Tout
       target: dev-stage
@@ -42,6 +41,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
     build:
       context: ./Ticket Tout
       target: prod-stage
