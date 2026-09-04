@@ -8,6 +8,10 @@
       "model": "Administration",
       "namespace": "public"
     },
+    "bannedUser": {
+      "model": "BannedUser",
+      "namespace": "public"
+    },
     "company": {
       "model": "Company",
       "namespace": "public"
@@ -63,6 +67,19 @@
               {
                 "name": "ADMIN",
                 "value": "ADMIN"
+              }
+            ]
+          },
+          "TransactionStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "REFUSER",
+                "value": "REFUSER"
+              },
+              {
+                "name": "VALIDER",
+                "value": "VALIDER"
               }
             ]
           },
@@ -126,6 +143,53 @@
               },
               "namespaceId": "public",
               "table": "administration"
+            }
+          },
+          "BannedUser": {
+            "fields": {
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Users",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "id": {
+                  "column": "id"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "bannedUser"
             }
           },
           "Company": {
@@ -727,6 +791,19 @@
                   "kind": "scalar"
                 }
               },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "TransactionStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "type": {
                 "nullable": false,
                 "type": {
@@ -826,6 +903,9 @@
                 },
                 "originalTransactionId": {
                   "column": "originalTransactionId"
+                },
+                "status": {
+                  "column": "status"
                 },
                 "type": {
                   "column": "type"
@@ -1030,6 +1110,64 @@
                 ]
               },
               "uniques": []
+            },
+            "bannedUser": {
+              "columns": {
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bannedUser"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "bannedUser_userId_idx_a489d58a",
+                  "prefix": "bannedUser_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId"
+                  ]
+                }
+              ]
             },
             "company": {
               "columns": {
@@ -1525,6 +1663,11 @@
             "transaction": {
               "checks": [
                 {
+                  "expression": "\"status\" IN ('REFUSER', 'VALIDER')",
+                  "name": "transaction_status_check_27d38134",
+                  "prefix": "transaction_status_check"
+                },
+                {
                   "expression": "\"type\" IN ('PAYMENT', 'REFUND')",
                   "name": "transaction_type_check_7dc51aca",
                   "prefix": "transaction_type_check"
@@ -1559,6 +1702,17 @@
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "TransactionStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
                 },
                 "type": {
                   "codecId": "pg/text@1",
@@ -1642,6 +1796,14 @@
                   ],
                   "name": "transaction_createdAt_idx_9575dbd7",
                   "prefix": "transaction_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "transaction_status_idx_e98638ab",
+                  "prefix": "transaction_status_idx",
                   "unique": false
                 },
                 {
@@ -1822,6 +1984,13 @@
                 "ADMIN"
               ]
             },
+            "TransactionStatus": {
+              "kind": "valueSet",
+              "values": [
+                "REFUSER",
+                "VALIDER"
+              ]
+            },
             "TransactionType": {
               "kind": "valueSet",
               "values": [
@@ -1835,7 +2004,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "30c1017425cecd9047c5ed0f84e3019e743699849dc73f5263da621585909b02"
+    "storageHash": "638124c976294b5adcad32e5948cb2585e64480016c4287a90a3e76b3d73d33b"
   },
   "execution": {
     "executionHash": "cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038",

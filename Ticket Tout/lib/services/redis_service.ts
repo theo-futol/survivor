@@ -32,4 +32,4 @@ async function banUser(userId: string): Promise<void>
   await redisClient.set(`ban:${userId}`, 'banned', { EX: BAN_TTL_SECONDS });
 }
 
-export { redisClient, isBanned, banUser };
+export { redisClient, isBanned, banUser, BAN_TTL_SECONDS };

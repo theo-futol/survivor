@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'638124c976294b5adcad32e5948cb2585e64480016c4287a90a3e76b3d73d33b'>;
+  StorageHashBase<'1eef2bf7aeaf0ebbfbd4923adfc4aacf5469c62ef6d7356cbc754e4a47d2aa05'>;
 export type ExecutionHash =
   ExecutionHashBase<'cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038'>;
 export type ProfileHash =
@@ -281,10 +281,6 @@ export type FieldOutputTypes = {
       readonly size: CodecTypes['pg/int4@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
-    readonly MinisterFavorite: {
-      readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly companyId: CodecTypes['pg/text@1']['output'];
-    };
     readonly QrCode: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -358,10 +354,6 @@ export type FieldInputTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly size: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-    };
-    readonly MinisterFavorite: {
-      readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly companyId: CodecTypes['pg/text@1']['input'];
     };
     readonly QrCode: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -437,10 +429,6 @@ export type StorageColumnTypes = {
       readonly size: CodecTypes['pg/int4@1']['output'];
       readonly storageKey: CodecTypes['pg/text@1']['output'];
     };
-    readonly ministerFavorite: {
-      readonly companyId: CodecTypes['pg/text@1']['output'];
-      readonly id: CodecTypes['pg/int4@1']['output'];
-    };
     readonly qrCode: {
       readonly companyId: CodecTypes['pg/text@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -514,10 +502,6 @@ export type StorageColumnInputTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly size: CodecTypes['pg/int4@1']['input'];
       readonly storageKey: CodecTypes['pg/text@1']['input'];
-    };
-    readonly ministerFavorite: {
-      readonly companyId: CodecTypes['pg/text@1']['input'];
-      readonly id: CodecTypes['pg/int4@1']['input'];
     };
     readonly qrCode: {
       readonly companyId: CodecTypes['pg/text@1']['input'];
@@ -898,41 +882,6 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
-            readonly ministerFavorite: {
-              columns: {
-                readonly id: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'autoincrement()';
-                  };
-                };
-                readonly companyId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['companyId'] }];
-              indexes: readonly [];
-              foreignKeys: readonly [
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'ministerFavorite';
-                    readonly columns: readonly ['companyId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'company';
-                    readonly columns: readonly ['id'];
-                  };
-                },
-              ];
-            };
             readonly qrCode: {
               columns: {
                 readonly id: {
@@ -1275,10 +1224,6 @@ type ContractBase = Omit<
       readonly model: 'Transaction';
     };
     readonly qrCode: { readonly namespace: 'public' & NamespaceId; readonly model: 'QrCode' };
-    readonly ministerFavorite: {
-      readonly namespace: 'public' & NamespaceId;
-      readonly model: 'MinisterFavorite';
-    };
     readonly bannedUser: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BannedUser';
@@ -1627,39 +1572,6 @@ type ContractBase = Omit<
                 readonly mimeType: { readonly column: 'mimeType' };
                 readonly size: { readonly column: 'size' };
                 readonly createdAt: { readonly column: 'createdAt' };
-              };
-            };
-          };
-          readonly MinisterFavorite: {
-            readonly fields: {
-              readonly id: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly companyId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-            };
-            readonly relations: {
-              readonly company: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Company';
-                };
-                readonly cardinality: 'N:1';
-                readonly on: {
-                  readonly localFields: readonly ['companyId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-            };
-            readonly storage: {
-              readonly table: 'ministerFavorite';
-              readonly namespaceId: 'public';
-              readonly fields: {
-                readonly id: { readonly column: 'id' };
-                readonly companyId: { readonly column: 'companyId' };
               };
             };
           };
