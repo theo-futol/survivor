@@ -22,7 +22,9 @@ FROM base AS prod-stage
 
 WORKDIR /Ticket Tout
 
-RUN npm run build
+RUN npm run build \
+    && cp -r public .next/standalone/public \
+    && cp -r .next/static .next/standalone/.next/static
 
 ENV NODE_ENV=production
 ENV PORT=3000

@@ -43,11 +43,9 @@ node_modules/
 dist/
 .env
 
-<<<<<<< HEAD
 CLAUDE.md
 AGENTS.md
-=======
->>>>>>> origin/frontend
+dev/full_purge.sh
 
 
 # dependencies

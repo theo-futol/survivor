@@ -5,6 +5,34 @@ const balanceSchema = z.object({
   id: z.uuid(),
 });
 
+/**
+ * @openapi
+ * /employees/{id}/balance:
+ *   get:
+ *     summary: Consultation du solde d'un salarié
+ *     description: Retourne le solde courant du salarié identifié par `id`.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Identifiant du salarié.
+ *     responses:
+ *       '200':
+ *         description: Solde récupéré avec succès.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EmployeeBalanceResponse'
+ *       '400':
+ *         description: Identifiant invalide.
+ *       '404':
+ *         description: Salarié introuvable.
+ *       '500':
+ *         description: Erreur serveur interne.
+ */
 export async function GET(request: Request,{ params }: { params: Promise<{ id: string }> })
 {
   const { id } = await params;

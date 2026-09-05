@@ -7,7 +7,7 @@
 | Champ | Valeur |
 |---|---|
 | Date de création de la fiche | 1 septembre 2026 |
-| Date de dernière mise à jour de la fiche | 2 septembre 2026 |
+| Date de dernière mise à jour de la fiche | 4 septembre 2026 |
 
 #### Objectifs poursuivis
 
@@ -136,9 +136,19 @@ Détail des tables et colonnes de la base applicative, avec la mesure de sécuri
 | originalTransactionId | text | Non (référence technique, relie un `REFUND` à sa transaction d'origine) | — |
 | amount | integer | Non (valeur simulée, aucune valeur monétaire réelle) | — |
 | type | text | Non (`PAYMENT` / `REFUND`) | — |
+| status | text | Non (statut technique de la transaction : `REFUSER` / `VALIDER`) | — |
 | userId | text | Oui (relie la transaction à un salarié identifié) | Accès restreint par rôle applicatif (salarié concerné + administration) |
 | companyId | text | Oui (relie la transaction à une entreprise/un partenaire identifié) | Accès restreint par rôle applicatif (partenaire concerné + administration) |
 | createdAt | timestamp | Non (métadonnée technique) | — |
+
+### `bannedUser`
+
+Enregistre le bannissement d'un compte utilisateur (un seul enregistrement par utilisateur).
+
+| Colonne | Type | Donnée personnelle | Sécurisation |
+|---|---|---|---|
+| id | integer | Non (identifiant technique) | — |
+| userId | text | Oui (relie le bannissement à un salarié/utilisateur identifié) | Accès restreint aux comptes administration |
 
 ### `qrCode`
 
@@ -165,3 +175,5 @@ QR code de paiement généré côté salarié pour valider une transaction ; cou
 |---|---|---|---|
 | id | integer | Non (identifiant technique) | — |
 | name | text | Oui (nom de l'agent/service administratif) | Accès restreint aux comptes administration |
+
+*Les tables de données sont toujours sujet à modification en fonction des besoins et des évolutions du service, c'est pourquoi ce document est régulièrement révisé et mis à jour.*

@@ -90,6 +90,12 @@ model Company {
 enum TransactionType {
   PAYMENT
   REFUND
+  TOPUP
+}
+
+enum TransactionStatus {
+  REFUSER
+  VALIDER
 }
 
 model Transaction {
@@ -97,24 +103,20 @@ model Transaction {
   type                   TransactionType
   userId                 String
   user                   Users             @relation(fields: [userId], references: [id])
-  companyId              String
-  company                Company          @relation(fields: [companyId], references: [id])
+  companyId              String?
+  company                Company?         @relation(fields: [companyId], references: [id])
   amount                 Int
   originalTransactionId  String?          @unique
   originalTransaction    Transaction?     @relation("RefundOf", fields: [originalTransactionId], references: [id])
   refund                 Transaction?     @relation("RefundOf")
+  status                 TransactionStatus
   createdAt              DateTime         @default(now())
 
   @@index([userId])
   @@index([companyId])
   @@index([type])
   @@index([createdAt])
-}
-
-model MinisterFavorite {
-  id Int            @id @default(autoincrement())
-  companyId String  @unique
-  company   Company @relation(fields: [companyId], references: [id])
+  @@index([status])
 }
 
 model QrCode {
@@ -130,3 +132,18 @@ model QrCode {
   @@index([userId])
   @@index([companyId])
 }
+
+model MinisterFavorite {
+  id Int            @id @default(autoincrement())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id])
+}
+
+model BannedUser {
+  id Int @id @default(autoincrement())
+  userId String @unique
+  user Users @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+

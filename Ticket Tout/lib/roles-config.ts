@@ -5,6 +5,8 @@
 
 export const ROUTE_ROLES = {
   'POST /api/v1/qrcode': ['EMPLOYEE'],
+  'GET /api/v1/employees/:id/balance': ['ADMIN'],
+  'GET /api/v1/admin/transaction.csv': ['ADMIN'],
 } as const;
 
 export type RouteKey = keyof typeof ROUTE_ROLES;

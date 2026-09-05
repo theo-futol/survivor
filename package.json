@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "next-swagger-doc": "^0.5.0",
+    "swagger-ui-react": "^5.32.14"
+  },
+  "devDependencies": {
+    "@types/swagger-ui-react": "^5.18.0"
+  }
+}

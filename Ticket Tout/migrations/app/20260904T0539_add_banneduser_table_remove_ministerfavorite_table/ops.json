@@ -1,0 +1,372 @@
+[
+  {
+    "id": "dropTable.ministerFavorite",
+    "label": "Drop table \"ministerFavorite\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ministerFavorite\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ministerFavorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"ministerFavorite\"",
+        "sql": "DROP TABLE \"public\".\"ministerFavorite\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ministerFavorite\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ministerFavorite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.bannedUser",
+    "label": "Create table \"bannedUser\"",
+    "summary": "Creates table \"bannedUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"bannedUser\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"bannedUser\"",
+        "sql": "CREATE TABLE \"public\".\"bannedUser\" (\n  \"id\" SERIAL NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"bannedUser\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.transaction.status",
+    "label": "Add column \"status\" to \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"status\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD COLUMN \"status\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.transaction.status",
+    "label": "Set NOT NULL on \"transaction\".\"status\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "status"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"status\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"transaction\" WHERE \"status\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ALTER COLUMN \"status\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "status",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.bannedUser.bannedUser_userId_key",
+    "label": "Add unique constraint on \"bannedUser\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "bannedUser_userId_key",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"bannedUser_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bannedUser_userId_key",
+          "public",
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"bannedUser_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"bannedUser\" ADD CONSTRAINT \"bannedUser_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"bannedUser_userId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bannedUser_userId_key",
+          "public",
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.transaction.transaction_status_check_27d38134",
+    "label": "Add check constraint \"transaction_status_check_27d38134\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "transaction_status_check_27d38134",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_status_check_27d38134\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_status_check_27d38134",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"transaction_status_check_27d38134\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD CONSTRAINT \"transaction_status_check_27d38134\" CHECK (\"status\" IN ('REFUSER', 'VALIDER'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_status_check_27d38134\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_status_check_27d38134",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bannedUser.bannedUser_userId_idx_a489d58a",
+    "label": "Create index \"bannedUser_userId_idx_a489d58a\" on \"bannedUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bannedUser_userId_idx_a489d58a",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bannedUser_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bannedUser_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bannedUser_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"bannedUser_userId_idx_a489d58a\" ON \"public\".\"bannedUser\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bannedUser_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bannedUser_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.transaction.transaction_status_idx_e98638ab",
+    "label": "Create index \"transaction_status_idx_e98638ab\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "transaction_status_idx_e98638ab",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"transaction_status_idx_e98638ab\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_status_idx_e98638ab\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"transaction_status_idx_e98638ab\"",
+        "sql": "CREATE INDEX \"transaction_status_idx_e98638ab\" ON \"public\".\"transaction\" (\"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"transaction_status_idx_e98638ab\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_status_idx_e98638ab\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bannedUser.bannedUser_userId_fkey",
+    "label": "Add foreign key \"bannedUser_userId_fkey\" on \"bannedUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bannedUser_userId_fkey",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bannedUser_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bannedUser_userId_fkey",
+          "public",
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bannedUser_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bannedUser\"\nADD CONSTRAINT \"bannedUser_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bannedUser_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bannedUser_userId_fkey",
+          "public",
+          "\"public\".\"bannedUser\""
+        ]
+      }
+    ]
+  }
+]

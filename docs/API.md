@@ -109,10 +109,6 @@
   - Supports: `?page=&limit=&from=&to=&type=`
   - Success: `200` paginated list.
 
-- `GET /api/v1/salaries/{salarieId}/transactions/{transactionId}`
-  - Roles: `admin`, `employeur` (own), `salarie` (self), `partenaire` (if concerned)
-  - Success: `200` transaction detail.
-
 - `POST /api/v1/salaries/{salarieId}/transactions`
   - Roles: `admin`, `employeur` (own), `partenaire` (when applicable)
   - Behavior: In case of the amount > 0, it's a payment : the body must contain a qr-code (string), check in the database if the qr-code is valid and not expired. If the amount < 0, it's a refund : the body must contain the originalTransactionId to reference the transaction to refund.
@@ -120,7 +116,7 @@
   - Body example:
 
 ```json
-{ "amount": 1500, "type": "PAYMENT", "reference": "T20260902-01", "reversible": true, "comment": "Prime performance" }
+{ "amount": 1500, "type": "PAYMENT", "qrcode": "T20260902-01" }
 ```
 
   - Rules: server recomputes the employee's `soldeActuel` and keeps an immutable transaction history.
@@ -148,6 +144,11 @@
 - `DELETE /api/v1/partenaires/{partenaireId}`
   - Roles: `admin`
   - Soft-delete recommended if referenced by transactions.
+
+- `GET /api/v1/partenaires/{partenaireId}/transactions`
+  - Roles: `admin`
+  - Supports: `?page=&limit=&from=&to=&type=`
+  - Success: `200` paginated list.
 
 ---
 
