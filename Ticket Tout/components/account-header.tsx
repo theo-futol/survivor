@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { History, Home, LogOut, MapPinned, Menu, UserRound } from "lucide-react"
+import { BriefcaseBusiness, History, Home, LogOut, MapPinned, Menu, UserRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { authClient } from "@/lib/auth-client"
@@ -17,13 +17,23 @@ const employeeLinks = [
   { href: "/partners", label: "Partenaires", icon: MapPinned },
   { href: "/profile", label: "Profil", icon: UserRound },
 ]
-const professionalLinks = [{ href: "/profile", label: "Profil", icon: UserRound }]
+const companyLinks = [
+  { href: "/employer", label: "Espace employeur", icon: BriefcaseBusiness },
+  { href: "/profile", label: "Profil", icon: UserRound },
+]
+
+const partnerLinks = [{ href: "/profile", label: "Profil", icon: UserRound }]
 
 export function AccountHeader() {
   const router = useRouter()
   const { data: session } = authClient.useSession()
-  const employeeAccess = (session?.user as { employeeAccess?: boolean } | undefined)?.employeeAccess === true
-  const links = employeeAccess ? employeeLinks : professionalLinks
+  const currentUser = session?.user as
+    | { employeeAccess?: boolean; accountType?: "employee" | "company" | "partner"; name?: string }
+    | undefined
+  const employeeAccess = currentUser?.employeeAccess === true
+  const isCompany = currentUser?.accountType === "company"
+  const links = employeeAccess ? employeeLinks : isCompany ? companyLinks : partnerLinks
+  const homeHref = employeeAccess ? "/" : isCompany ? "/employer" : "/profile"
 
   async function logout() {
     await authClient.signOut()
@@ -34,7 +44,7 @@ export function AccountHeader() {
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex min-h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href={employeeAccess ? "/" : "/profile"} className="flex items-center gap-3" aria-label={`Accueil ${BRAND.name}`}>
+        <Link href={homeHref} className="flex items-center gap-3" aria-label={`Accueil ${BRAND.name}`}>
           <BrandLogo />
         </Link>
         <span className="rounded-full bg-brand-red-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
@@ -50,7 +60,7 @@ export function AccountHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-3">
-          {session?.user?.name && <span className="hidden max-w-40 truncate text-sm font-semibold text-muted-foreground lg:inline">{session.user.name}</span>}
+          {currentUser?.name && <span className="hidden max-w-40 truncate text-sm font-semibold text-muted-foreground lg:inline">{currentUser.name}</span>}
           <ThemeToggle />
           <Button variant="outline" size="icon" onClick={logout} className="hidden md:inline-flex" aria-label="Se déconnecter" title="Se déconnecter">
             <LogOut aria-hidden="true" />

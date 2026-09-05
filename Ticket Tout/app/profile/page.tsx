@@ -1,11 +1,12 @@
 "use client"
 
-import { Building2, LogOut, Mail, MapPin, Phone, UserRound } from "lucide-react"
+import { BriefcaseBusiness, Building2, LogOut, Mail, MapPin, Phone, UserRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { AccountHeader } from "@/components/account-header"
 import { authClient } from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -70,7 +71,16 @@ export default function ProfilePage() {
             {!isEmployee && (
               <div className="mx-7 mb-1 rounded-2xl bg-secondary p-5 text-sm sm:mx-8">
                 <p className="font-black">Compte professionnel créé</p>
-                <p className="mt-1 text-muted-foreground">Cet espace confirme l&apos;inscription. Les tableaux de bord entreprise et partenaire pourront être branchés sur ce même compte.</p>
+                {user.accountType === "company" ? (
+                  <>
+                    <p className="mt-1 text-muted-foreground">Gérez les demandes de comptes salariés et les renouvellements de contrats depuis votre espace employeur.</p>
+                    <Link href="/employer" className={buttonVariants({ className: "mt-4" })}>
+                      <BriefcaseBusiness aria-hidden="true" /> Ouvrir l&apos;espace employeur
+                    </Link>
+                  </>
+                ) : (
+                  <p className="mt-1 text-muted-foreground">Votre espace partenaire pourra être branché sur ce même compte.</p>
+                )}
               </div>
             )}
 
