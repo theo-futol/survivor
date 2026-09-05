@@ -1,0 +1,53 @@
+Ticket Tout — test accounts, one per role
+=========================================
+
+Created by seed-roles.sql (this folder). Local development only — these
+credentials are public, never reuse them anywhere real.
+
+  Role      Email                       Password
+  --------  --------------------------  ---------------
+  ADMIN     admin@tickettout.test       AdminPass1!
+  COMPANY   company@tickettout.test     CompanyPass1!
+  PARTNER   partner@tickettout.test     PartnerPass1!
+  EMPLOYEE  employee@tickettout.test    EmployeePass1!
+
+Passwords are stored SHA-256 hashed, matching hashPassword() in
+Ticket Tout/lib/services/auth_service.ts.
+
+
+What each account is attached to
+--------------------------------
+
+  ADMIN     no company (companyId is NULL) — bypasses every ownership check
+  COMPANY   Employeur Test SA (c0000000-0000-4000-8000-000000000001, isPartner = false)
+  EMPLOYEE  Employeur Test SA — same employer, balance 5000
+  PARTNER   Le Bistrot des Halles (a0f9dfc0-b6d4-4001-8880-c12c01b44f24, isPartner = true)
+
+The COMPANY and EMPLOYEE accounts share an employer, so the employer-scoped
+endpoints (GET /api/v1/salaries, the abondement route) return data instead of an
+empty list. Every company in seed.sql is a partner, which is why seed-roles.sql
+adds "Employeur Test SA".
+
+
+Loading them
+------------
+
+  docker compose --env-file .env.development up -d db
+  docker exec -i ticket_tout_db psql -U postgres -d tickettout < mocks/seed.sql
+  docker exec -i ticket_tout_db psql -U postgres -d tickettout < mocks/seed-roles.sql
+
+seed-roles.sql must run after seed.sql (it reuses administration id 1,
+companyValidationReason id 1, companyCategory id 1 and the seeded partner
+company). Re-running it is safe — every insert is ON CONFLICT DO NOTHING.
+
+
+Getting a token
+---------------
+
+  curl -sk -X POST https://localhost:3000/api/v1/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"admin@tickettout.test","password":"AdminPass1!"}'
+
+The response carries { token, expiresIn, user }. Pass it on every other call:
+
+  -H "Authorization: Bearer <token>"

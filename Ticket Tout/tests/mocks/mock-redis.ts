@@ -13,6 +13,11 @@ async function banUser(userId: string): Promise<void>
   bans.add(userId);
 }
 
+function resetMockRedis(): void
+{
+  bans.clear();
+}
+
 const redisClient = {
   connect: async () => {},
   get: async () => null,
@@ -20,4 +25,4 @@ const redisClient = {
   on: () => redisClient,
 };
 
-export { redisClient, isBanned, banUser };
+export { redisClient, isBanned, banUser, resetMockRedis };

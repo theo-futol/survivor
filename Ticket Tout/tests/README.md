@@ -6,18 +6,30 @@ This folder contains the tests for the Ticket Tout application. The tests are wr
 
 ### Layout
 
-- `mocks/` — in-memory mock of `@/lib/prisma/db` (`mock-db.ts`) and the fixture data it seeds from (`fixtures.ts`). Wired in globally via `jest.config.ts`'s `moduleNameMapper`, so any route/service importing `@/lib/prisma/db` transparently gets the mock — no real database is needed to run the suite.
+- `mocks/` — in-memory mocks wired in globally via `jest.config.ts`'s `moduleNameMapper`, so any route/service importing them transparently gets the mock and no real database, Redis or Postgres connection is needed:
+  - `mock-db.ts` — stands in for `@/lib/prisma/db`.
+  - `mock-redis.ts` — stands in for `@/lib/services/redis_service` (the ban store).
+  - `mock-postgres.ts` — stands in for `@/lib/services/postgres_client`, i.e. the raw `withTransaction` lane.
+  - `fixtures.ts` — the seed rows every mock starts from.
 - `api/` — integration tests for the API route handlers.
 
 ### Mock fixtures
 
-`mocks/fixtures.ts` defines the rows the suites below assume exist. Each test file calls `resetMockDb()` (from `mocks/mock-db.ts`) in a `beforeEach` to restore this state before every test, so tests don't leak data into one another:
+`mocks/fixtures.ts` defines the rows the suites below assume exist. Each test file calls `resetMockDb()` (from `mocks/mock-db.ts`) in a `beforeEach` to restore this state before every test, so tests don't leak data into one another; suites that ban users also call `resetMockRedis()` (from `mocks/mock-redis.ts`).
+
+Two legacy rows are kept for the login and qrcode suites, which predate UUID validation:
 
 - `test-login@example.com` / `Secret123!` (exported as `SEED_PASSWORD`) — role `COMPANY`, id `user-test-1`.
 - `test-salarie@example.com` / `Secret123!` — role `EMPLOYEE`, id `user-test-2`.
 - A partner company, id `company-test-1` (`Test Partner`), used as the target of the qrcode tests.
 
-The mock only implements the two operations the app currently performs (`.where(condition).first()` and `.create(data)`). If a route starts using another Prisma Next operation (e.g. `.update()`, pagination, relations), extend `mocks/mock-db.ts` accordingly.
+Every other route validates its path params and body ids with `z.uuid()`, so the rows those suites act on use real UUIDs exported as named constants (`ADMIN_ID`, `COMPANY_USER_ID`, `EMPLOYEE_ID`, `PARTNER_USER_ID`, `EMPLOYER_COMPANY_ID`, `PARTNER_COMPANY_ID`, `OTHER_COMPANY_ID`, `UNKNOWN_ID`, …). Import the constant rather than hard-coding a UUID. The employee belongs to `EMPLOYER_COMPANY_ID` and already has two transactions, which is what the salariés-list aggregates assert against.
+
+### What the mocks support
+
+`mock-db.ts` is a small query engine over plain arrays, covering the operations the routes actually use: `.where()` with either an equality object or a field-proxy lambda (`.eq`, `.neq`, `.lt/.lte/.gt/.gte`, `.in`, `.like/.ilike`, `.isNull/.isNotNull`), `.select()`, `.orderBy()`, `.limit()`, `.offset()`, `.include()`, `.aggregate()` (`count`/`sum`/`avg`/`min`/`max`), `.all()`, `.first()`, `.create()`, `.update()` and `.delete()`. Relations available to `.include()` are declared in the `RELATIONS` map at the top of the file — add an entry there when a route eager-loads a new relation.
+
+`mock-postgres.ts` deliberately understands only the two raw statements the abondement route issues (the `SELECT … FOR UPDATE` and the batched balance `UPDATE`) and throws on anything else, so a newly added raw query fails loudly instead of silently doing nothing.
 
 ### Running the tests
 
