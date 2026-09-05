@@ -31,10 +31,6 @@
   - Query: `?page=&limit=&search=`
   - Success: `200` `{ "data": [ ... ], "meta": { "page":1, "limit":20, "total": 123 } }`
 
-- `GET /api/v1/employeurs/{employeurId}`
-  - Roles: `admin`, `employeur`
-  - Success: `200` `{ "id":"...","name":"...","email":"...","siret":"..." }`
-
 - `POST /api/v1/employeurs`
   - Roles: `admin`
   - Body example:
@@ -77,10 +73,7 @@
   - Roles: `admin`, `employeur`
   - Supports: `?employeurId=`, `?page=`, `?limit=`
   - Success: `200` paginated list.
-
-- `GET /api/v1/salaries/{salarieId}`
-  - Roles: `admin`, `employeur` (own), `salarie` (self)
-  - Success: `200` employee object + associated valid qr-codes.
+  - Also includes if the user is banned or not, the total amount of transactions and the count of transctions associated with the employee.
 
 - `POST /api/v1/salaries`
   - Roles: `admin`, `employeur`
@@ -124,6 +117,11 @@
 
 - PATCH / DELETE: not exposed; to cancel, create a `REFUND` transaction referencing `originalTransactionId`.
 
+- `GET /api/v1/partenaires/{partenaireId}/transactions`
+  - Roles: `admin`
+  - Supports: `?page=&limit=&from=&to=&type=`
+  - List of transactions associated with the partner.
+
 ---
 
 ## Partners
@@ -131,9 +129,7 @@
 - `GET /api/v1/partenaires`
   - Roles: `admin`, `partenaire`
   - Supports: `?categorie=`, `?featured=`
-
-- `GET /api/v1/partenaires/{partenaireId}`
-  - Roles: `admin`, `partenaire`
+  - Output: list of partners with the full profile also include the company category.
 
 - `POST /api/v1/partenaires`
   - Roles: `admin`
@@ -144,11 +140,6 @@
 - `DELETE /api/v1/partenaires/{partenaireId}`
   - Roles: `admin`
   - Soft-delete recommended if referenced by transactions.
-
-- `GET /api/v1/partenaires/{partenaireId}/transactions`
-  - Roles: `admin`
-  - Supports: `?page=&limit=&from=&to=&type=`
-  - Success: `200` paginated list.
 
 ---
 
@@ -189,6 +180,34 @@
 ```
 
   - Success: `200` returns `{ "status": "banned", "userId": "...", "reason": "Violation of terms" }`
+
+## MinisterFavorite
+
+- `POST /api/v1/ministerfavorite`
+  - Roles: `admin`
+  - Behavior: adds a partner to the minister's favorite list.
+  - Body example:
+
+```json
+{ "partnerId": "..." }
+```
+
+  - Success: `200` returns `{ "status": "added", "partnerId": "..." }`
+
+- `GET /api/v1/ministerfavorite`
+  - Roles: `admin`
+  - Behavior: retrieves the list of partners in the minister's favorite list.
+  - Success: `200` returns `{ "favorites": [ { "partnerId": "...", "name": "..." }, ... ] }`
+
+- `PATCH /api/v1/ministerfavorite/{partnerId}`
+  - Roles: `admin`
+  - Behavior: removes a partner from the minister's favorite list.
+  - Success: `200` returns `{ "status": "removed", "partnerId": "..." }`
+
+- `DELETE /api/v1/ministerfavorite/{partnerId}`
+  - Roles: `admin`
+  - Behavior: removes a partner from the minister's favorite list.
+  - Success: `200` returns `{ "status": "removed", "partnerId": "..." }`
 
 ---
 

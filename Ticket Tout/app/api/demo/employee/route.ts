@@ -19,7 +19,10 @@ import { BRAND } from "@/lib/brand"
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/DemoEmployeeResponse'
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
  *       '404':
  *         description: Démo désactivée en production.
  */

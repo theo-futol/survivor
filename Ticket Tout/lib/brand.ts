@@ -8,4 +8,14 @@ export const BRAND = {
     email: "julie.marchand@demo.local",
     password: "Demo2026!",
   },
+  demoPartner: {
+    name: "Boulangerie du coin",
+    email: "boulangerie.du.coin@demo.local",
+    password: "Demo2026!",
+  },
+  demoAdmin: {
+    name: "Admin Demo",
+    email: "admin.demo@demo.local",
+    password: "Demo2026!",
+  }
 } as const

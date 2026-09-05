@@ -43,7 +43,7 @@ Notes on the tree above:
 | `app-dev` | Built from `./app`, target `dev-stage` | Runs under the `dev` Compose profile, mounts source with a volume for hot reload, exposes port 3000 |
 | `app-prod` | Built from `./app`, target `prod-stage` | Runs under the `prod` Compose profile, runs the production build, exposes port 3000 |
 
-The `app/Dockerfile` is multi-stage: a shared `base` stage (Node `26.1.0-bookworm-slim`, `npm ci`) followed by `dev-stage` (`npm run dev`) and `prod-stage` (`npm run build` + `npm start`, with a `HEALTHCHECK`). Both stages run `npx prisma migrate deploy` at build time.
+The `app/Dockerfile` is multi-stage: a shared `base` stage (Node `26.1.0-bookworm-slim`, `npm ci`) followed by `dev-stage` (`npm run dev`) and `prod-stage` (`npm run build` + `npm start`). Both stages run `npx prisma migrate deploy` at build time.
 
 ## Technical choices
 

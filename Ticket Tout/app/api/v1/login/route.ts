@@ -15,7 +15,7 @@ const loginSchema = z.object({
 
 /**
  * @openapi
- * /login:
+ * /api/v1/login:
  *   post:
  *     summary: Authentification par email et mot de passe
  *     description: "Vérifie les identifiants et retourne un token JWT valide 1 heure, contenant le rôle de l'utilisateur. Ce token doit être transmis via le header `Authorization: Bearer <token>` pour toutes les requêtes authentifiées suivantes."
@@ -24,14 +24,32 @@ const loginSchema = z.object({
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
  *     responses:
  *       '200':
  *         description: Authentification réussie.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 expiresIn:
+ *                   type: number
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     role:
+ *                       type: string
  *       '400':
  *         description: Corps de requête invalide.
  *       '401':

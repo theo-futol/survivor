@@ -16,7 +16,7 @@ export async function getApiDocs() {
 
       servers: [
         {
-          url: "http://localhost:3000",
+          url: "https://localhost:3000",
           description: "Développement local",
         },
       ],

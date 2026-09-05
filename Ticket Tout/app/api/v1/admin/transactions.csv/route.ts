@@ -2,7 +2,7 @@ import { db } from '@/lib/prisma/db';
 
 /**
  * @openapi
- * /admin/transactions.csv:
+ * /api/v1/admin/transactions.csv:
  *   get:
  *     summary: Export CSV de l'ensemble des transactions
  *     description: Retourne toutes les transactions au format CSV (`id;date_iso8601;employee_id;partner_id;amount_cents;status`), en pièce jointe téléchargeable.
