@@ -9,7 +9,7 @@ const qrcodeSchema = z.object({
 
 /**
  * @openapi
- * /qrcode:
+ * /api/v1/qrcode:
  *   post:
  *     summary: Génération d'un QR code de paiement
  *     description: Génère un QR code de paiement pour le salarié authentifié, valide 5 minutes. Le contenu est haché (SHA-256) avant stockage ; seul le code en clair est retourné au client. Un seul QR code valide est autorisé par salarié et par entreprise partenaire à la fois.
@@ -20,14 +20,24 @@ const qrcodeSchema = z.object({
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/QrCodeRequest'
+ *             type: object
+ *             properties:
+ *               companyId:
+ *                 type: string
+ *               userId:
+ *                 type: string
  *     responses:
  *       '201':
  *         description: QR code généré avec succès.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/QrCodeResponse'
+ *               type: object
+ *               properties:
+ *                 qrcode:
+ *                   type: string
+ *                 expiresAt:
+ *                   type: string
  *       '400':
  *         description: Corps de requête invalide.
  *       '401':

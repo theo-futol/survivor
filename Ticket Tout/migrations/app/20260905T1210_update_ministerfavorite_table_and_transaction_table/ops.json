@@ -1,0 +1,314 @@
+[
+  {
+    "id": "column.public.ministerFavorite.createdAt",
+    "label": "Add column \"createdAt\" to \"ministerFavorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "createdAt",
+        "table": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"createdAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "createdAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"createdAt\"",
+        "sql": "ALTER TABLE \"public\".\"ministerFavorite\" ADD COLUMN \"createdAt\" timestamptz DEFAULT (now()) NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"createdAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "createdAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.company.location",
+    "label": "Add column \"location\" to \"company\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "location",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"location\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "location"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"location\"",
+        "sql": "ALTER TABLE \"public\".\"company\" ADD COLUMN \"location\" geometry(Geometry,4326)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"location\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "location"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.company.location",
+    "label": "Set NOT NULL on \"company\".\"location\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "location",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"location\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "location"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"location\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"company\" WHERE \"location\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"location\"",
+        "sql": "ALTER TABLE \"public\".\"company\" ALTER COLUMN \"location\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"location\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "location",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ministerFavorite.likeAmount",
+    "label": "Add column \"likeAmount\" to \"ministerFavorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "likeAmount",
+        "table": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"likeAmount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "likeAmount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"likeAmount\"",
+        "sql": "ALTER TABLE \"public\".\"ministerFavorite\" ADD COLUMN \"likeAmount\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"likeAmount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "likeAmount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.ministerFavorite.likeAmount",
+    "label": "Set NOT NULL on \"ministerFavorite\".\"likeAmount\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "likeAmount",
+        "table": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"likeAmount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "likeAmount"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"likeAmount\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"ministerFavorite\" WHERE \"likeAmount\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"likeAmount\"",
+        "sql": "ALTER TABLE \"public\".\"ministerFavorite\" ALTER COLUMN \"likeAmount\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"likeAmount\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "likeAmount",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ministerFavorite.updatedAt",
+    "label": "Add column \"updatedAt\" to \"ministerFavorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "updatedAt",
+        "table": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"updatedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "updatedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"updatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"ministerFavorite\" ADD COLUMN \"updatedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"updatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "updatedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.ministerFavorite.updatedAt",
+    "label": "Set NOT NULL on \"ministerFavorite\".\"updatedAt\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "updatedAt",
+        "table": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"updatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "updatedAt"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"updatedAt\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"ministerFavorite\" WHERE \"updatedAt\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"updatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"ministerFavorite\" ALTER COLUMN \"updatedAt\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"updatedAt\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "ministerFavorite",
+          "updatedAt",
+          "NO"
+        ]
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18
+    image: postgis/postgis:18-3.6
     container_name: ticket_tout_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -17,13 +17,10 @@ services:
     depends_on:
       - db
     profiles: [dev]
+    env_file:
+      - .env.development
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
       NODE_ENV: development
-      ENABLE_DEMO_EMPLOYEE: ${ENABLE_DEMO_EMPLOYEE}
     build:
       context: ./Ticket Tout
       target: dev-stage
@@ -41,20 +38,31 @@ services:
     depends_on:
       - db
     profiles: [prod]
+    env_file:
+      - .env.production
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
       NODE_ENV: production
-      ENABLE_DEMO_EMPLOYEE: ${ENABLE_DEMO_EMPLOYEE}
-      # APP_HOST_IP: ${APP_HOST_IP}
     build:
       context: ./Ticket Tout
       target: prod-stage
     ports:
       - "3000:3000"
     restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: ticket_tout_nginx
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Ticket Tout/certificates/localhost.pem:/etc/ssl/certs/localhost.pem:ro
+      - ./Ticket Tout/certificates/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
+    profiles: [prod]
+    depends_on:
+      - app-prod
 
   redis:
     image: redis:7

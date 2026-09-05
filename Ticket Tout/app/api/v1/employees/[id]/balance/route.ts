@@ -7,7 +7,7 @@ const balanceSchema = z.object({
 
 /**
  * @openapi
- * /employees/{id}/balance:
+ * /api/v1/employees/{id}/balance:
  *   get:
  *     summary: Consultation du solde d'un salarié
  *     description: Retourne le solde courant du salarié identifié par `id`.
@@ -25,7 +25,10 @@ const balanceSchema = z.object({
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/EmployeeBalanceResponse'
+ *               type: object
+ *               properties:
+ *                 balance:
+ *                   type: number
  *       '400':
  *         description: Identifiant invalide.
  *       '404':

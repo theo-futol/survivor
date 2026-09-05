@@ -6,6 +6,8 @@ design/
 note.md
 .venv/
 garage/
-CartePro
 .DS_Store
+Ticket Tout/certificate/
+Ticket Tout/certificates/
 package-lock.json
+package.json
