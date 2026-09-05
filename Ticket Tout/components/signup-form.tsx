@@ -71,7 +71,7 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Votre compte {isCompany ? "entreprise" : "partenaire"} {BRAND.name} est enregistré. Votre session est ouverte et votre espace est prêt.
         </p>
-        <Link href="/profile" className={buttonVariants({ className: "mt-5" })}>Accéder à mon espace</Link>
+        <Link href={isCompany ? "/employer" : "/profile"} className={buttonVariants({ className: "mt-5" })}>Accéder à mon espace</Link>
       </div>
     )
   }

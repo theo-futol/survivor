@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { ensureAuthSchema } from "@/lib/auth-schema"
 
 const employeeOnly = ["/", "/transactions", "/partners", "/history", "/credited", "/consumes"]
+const companyOnly = ["/employer"]
 
 export async function proxy(request: NextRequest) {
   await ensureAuthSchema()
@@ -22,8 +23,16 @@ export async function proxy(request: NextRequest) {
     route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
   )
 
-  const employeeAccess = (session.user as { employeeAccess?: boolean }).employeeAccess === true
+  const currentUser = session.user as { employeeAccess?: boolean; accountType?: string }
+  const employeeAccess = currentUser.employeeAccess === true
   if (isEmployeeRoute && !employeeAccess) {
+    return NextResponse.redirect(new URL(currentUser.accountType === "company" ? "/employer" : "/profile", request.url))
+  }
+
+  const isCompanyRoute = companyOnly.some((route) =>
+    pathname === route || pathname.startsWith(`${route}/`)
+  )
+  if (isCompanyRoute && currentUser.accountType !== "company") {
     return NextResponse.redirect(new URL("/profile", request.url))
   }
 
@@ -31,5 +40,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/transactions/:path*", "/partners/:path*", "/history/:path*", "/credited/:path*", "/consumes/:path*", "/profile/:path*", "/administration/:path*"],
+  matcher: ["/", "/transactions/:path*", "/partners/:path*", "/history/:path*", "/credited/:path*", "/consumes/:path*", "/profile/:path*", "/employer/:path*", "/admin/:path*", "/administration/:path*"],
 }
