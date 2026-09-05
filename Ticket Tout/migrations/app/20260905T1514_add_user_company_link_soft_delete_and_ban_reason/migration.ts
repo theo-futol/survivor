@@ -56,6 +56,7 @@ export default class M extends Migration<Start, End> {
             sql: 'UPDATE "public"."bannedUser" SET "reason" = \'\' WHERE "reason" IS NULL',
           },
         ],
+        precheck: [],
         postcheck: [
           {
             description: 'verify no "reason" is left null',
