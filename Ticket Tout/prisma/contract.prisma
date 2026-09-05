@@ -55,11 +55,14 @@ model Users {
   expiredAt    DateTime?
   documentId   String        @unique
   document     Document?     @relation(fields: [documentId], references: [id])
+  companyId    String?
+  company      Company?      @relation(fields: [companyId], references: [id])
   transactions Transaction[]
 
   @@index([role])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([companyId])
 }
 
 model Company {
@@ -81,15 +84,18 @@ model Company {
   category     CompanyCategory         @relation(fields: [categoryId], references: [id])
   location     WgsGeometry
   isPartner    Boolean
+  active       Boolean                 @default(true)
   createdAt    DateTime                @default(now())
   updatedAt    temporal.updatedAt()
   transactions Transaction[]
+  employees    Users[]
 
   @@index([verified])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([agentId])
   @@index([reasonId])
+  @@index([active])
 }
 
 enum TransactionType {
@@ -148,9 +154,11 @@ model MinisterFavorite {
 }
 
 model BannedUser {
-  id Int @id @default(autoincrement())
-  userId String @unique
-  user Users @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  user      Users    @relation(fields: [userId], references: [id])
+  reason    String
+  createdAt DateTime @default(now())
 
   @@index([userId])
 }

@@ -151,10 +151,24 @@
           },
           "BannedUser": {
             "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -185,8 +199,14 @@
             },
             "storage": {
               "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
                 "id": {
                   "column": "id"
+                },
+                "reason": {
+                  "column": "reason"
                 },
                 "userId": {
                   "column": "userId"
@@ -198,6 +218,13 @@
           },
           "Company": {
             "fields": {
+              "active": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "address": {
                 "nullable": false,
                 "type": {
@@ -342,6 +369,21 @@
                   "namespace": "public"
                 }
               },
+              "employees": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "companyId"
+                  ]
+                },
+                "to": {
+                  "model": "Users",
+                  "namespace": "public"
+                }
+              },
               "kbis": {
                 "cardinality": "N:1",
                 "on": {
@@ -390,6 +432,9 @@
             },
             "storage": {
               "fields": {
+                "active": {
+                  "column": "active"
+                },
                 "address": {
                   "column": "address"
                 },
@@ -971,6 +1016,13 @@
                   "kind": "scalar"
                 }
               },
+              "companyId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -1049,6 +1101,21 @@
               }
             },
             "relations": {
+              "company": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "companyId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Company",
+                  "namespace": "public"
+                }
+              },
               "document": {
                 "cardinality": "N:1",
                 "on": {
@@ -1084,6 +1151,9 @@
               "fields": {
                 "balance": {
                   "column": "balance"
+                },
+                "companyId": {
+                  "column": "companyId"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -1157,6 +1227,15 @@
             },
             "bannedUser": {
               "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -1164,6 +1243,11 @@
                     "kind": "function"
                   },
                   "nativeType": "int4",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "userId": {
@@ -1215,6 +1299,15 @@
             },
             "company": {
               "columns": {
+                "active": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
                 "address": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -1368,6 +1461,14 @@
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "active"
+                  ],
+                  "name": "company_active_idx_8af4daed",
+                  "prefix": "company_active_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "agentId"
@@ -1919,6 +2020,11 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "companyId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "default": {
@@ -1996,9 +2102,33 @@
                     "namespaceId": "public",
                     "tableName": "document"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "companyId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "company"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "companyId"
+                  ],
+                  "name": "users_companyId_idx_33acc5ed",
+                  "prefix": "users_companyId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "createdAt"
@@ -2074,7 +2204,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "61773de56ef951f1ac3d240a18433f7539dff5e104f355a4bc902b55b2d43971",
+    "storageHash": "3aef406a4dac1916022111ec37bec1bfd8a96403932cf52c47106189b4ae6406",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",

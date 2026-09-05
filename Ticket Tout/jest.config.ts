@@ -12,6 +12,7 @@ const config: Config = {
   moduleNameMapper: {
     '^@/lib/prisma/db$': '<rootDir>/tests/mocks/mock-db.ts',
     '^@/lib/services/redis_service$': '<rootDir>/tests/mocks/mock-redis.ts',
+    '^@/lib/services/postgres_client$': '<rootDir>/tests/mocks/mock-postgres.ts',
     '^@/(.*)$': '<rootDir>/$1',
   },
   transform: {

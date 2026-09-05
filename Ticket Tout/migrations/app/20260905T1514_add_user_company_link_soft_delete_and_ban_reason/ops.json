@@ -1,0 +1,364 @@
+[
+  {
+    "id": "column.public.bannedUser.createdAt",
+    "label": "Add column \"createdAt\" to \"bannedUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "createdAt",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"createdAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "createdAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"createdAt\"",
+        "sql": "ALTER TABLE \"public\".\"bannedUser\" ADD COLUMN \"createdAt\" timestamptz DEFAULT (now()) NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"createdAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "createdAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.company.active",
+    "label": "Add column \"active\" to \"company\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "active",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"active\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "active"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"active\"",
+        "sql": "ALTER TABLE \"public\".\"company\" ADD COLUMN \"active\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"active\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "active"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.companyId",
+    "label": "Add column \"companyId\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "companyId",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"companyId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "companyId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"companyId\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"companyId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"companyId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "companyId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.bannedUser.reason",
+    "label": "Add column \"reason\" to \"bannedUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reason",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"reason\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "reason"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"reason\"",
+        "sql": "ALTER TABLE \"public\".\"bannedUser\" ADD COLUMN \"reason\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"reason\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "reason"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.public.bannedUser.reason.backfill",
+    "label": "Backfill \"reason\" on pre-existing \"bannedUser\" rows",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reason",
+        "table": "bannedUser"
+      }
+    },
+    "execute": [
+      {
+        "description": "backfill \"reason\" where it is null",
+        "sql": "UPDATE \"public\".\"bannedUser\" SET \"reason\" = '' WHERE \"reason\" IS NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify no \"reason\" is left null",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"bannedUser\" WHERE \"reason\" IS NULL) AS \"result\""
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.bannedUser.reason",
+    "label": "Set NOT NULL on \"bannedUser\".\"reason\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reason",
+        "table": "bannedUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"reason\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "reason"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"reason\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"bannedUser\" WHERE \"reason\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"reason\"",
+        "sql": "ALTER TABLE \"public\".\"bannedUser\" ALTER COLUMN \"reason\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"reason\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "bannedUser",
+          "reason",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.company.company_active_idx_8af4daed",
+    "label": "Create index \"company_active_idx_8af4daed\" on \"company\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "company_active_idx_8af4daed",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"company_active_idx_8af4daed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"company_active_idx_8af4daed\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"company_active_idx_8af4daed\"",
+        "sql": "CREATE INDEX \"company_active_idx_8af4daed\" ON \"public\".\"company\" (\"active\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"company_active_idx_8af4daed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"company_active_idx_8af4daed\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.users.users_companyId_idx_33acc5ed",
+    "label": "Create index \"users_companyId_idx_33acc5ed\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_companyId_idx_33acc5ed",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_companyId_idx_33acc5ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_companyId_idx_33acc5ed\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"users_companyId_idx_33acc5ed\"",
+        "sql": "CREATE INDEX \"users_companyId_idx_33acc5ed\" ON \"public\".\"users\" (\"companyId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_companyId_idx_33acc5ed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_companyId_idx_33acc5ed\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.users.users_companyId_fkey",
+    "label": "Add foreign key \"users_companyId_fkey\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "users_companyId_fkey",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"users_companyId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_companyId_fkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"users_companyId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"users\"\nADD CONSTRAINT \"users_companyId_fkey\"\nFOREIGN KEY (\"companyId\")\nREFERENCES \"public\".\"company\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"users_companyId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_companyId_fkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  }
+]
