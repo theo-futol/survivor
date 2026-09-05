@@ -261,6 +261,13 @@
                   "kind": "scalar"
                 }
               },
+              "location": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/geometry@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -409,6 +416,9 @@
                 },
                 "kbisId": {
                   "column": "kbisId"
+                },
+                "location": {
+                  "column": "location"
                 },
                 "name": {
                   "column": "name"
@@ -628,10 +638,31 @@
                   "kind": "scalar"
                 }
               },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "likeAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
                 }
               }
@@ -658,8 +689,17 @@
                 "companyId": {
                   "column": "companyId"
                 },
+                "createdAt": {
+                  "column": "createdAt"
+                },
                 "id": {
                   "column": "id"
+                },
+                "likeAmount": {
+                  "column": "likeAmount"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
                 }
               },
               "namespaceId": "public",
@@ -1224,6 +1264,12 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "location": {
+                  "codecId": "pg/geometry@1",
+                  "nativeType": "geometry",
+                  "nullable": false,
+                  "typeRef": "WgsGeometry"
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -1523,6 +1569,15 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -1530,6 +1585,16 @@
                     "kind": "function"
                   },
                   "nativeType": "int4",
+                  "nullable": false
+                },
+                "likeAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
                   "nullable": false
                 }
               },
@@ -2009,10 +2074,20 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ddea35b058943bd356875a9e296d76f5a21fa1b8c244ff4177bbd1d166a05a12"
+    "storageHash": "61773de56ef951f1ac3d240a18433f7539dff5e104f355a4bc902b55b2d43971",
+    "types": {
+      "WgsGeometry": {
+        "codecId": "pg/geometry@1",
+        "kind": "codec-instance",
+        "nativeType": "geometry",
+        "typeParams": {
+          "srid": 4326
+        }
+      }
+    }
   },
   "execution": {
-    "executionHash": "cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038",
+    "executionHash": "0bc950693acece6d094115f981f56f85d35eae54fc3421449c27857c3ee8076f",
     "mutations": {
       "defaults": [
         {
@@ -2050,6 +2125,21 @@
             "column": "id",
             "namespace": "public",
             "table": "document"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "ministerFavorite"
           }
         },
         {
@@ -2099,6 +2189,7 @@
       "lateral": true,
       "limit": true,
       "orderBy": true,
+      "postgis.geometry": true,
       "returning": true
     },
     "sql": {
@@ -2110,7 +2201,51 @@
       "scalarList": true
     }
   },
-  "extensions": {},
+  "extensions": {
+    "postgis": {
+      "capabilities": {
+        "postgres": {
+          "postgis.geometry": true
+        }
+      },
+      "familyId": "sql",
+      "id": "postgis",
+      "kind": "extension",
+      "targetId": "postgres",
+      "types": {
+        "codecTypes": {
+          "import": {
+            "alias": "PostgisTypes",
+            "named": "CodecTypes",
+            "package": "@internal/extension-postgis/codec-types"
+          },
+          "typeImports": [
+            {
+              "alias": "Geometry",
+              "named": "Geometry",
+              "package": "@internal/extension-postgis/codec-types"
+            }
+          ]
+        },
+        "queryOperationTypes": {
+          "import": {
+            "alias": "PostgisQueryOperationTypes",
+            "named": "QueryOperationTypes",
+            "package": "@internal/extension-postgis/operation-types"
+          }
+        },
+        "storage": [
+          {
+            "familyId": "sql",
+            "nativeType": "geometry",
+            "targetId": "postgres",
+            "typeId": "pg/geometry@1"
+          }
+        ]
+      },
+      "version": "0.0.1"
+    }
+  },
   "meta": {},
   "_generated": {
     "warning": "⚠️  GENERATED FILE - DO NOT EDIT",
