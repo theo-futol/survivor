@@ -4,6 +4,7 @@ import { AUTH_COOKIE_NAME, verifyToken } from "@/lib/services/auth_service"
 
 const employeeOnly = ["/transactions", "/partners", "/history", "/credited", "/consumes"]
 const companyOnly = ["/employer"]
+const partnerOnly = ["/partner"]
 const adminOnly = ["/admin", "/administration"]
 
 function matches(pathname: string, routes: string[]) {
@@ -16,6 +17,7 @@ function homeForRole(role: string) {
   if (role === "EMPLOYEE") return "/"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
+  if (role === "PARTNER") return "/partner"
   return "/profile"
 }
 
@@ -41,6 +43,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
   }
 
+  if (matches(pathname, partnerOnly) && session.role !== "PARTNER") {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
+  }
+
   if (matches(pathname, adminOnly) && session.role !== "ADMIN") {
     return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
   }
@@ -57,6 +63,7 @@ export const config = {
     "/consumes/:path*",
     "/profile/:path*",
     "/employer/:path*",
+    "/partner/:path*",
     "/admin/:path*",
     "/administration/:path*",
   ],

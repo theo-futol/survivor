@@ -31,7 +31,7 @@ function homeForRole(role: string) {
   if (role === "EMPLOYEE") return "/"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
-  if (role === "PARTNER") return "/profile"
+  if (role === "PARTNER") return "/partner"
   return null
 }
 
