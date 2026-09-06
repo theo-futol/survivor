@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-RUN apk add --no-cache gettext
+COPY --from=bhgedigital/envsubst /usr/local/bin/envsubst /usr/local/bin/envsubst
 
 WORKDIR /garage-init
 COPY garage.toml.template .
