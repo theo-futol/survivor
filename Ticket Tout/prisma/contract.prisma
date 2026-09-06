@@ -11,6 +11,12 @@ enum Role {
   ADMIN
 }
 
+enum AccountStatus {
+  PENDING
+  ACCEPTED
+  REFUSED
+}
+
 model CompanyCategory {
   id        Int       @id @default(autoincrement())
   category  String    @unique
@@ -23,12 +29,6 @@ model CompanyValidationReason {
   companies Company[]
 }
 
-model Administration {
-  id        Int       @id @default(autoincrement())
-  name      String
-  companies Company[]
-}
-
 model Document {
   id         String   @id @default(uuid())
   storageKey String   @unique
@@ -36,33 +36,42 @@ model Document {
   size       Int
   createdAt  DateTime @default(now())
   company    Company?
-  user       Users?
 
   @@index([createdAt])
   @@index([storageKey])
 }
 
+model AdminUser {
+  userId    String              @id
+  user      Users               @relation(fields: [userId], references: [id])
+  refusals  UserRefusalReason[] @relation("AgentRefusals")
+  companies Company[]           @relation("CompanyAgent")
+}
+
 model Users {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  surname      String
-  name         String
-  role         Role
-  balance      Int
-  password     String
-  createdAt    DateTime      @default(now())
-  updatedAt    temporal.updatedAt()
-  expiredAt    DateTime?
-  documentId   String        @unique
-  document     Document?     @relation(fields: [documentId], references: [id])
-  companyId    String?
-  company      Company?      @relation(fields: [companyId], references: [id])
-  transactions Transaction[]
+  id                     String              @id @default(uuid())
+  email                  String              @unique
+  surname                String
+  name                   String
+  role                   Role
+  balance                Int
+  password               String
+  createdAt              DateTime            @default(now())
+  updatedAt              temporal.updatedAt()
+  expiredAt              DateTime?
+  companyId              String?
+  company                Company?            @relation("CompanyEmployees", fields: [companyId], references: [id])
+  transactions           Transaction[]
+
+  accountStatus          AccountStatus       @default(PENDING)
+  refusalsAsUser         UserRefusalReason[] @relation("UserRefusals")
+  adminUser              AdminUser?
 
   @@index([role])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([companyId])
+  @@index([accountStatus])
 }
 
 model Company {
@@ -74,8 +83,8 @@ model Company {
   kbis         Document                @relation(fields: [kbisId], references: [id])
   address      String
   postalCode   String
-  agentId      Int
-  agent        Administration          @relation(fields: [agentId], references: [id])
+  agentId      String
+  agent        AdminUser               @relation("CompanyAgent", fields: [agentId], references: [userId])
   reasonId     Int
   reason       CompanyValidationReason @relation(fields: [reasonId], references: [id])
   verified     Boolean
@@ -88,7 +97,7 @@ model Company {
   createdAt    DateTime                @default(now())
   updatedAt    temporal.updatedAt()
   transactions Transaction[]
-  employees    Users[]
+  employees    Users[]                 @relation("CompanyEmployees")
 
   @@index([verified])
   @@index([createdAt])
@@ -117,6 +126,7 @@ model Transaction {
   companyId              String?
   company                Company?          @relation(fields: [companyId], references: [id])
   amount                 Int
+  newBalance             Int
   originalTransactionId  String?           @unique
   originalTransaction    Transaction?      @relation("RefundOf", fields: [originalTransactionId], references: [id])
   refund                 Transaction?      @relation("RefundOf")
@@ -161,4 +171,17 @@ model BannedUser {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model UserRefusalReason {
+  id        Int       @id @default(autoincrement())
+  reason    String
+  agentId   String
+  agent     AdminUser @relation("AgentRefusals", fields: [agentId], references: [userId])
+  userId    String
+  user      Users     @relation("UserRefusals", fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

@@ -4,8 +4,8 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
-    "administration": {
-      "model": "Administration",
+    "adminUser": {
+      "model": "AdminUser",
       "namespace": "public"
     },
     "bannedUser": {
@@ -40,6 +40,10 @@
       "model": "Transaction",
       "namespace": "public"
     },
+    "userRefusalReason": {
+      "model": "UserRefusalReason",
+      "namespace": "public"
+    },
     "users": {
       "model": "Users",
       "namespace": "public"
@@ -49,6 +53,23 @@
     "namespaces": {
       "public": {
         "enum": {
+          "AccountStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "PENDING",
+                "value": "PENDING"
+              },
+              {
+                "name": "ACCEPTED",
+                "value": "ACCEPTED"
+              },
+              {
+                "name": "REFUSED",
+                "value": "REFUSED"
+              }
+            ]
+          },
           "Role": {
             "codecId": "pg/text@1",
             "members": [
@@ -102,16 +123,9 @@
           }
         },
         "models": {
-          "Administration": {
+          "AdminUser": {
             "fields": {
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
-              "name": {
+              "userId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -124,7 +138,7 @@
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
-                    "id"
+                    "userId"
                   ],
                   "targetFields": [
                     "agentId"
@@ -134,19 +148,46 @@
                   "model": "Company",
                   "namespace": "public"
                 }
+              },
+              "refusals": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "agentId"
+                  ]
+                },
+                "to": {
+                  "model": "UserRefusalReason",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Users",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
               "fields": {
-                "id": {
-                  "column": "id"
-                },
-                "name": {
-                  "column": "name"
+                "userId": {
+                  "column": "userId"
                 }
               },
               "namespaceId": "public",
-              "table": "administration"
+              "table": "adminUser"
             }
           },
           "BannedUser": {
@@ -235,7 +276,7 @@
               "agentId": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -346,11 +387,11 @@
                     "agentId"
                   ],
                   "targetFields": [
-                    "id"
+                    "userId"
                   ]
                 },
                 "to": {
-                  "model": "Administration",
+                  "model": "AdminUser",
                   "namespace": "public"
                 }
               },
@@ -635,21 +676,6 @@
                   "model": "Company",
                   "namespace": "public"
                 }
-              },
-              "user": {
-                "cardinality": "1:1",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "documentId"
-                  ]
-                },
-                "to": {
-                  "model": "Users",
-                  "namespace": "public"
-                }
               }
             },
             "storage": {
@@ -873,6 +899,13 @@
                   "kind": "scalar"
                 }
               },
+              "newBalance": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "originalTransactionId": {
                 "nullable": true,
                 "type": {
@@ -990,6 +1023,9 @@
                 "id": {
                   "column": "id"
                 },
+                "newBalance": {
+                  "column": "newBalance"
+                },
                 "originalTransactionId": {
                   "column": "originalTransactionId"
                 },
@@ -1007,8 +1043,113 @@
               "table": "transaction"
             }
           },
+          "UserRefusalReason": {
+            "fields": {
+              "agentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "agent": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "agentId"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminUser",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Users",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "agentId": {
+                  "column": "agentId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "userRefusalReason"
+            }
+          },
           "Users": {
             "fields": {
+              "accountStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AccountStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "balance": {
                 "nullable": false,
                 "type": {
@@ -1027,13 +1168,6 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
-                  "kind": "scalar"
-                }
-              },
-              "documentId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -1101,6 +1235,21 @@
               }
             },
             "relations": {
+              "adminUser": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminUser",
+                  "namespace": "public"
+                }
+              },
               "company": {
                 "cardinality": "N:1",
                 "on": {
@@ -1116,18 +1265,18 @@
                   "namespace": "public"
                 }
               },
-              "document": {
-                "cardinality": "N:1",
+              "refusalsAsUser": {
+                "cardinality": "1:N",
                 "on": {
                   "localFields": [
-                    "documentId"
+                    "id"
                   ],
                   "targetFields": [
-                    "id"
+                    "userId"
                   ]
                 },
                 "to": {
-                  "model": "Document",
+                  "model": "UserRefusalReason",
                   "namespace": "public"
                 }
               },
@@ -1149,6 +1298,9 @@
             },
             "storage": {
               "fields": {
+                "accountStatus": {
+                  "column": "accountStatus"
+                },
                 "balance": {
                   "column": "balance"
                 },
@@ -1157,9 +1309,6 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
-                },
-                "documentId": {
-                  "column": "documentId"
                 },
                 "email": {
                   "column": "email"
@@ -1199,28 +1348,36 @@
       "public": {
         "entries": {
           "table": {
-            "administration": {
+            "adminUser": {
               "columns": {
-                "id": {
-                  "codecId": "pg/int4@1",
-                  "default": {
-                    "expression": "autoincrement()",
-                    "kind": "function"
-                  },
-                  "nativeType": "int4",
-                  "nullable": false
-                },
-                "name": {
+                "userId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
                 }
               },
-              "foreignKeys": [],
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "adminUser"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
               "indexes": [],
               "primaryKey": {
                 "columns": [
-                  "id"
+                  "userId"
                 ]
               },
               "uniques": []
@@ -1314,8 +1471,8 @@
                   "nullable": false
                 },
                 "agentId": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "categoryId": {
@@ -1421,10 +1578,10 @@
                   },
                   "target": {
                     "columns": [
-                      "id"
+                      "userId"
                     ],
                     "namespaceId": "public",
-                    "tableName": "administration"
+                    "tableName": "adminUser"
                   }
                 },
                 {
@@ -1868,6 +2025,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "newBalance": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
                 "originalTransactionId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2006,8 +2168,116 @@
                 }
               ]
             },
+            "userRefusalReason": {
+              "columns": {
+                "agentId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "agentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "userRefusalReason"
+                  },
+                  "target": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "adminUser"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "userRefusalReason"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "agentId"
+                  ],
+                  "name": "userRefusalReason_agentId_idx_8d0ba4f0",
+                  "prefix": "userRefusalReason_agentId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "userRefusalReason_createdAt_idx_9575dbd7",
+                  "prefix": "userRefusalReason_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "userRefusalReason_userId_idx_a489d58a",
+                  "prefix": "userRefusalReason_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "users": {
               "checks": [
+                {
+                  "expression": "\"accountStatus\" IN ('PENDING', 'ACCEPTED', 'REFUSED')",
+                  "name": "users_accountStatus_check_1773ea89",
+                  "prefix": "users_accountStatus_check"
+                },
                 {
                   "expression": "\"role\" IN ('EMPLOYEE', 'COMPANY', 'PARTNER', 'ADMIN')",
                   "name": "users_role_check_0f22a2ab",
@@ -2015,6 +2285,21 @@
                 }
               ],
               "columns": {
+                "accountStatus": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AccountStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "balance": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
@@ -2032,11 +2317,6 @@
                     "kind": "function"
                   },
                   "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "documentId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
                   "nullable": false
                 },
                 "email": {
@@ -2090,22 +2370,6 @@
                 {
                   "source": {
                     "columns": [
-                      "documentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "users"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "document"
-                  }
-                },
-                {
-                  "source": {
-                    "columns": [
                       "companyId"
                     ],
                     "namespaceId": "public",
@@ -2121,6 +2385,14 @@
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "accountStatus"
+                  ],
+                  "name": "users_accountStatus_idx_66d3289d",
+                  "prefix": "users_accountStatus_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "companyId"
@@ -2164,16 +2436,19 @@
                   "columns": [
                     "email"
                   ]
-                },
-                {
-                  "columns": [
-                    "documentId"
-                  ]
                 }
               ]
             }
           },
           "valueSet": {
+            "AccountStatus": {
+              "kind": "valueSet",
+              "values": [
+                "PENDING",
+                "ACCEPTED",
+                "REFUSED"
+              ]
+            },
             "Role": {
               "kind": "valueSet",
               "values": [
@@ -2204,7 +2479,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3aef406a4dac1916022111ec37bec1bfd8a96403932cf52c47106189b4ae6406",
+    "storageHash": "58ee6c51ed346c95314b55921487eb7a9979068a90cb8dca78f76f2eb3bfb82b",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",
