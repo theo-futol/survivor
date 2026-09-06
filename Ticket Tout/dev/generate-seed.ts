@@ -83,6 +83,10 @@ function sqlBool(v: boolean): string {
 function sqlTs(ms: number): string {
   return sqlStr(toIso(ms));
 }
+/** PostGIS point literal (SRID 4326 / WGS84) for Company.location. */
+function sqlPoint(lon: number, lat: number): string {
+  return `ST_SetSRID(ST_MakePoint(${lon.toFixed(4)}, ${lat.toFixed(4)}), 4326)`;
+}
 
 // ---------------------------------------------------------------------------
 // Data pools
@@ -117,21 +121,25 @@ type Company = {
   postalCode: string;
   region: string;
   siret: string;
+  // Coordonnées approximatives au niveau ville/quartier (basées sur le code
+  // postal), pas un géocodage exact de l'adresse.
+  lon: number;
+  lat: number;
 };
 
 const COMPANIES: Company[] = [
-  { name: 'Le Bistrot des Halles', category: 'Restauration', city: 'Paris', postalCode: '75001', region: 'Île-de-France', siret: '40312345600011' },
-  { name: 'Chez Antoine', category: 'Restauration', city: 'Levallois-Perret', postalCode: '92300', region: 'Île-de-France', siret: '40312345600028' },
-  { name: "La Table d'Amélie", category: 'Restauration', city: 'Lyon', postalCode: '69002', region: 'Auvergne-Rhône-Alpes', siret: '40312345600035' },
-  { name: 'Librairie du Marché', category: 'Librairie & Papeterie', city: 'Paris', postalCode: '75011', region: 'Île-de-France', siret: '40312345600042' },
-  { name: 'Papeterie Voltaire', category: 'Librairie & Papeterie', city: 'Bordeaux', postalCode: '33000', region: 'Nouvelle-Aquitaine', siret: '40312345600059' },
-  { name: 'Librairie des Arts', category: 'Librairie & Papeterie', city: 'Lille', postalCode: '59000', region: 'Hauts-de-France', siret: '40312345600066' },
-  { name: 'Studio Yoga Zen', category: 'Sport & Bien-être', city: 'Lyon', postalCode: '69003', region: 'Auvergne-Rhône-Alpes', siret: '40312345600073' },
-  { name: 'Salle Sport Forme', category: 'Sport & Bien-être', city: 'Bordeaux', postalCode: '33200', region: 'Nouvelle-Aquitaine', siret: '40312345600080' },
-  { name: 'Spa Sérénité', category: 'Sport & Bien-être', city: 'Lille', postalCode: '59800', region: 'Hauts-de-France', siret: '40312345600097' },
-  { name: 'Ciné Palace', category: 'Culture & Loisirs', city: 'Créteil', postalCode: '94000', region: 'Île-de-France', siret: '40312345600103' },
-  { name: 'Café du Musée', category: 'Culture & Loisirs', city: 'Bordeaux', postalCode: '33800', region: 'Nouvelle-Aquitaine', siret: '40312345600110' },
-  { name: 'Théâtre du Nord', category: 'Culture & Loisirs', city: 'Calais', postalCode: '62100', region: 'Hauts-de-France', siret: '40312345600127' },
+  { name: 'Le Bistrot des Halles', category: 'Restauration', city: 'Paris', postalCode: '75001', region: 'Île-de-France', siret: '40312345600011', lon: 2.3372, lat: 48.8606 },
+  { name: 'Chez Antoine', category: 'Restauration', city: 'Levallois-Perret', postalCode: '92300', region: 'Île-de-France', siret: '40312345600028', lon: 2.2876, lat: 48.8933 },
+  { name: "La Table d'Amélie", category: 'Restauration', city: 'Lyon', postalCode: '69002', region: 'Auvergne-Rhône-Alpes', siret: '40312345600035', lon: 4.832, lat: 45.755 },
+  { name: 'Librairie du Marché', category: 'Librairie & Papeterie', city: 'Paris', postalCode: '75011', region: 'Île-de-France', siret: '40312345600042', lon: 2.38, lat: 48.858 },
+  { name: 'Papeterie Voltaire', category: 'Librairie & Papeterie', city: 'Bordeaux', postalCode: '33000', region: 'Nouvelle-Aquitaine', siret: '40312345600059', lon: -0.5792, lat: 44.8378 },
+  { name: 'Librairie des Arts', category: 'Librairie & Papeterie', city: 'Lille', postalCode: '59000', region: 'Hauts-de-France', siret: '40312345600066', lon: 3.0573, lat: 50.6292 },
+  { name: 'Studio Yoga Zen', category: 'Sport & Bien-être', city: 'Lyon', postalCode: '69003', region: 'Auvergne-Rhône-Alpes', siret: '40312345600073', lon: 4.85, lat: 45.76 },
+  { name: 'Salle Sport Forme', category: 'Sport & Bien-être', city: 'Bordeaux', postalCode: '33200', region: 'Nouvelle-Aquitaine', siret: '40312345600080', lon: -0.61, lat: 44.845 },
+  { name: 'Spa Sérénité', category: 'Sport & Bien-être', city: 'Lille', postalCode: '59800', region: 'Hauts-de-France', siret: '40312345600097', lon: 3.07, lat: 50.635 },
+  { name: 'Ciné Palace', category: 'Culture & Loisirs', city: 'Créteil', postalCode: '94000', region: 'Île-de-France', siret: '40312345600103', lon: 2.455, lat: 48.79 },
+  { name: 'Café du Musée', category: 'Culture & Loisirs', city: 'Bordeaux', postalCode: '33800', region: 'Nouvelle-Aquitaine', siret: '40312345600110', lon: -0.56, lat: 44.825 },
+  { name: 'Théâtre du Nord', category: 'Culture & Loisirs', city: 'Calais', postalCode: '62100', region: 'Hauts-de-France', siret: '40312345600127', lon: 1.855, lat: 50.95 },
 ];
 
 if (COMPANIES.length !== 12) {
@@ -151,8 +159,6 @@ const ADMIN_EMAIL = 'admin.seed@tickettout.fr';
 // ---------------------------------------------------------------------------
 // Lookup rows
 // ---------------------------------------------------------------------------
-
-const administration = { id: 1, name: 'Direction Régionale des Entreprises' };
 
 const validationReasons = [
   { id: 1, reason: 'Dossier complet et conforme' },
@@ -189,7 +195,6 @@ type Employee = {
   email: string;
   name: string;
   surname: string;
-  documentId: string;
   balance: number; // filled in after the replay
 };
 
@@ -197,26 +202,42 @@ const employees: Employee[] = [];
 for (let i = 0; i < 50; i++) {
   const surname = FIRST_NAMES[i]!;
   const name = LAST_NAMES[i]!;
-  const doc = makeDocument(`employees/${String(i).padStart(2, '0')}`, EMPLOYEE_CREATED_AT);
+  // Users no longer carries a documentId FK, but the row is still emitted into
+  // public.document (unreferenced, which the schema allows). The call must stay:
+  // it consumes the shared RNG stream, so dropping it would shift every
+  // subsequent amount, date and balance in the seed.
+  makeDocument(`employees/${String(i).padStart(2, '0')}`, EMPLOYEE_CREATED_AT);
   employees.push({
     index: i,
     id: seededId(`employee:${i}`),
     email: `${surname.toLowerCase()}.${name.toLowerCase()}${i}@example.fr`,
     name,
     surname,
-    documentId: doc.id,
     balance: 0,
   });
 }
 
-const adminDoc = makeDocument('admin/00', EMPLOYEE_CREATED_AT);
+// Same as above: kept for the RNG stream, no longer referenced by users.
+makeDocument('admin/00', EMPLOYEE_CREATED_AT);
 const admin = {
   id: seededId('admin:0'),
   email: ADMIN_EMAIL,
   name: 'Admin',
   surname: 'Seed',
-  documentId: adminDoc.id,
 };
+
+// Two ADMIN "agents" backing company.agentId. Company.agentId references
+// adminUser.userId (a shadow table holding only ADMIN users), so each agent
+// needs a users row *and* an adminUser row, both inserted before any company.
+// Ids come from seededId, which is outside the RNG stream — adding these
+// agents leaves every other generated value untouched.
+const AGENTS = [0, 1].map((i) => ({
+  index: i,
+  id: seededId(`agent:${i}`),
+  email: `agent${i + 1}.seed@tickettout.fr`,
+  surname: 'Agent',
+  name: `Seed${i + 1}`,
+}));
 
 type Partner = { index: number; id: string; kbisId: string; company: Company };
 const partners: Partner[] = COMPANIES.map((company, i) => {
@@ -247,6 +268,9 @@ type TxRow = {
   userId: string;
   companyId: string | null;
   amount: number;
+  // Running balance of `userId` immediately after this row was applied.
+  // REFUSER rows leave the balance untouched and simply record it.
+  newBalance: number;
   originalTransactionId: string | null;
   status: TxStatus;
   createdAt: number;
@@ -281,6 +305,7 @@ for (const employee of employees) {
     userId: employee.id,
     companyId: null,
     amount: topup1Amount,
+    newBalance: balance,
     originalTransactionId: null,
     status: 'VALIDER',
     createdAt: dayOffset(topup1Day, randInt(8, 11), randInt(0, 59)),
@@ -295,6 +320,7 @@ for (const employee of employees) {
     userId: employee.id,
     companyId: null,
     amount: topup2Amount,
+    newBalance: balance,
     originalTransactionId: null,
     status: 'VALIDER',
     createdAt: dayOffset(topup2Day, randInt(8, 11), randInt(0, 59)),
@@ -329,6 +355,7 @@ for (const employee of employees) {
         userId: employee.id,
         companyId: lastPaymentForRefund.companyId,
         amount: refundAmount,
+        newBalance: balance,
         originalTransactionId: lastPaymentForRefund.id,
         status: 'VALIDER',
         createdAt,
@@ -347,6 +374,7 @@ for (const employee of employees) {
         userId: employee.id,
         companyId: partner.id,
         amount,
+        newBalance: balance,
         originalTransactionId: null,
         status: 'VALIDER',
         createdAt,
@@ -364,6 +392,7 @@ for (const employee of employees) {
         userId: employee.id,
         companyId: partner.id,
         amount,
+        newBalance: balance,
         originalTransactionId: null,
         status: 'VALIDER',
         createdAt,
@@ -381,6 +410,7 @@ for (const employee of employees) {
         userId: employee.id,
         companyId: partner.id,
         amount,
+        newBalance: balance,
         originalTransactionId: null,
         status: 'REFUSER',
         createdAt,
@@ -401,6 +431,7 @@ for (const employee of employees) {
       userId: employee.id,
       companyId: partner.id,
       amount,
+      newBalance: balance,
       originalTransactionId: null,
       status: 'VALIDER',
       createdAt,
@@ -435,6 +466,15 @@ if (subFiveCount !== 2) {
 for (const e of employees) {
   if (e.balance < 0) throw new Error(`employee ${e.index} ended with a negative balance`);
 }
+for (const e of employees) {
+  const own = transactions.filter((t) => t.userId === e.id);
+  const last = own.reduce((a, b) => (b.createdAt >= a.createdAt ? b : a));
+  if (last.newBalance !== e.balance) {
+    throw new Error(
+      `employee ${e.index}: last transaction newBalance ${last.newBalance} != balance ${e.balance}`,
+    );
+  }
+}
 
 // createdAt, id ordering used identically for the CSV export.
 customerFacing.sort((a, b) => (a.createdAt !== b.createdAt ? a.createdAt - b.createdAt : a.id.localeCompare(b.id)));
@@ -449,12 +489,6 @@ lines.push('-- Deterministic seed data for Ticket Tout.');
 lines.push('-- Generated by Ticket Tout/dev/generate-seed.ts — do not hand-edit.');
 lines.push('-- Re-run `npm run db:seed:generate` (from Ticket Tout/) to regenerate byte-for-byte.');
 lines.push('BEGIN;');
-lines.push('');
-
-lines.push('-- administration');
-lines.push(
-  `INSERT INTO public.administration (id, name) VALUES (${sqlInt(administration.id)}, ${sqlStr(administration.name)});`,
-);
 lines.push('');
 
 lines.push('-- companyValidationReason');
@@ -480,6 +514,35 @@ for (const d of documents) {
 }
 lines.push('');
 
+lines.push('-- users: 2 agents (ADMIN) — referenced by company."agentId" through adminUser');
+for (const a of AGENTS) {
+  lines.push(
+    `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+      `"expiredAt") VALUES (` +
+      [
+        sqlStr(a.id),
+        sqlStr(a.email),
+        sqlStr(a.surname),
+        sqlStr(a.name),
+        sqlStr('ADMIN'),
+        sqlInt(0),
+        sqlStr(hashPassword(ADMIN_PASSWORD)),
+        sqlTs(EMPLOYEE_CREATED_AT),
+        sqlTs(EMPLOYEE_CREATED_AT),
+        'NULL',
+      ].join(', ') +
+      ');',
+  );
+}
+lines.push('');
+
+lines.push('-- adminUser: shadow table holding only ADMIN users; nothing populates it');
+lines.push('-- automatically, so the agent rows are inserted explicitly here.');
+for (const a of AGENTS) {
+  lines.push(`INSERT INTO public."adminUser" ("userId") VALUES (${sqlStr(a.id)});`);
+}
+lines.push('');
+
 lines.push('-- company (12 partners: >=4 categories, >=3 régions)');
 partners.forEach((p, i) => {
   const c = p.company;
@@ -487,7 +550,7 @@ partners.forEach((p, i) => {
   const categoryId = categoryIdByName.get(c.category)!;
   lines.push(
     `INSERT INTO public.company (id, name, email, siret, "kbisId", address, "postalCode", "agentId", "reasonId", ` +
-      `verified, "isFeatured", "categoryId", "isPartner", "createdAt", "updatedAt") VALUES (` +
+      `verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
       [
         sqlStr(p.id),
         sqlStr(c.name),
@@ -496,11 +559,13 @@ partners.forEach((p, i) => {
         sqlStr(p.kbisId),
         sqlStr(`${randInt(1, 120)} rue de la République`),
         sqlStr(c.postalCode),
-        sqlInt(administration.id),
+        // Half the partners on agent 1, half on agent 2.
+        sqlStr(i < partners.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
         sqlInt(reasonId),
         sqlBool(true),
         sqlBool(i % 3 === 0),
         sqlInt(categoryId),
+        sqlPoint(c.lon, c.lat),
         sqlBool(true),
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
@@ -514,7 +579,7 @@ lines.push('-- users: 50 employees');
 for (const e of employees) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-      `"expiredAt", "documentId") VALUES (` +
+      `"expiredAt") VALUES (` +
       [
         sqlStr(e.id),
         sqlStr(e.email),
@@ -526,7 +591,6 @@ for (const e of employees) {
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
-        sqlStr(e.documentId),
       ].join(', ') +
       ');',
   );
@@ -536,7 +600,7 @@ lines.push('');
 lines.push('-- users: 1 admin (for exercising admin-only routes)');
 lines.push(
   `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-    `"expiredAt", "documentId") VALUES (` +
+    `"expiredAt") VALUES (` +
     [
       sqlStr(admin.id),
       sqlStr(admin.email),
@@ -548,7 +612,6 @@ lines.push(
       sqlTs(EMPLOYEE_CREATED_AT),
       sqlTs(EMPLOYEE_CREATED_AT),
       'NULL',
-      sqlStr(admin.documentId),
     ].join(', ') +
     ');',
 );
@@ -557,14 +620,15 @@ lines.push('');
 lines.push('-- transaction: employer TOPUPs + 200 PAYMENT/REFUND rows, written in chronological order');
 for (const t of transactions) {
   lines.push(
-    `INSERT INTO public.transaction (id, type, "userId", "companyId", amount, "originalTransactionId", status, ` +
-      `"createdAt") VALUES (` +
+    `INSERT INTO public.transaction (id, type, "userId", "companyId", amount, "newBalance", ` +
+      `"originalTransactionId", status, "createdAt") VALUES (` +
       [
         sqlStr(t.id),
         sqlStr(t.type),
         sqlStr(t.userId),
         sqlNullableStr(t.companyId),
         sqlInt(t.amount),
+        sqlInt(t.newBalance),
         sqlNullableStr(t.originalTransactionId),
         sqlStr(t.status),
         sqlTs(t.createdAt),
@@ -575,9 +639,6 @@ for (const t of transactions) {
 lines.push('');
 
 lines.push('-- keep autoincrement sequences ahead of the seeded ids');
-lines.push(
-  `SELECT setval('public.administration_id_seq', (SELECT max(id) FROM public.administration), true);`,
-);
 lines.push(
   `SELECT setval('public."companyValidationReason_id_seq"', (SELECT max(id) FROM public."companyValidationReason"), true);`,
 );
