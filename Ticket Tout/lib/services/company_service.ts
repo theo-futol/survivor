@@ -44,6 +44,7 @@ export type ListCompaniesFilters = {
   search?: string | undefined;
   categorie?: string | undefined;
   featured?: boolean | undefined;
+  verified?: boolean | undefined;
   // Set for non-admin callers so they only ever see their own company.
   id?: string | undefined;
 };
@@ -62,7 +63,7 @@ async function resolveCategoryId(categorie: string): Promise<number>
 
 export async function listCompanies(filters: ListCompaniesFilters)
 {
-  const equality: { isPartner: boolean; active: boolean; isFeatured?: boolean; categoryId?: number; id?: string } = {
+  const equality: { isPartner: boolean; active: boolean; isFeatured?: boolean; verified?: boolean; categoryId?: number; id?: string } = {
     isPartner: filters.isPartner,
     active: true,
   };
@@ -75,6 +76,11 @@ export async function listCompanies(filters: ListCompaniesFilters)
   if (filters.featured !== undefined)
   {
     equality.isFeatured = filters.featured;
+  }
+
+  if (filters.verified !== undefined)
+  {
+    equality.verified = filters.verified;
   }
 
   if (filters.categorie !== undefined)

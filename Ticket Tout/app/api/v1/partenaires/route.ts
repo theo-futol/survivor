@@ -75,6 +75,7 @@ export async function GET(request: Request)
       pagination,
       categorie,
       featured: featured === undefined ? undefined : featured === 'true',
+      verified: actor.role === 'EMPLOYEE' ? true : undefined,
       id: actor.role === 'PARTNER' ? (actor.companyId ?? '') : undefined,
     });
 

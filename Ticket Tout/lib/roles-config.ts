@@ -1,5 +1,5 @@
 // Maps each protected endpoint (method + path) to the roles allowed to call it.
-// POST /api/v1/login stays public and is intentionally absent.
+// POST /api/v1/login and POST /api/v1/signup stay public and are intentionally absent.
 
 export const ROUTE_ROLES = {
   'GET /api/v1/me': ['EMPLOYEE', 'COMPANY', 'PARTNER', 'ADMIN'],

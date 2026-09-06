@@ -59,14 +59,16 @@ La palette est construite autour du bleu institutionnel demandé **#1B3A6B** et 
 ## Inscription et authentification
 
 - `/signup` contient deux formulaires distincts : **Entreprise** et **Partenaire**.
-- Les deux formulaires appellent `authClient.signUp.email()` de Better Auth.
-- Les comptes sont distingués par les champs additionnels `accountType`, `organizationName`, `registrationNumber` et `phone`.
-- `/login` utilise `authClient.signIn.email()`.
-- `/profile` lit la session Better Auth et propose la déconnexion.
-- Le handler `/api/auth/[...all]` exécute les migrations Better Auth programmatiquement avant les requêtes afin que la base SQLite locale soit initialisée sans étape manuelle supplémentaire.
+- Les deux formulaires envoient maintenant un `multipart/form-data` vers `POST /api/v1/signup`.
+- Le Kbis PDF est stocké dans Garage ; sa `storageKey` est enregistrée dans `Document`.
+- L'organisation est créée dans `Company` et son compte propriétaire dans `Users`, avec le rôle `COMPANY` ou `PARTNER`.
+- La route ouvre immédiatement la session web avec le même cookie JWT HttpOnly que `POST /api/v1/login`.
+- `/login`, `/profile`, `/employer` et `/partner` utilisent donc PostgreSQL comme source d'authentification principale.
+- Le compte professionnel est créé avec `verified = false` afin qu'il puisse être contrôlé dans l'administration avant validation.
+- Les anciennes routes Better Auth/SQLite restent présentes pour les prototypes historiques qui les utilisent encore, mais elles ne pilotent plus l'inscription professionnelle ni la page de connexion principale.
 
 ## Pré-requis d’exécution
 
-- Node.js **22.13+** (le projet utilise `node:sqlite`).
-- Définir `BETTER_AUTH_SECRET` en production.
-- En production multi-instance/serverless, remplacer le SQLite local par une base persistante partagée (PostgreSQL/MySQL/SQLite persistant selon l’hébergement).
+- Node.js **22.13+**.
+- PostgreSQL/PostGIS, Redis et Garage doivent être disponibles via l'environnement Docker prévu par le projet.
+- Définir `JWT_SECRET`, `DATABASE_URL`, `GARAGE_DEFAULT_ACCESS_KEY` et `GARAGE_DEFAULT_SECRET_KEY` dans l'environnement d'exécution.

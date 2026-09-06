@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react"
 import Link from "next/link"
 import { Building2, CheckCircle2, Handshake, LoaderCircle } from "lucide-react"
 
-import { authClient } from "@/lib/auth-client"
 import { BRAND } from "@/lib/brand"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,29 +37,28 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
       return
     }
 
-    const result = await authClient.signUp.email({
-      name: String(form.get("legalRepresentative") ?? ""),
-      email: String(form.get("email") ?? ""),
-      password,
-      accountType,
-      organizationName: String(form.get("organizationName") ?? ""),
-      registrationNumber: siret,
-      phone: String(form.get("phone") ?? ""),
-      legalRepresentative: String(form.get("legalRepresentative") ?? ""),
-      jobTitle: String(form.get("jobTitle") ?? ""),
-      address: String(form.get("address") ?? ""),
-      postalCode: String(form.get("postalCode") ?? ""),
-      city: String(form.get("city") ?? ""),
-      partnerCategory: isCompany ? "" : String(form.get("partnerCategory") ?? ""),
-    })
+    form.set("accountType", accountType)
+    form.set("registrationNumber", siret)
+    if (isCompany) form.set("partnerCategory", "")
 
-    if (result.error) {
-      setError(result.error.message ?? "La création du compte a échoué.")
+    try {
+      const response = await fetch("/api/v1/signup", {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+      })
+
+      const payload = await response.json().catch(() => null) as { error?: string } | null
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "La création du compte a échoué.")
+      }
+
+      setStatus("success")
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "La création du compte a échoué.")
       setStatus("idle")
-      return
     }
-
-    setStatus("success")
   }
 
   if (status === "success") {
@@ -71,7 +69,7 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Votre compte {isCompany ? "entreprise" : "partenaire"} {BRAND.name} est enregistré. Votre session est ouverte et votre espace est prêt.
         </p>
-        <Link href={isCompany ? "/employer" : "/profile"} className={buttonVariants({ className: "mt-5" })}>Accéder à mon espace</Link>
+        <Link href={isCompany ? "/employer" : "/partner"} className={buttonVariants({ className: "mt-5" })}>Accéder à mon espace</Link>
       </div>
     )
   }
@@ -114,6 +112,11 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
             </select>
           </div>
         )}
+        <div className="sm:col-span-2">
+          <Label htmlFor={`${accountType}-kbis`}>Kbis (PDF)</Label>
+          <Input id={`${accountType}-kbis`} name="kbis" type="file" accept="application/pdf,.pdf" className="mt-2" required />
+          <p className="mt-2 text-xs text-muted-foreground">PDF uniquement, 10 Mo maximum. Le document est stocké dans Garage.</p>
+        </div>
         <div className="sm:col-span-2">
           <Label htmlFor={`${accountType}-address`}>Adresse du siège / établissement</Label>
           <Input id={`${accountType}-address`} name="address" className="mt-2" required autoComplete="street-address" />
