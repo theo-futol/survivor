@@ -2,6 +2,26 @@ import { db } from '@/lib/prisma/db';
 import { authorize } from '@/lib/services/auth_service';
 import { commonErrorHandler } from '@/lib/services/error_service';
 
+/**
+ * @openapi
+ * /api/v1/me:
+ *   get:
+ *     summary: Récupérer l'utilisateur connecté
+ *     description: Retourne l'utilisateur authentifié à partir du JWT envoyé en Bearer ou du cookie de session web.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Utilisateur connecté.
+ *       '401':
+ *         description: Token manquant ou invalide.
+ *       '403':
+ *         description: Compte révoqué.
+ *       '404':
+ *         description: Utilisateur introuvable.
+ *       '503':
+ *         description: Service d'authentification temporairement indisponible.
+ */
 export async function GET(request: Request)
 {
   try

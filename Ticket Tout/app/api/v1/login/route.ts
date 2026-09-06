@@ -97,6 +97,16 @@ export async function POST(request: Request)
   }
 }
 
+/**
+ * @openapi
+ * /api/v1/login:
+ *   delete:
+ *     summary: Déconnexion
+ *     description: Supprime le cookie de session JWT du navigateur.
+ *     responses:
+ *       '200':
+ *         description: Déconnexion réussie.
+ */
 export async function DELETE(request: Request)
 {
   const response = NextResponse.json({ ok: true });
