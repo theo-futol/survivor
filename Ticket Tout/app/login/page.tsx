@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Building2, Handshake, ShieldCheck } from "lucide-react"
 
-import { BetterAuthLoginForm } from "@/components/login-better-auth-form"
+import { LoginApiSalarieForm } from "@/components/login-api-salarie-form"
 import { BrandLogo } from "@/components/brand-logo"
 import { PublicHeader } from "@/components/public-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -36,7 +36,7 @@ export default function LoginPage() {
           <h2 className="text-2xl font-black">Connexion</h2>
           <p className="mt-2 text-muted-foreground">Utilisez les identifiants associés à votre compte.</p>
           <div className="mt-7">
-            <BetterAuthLoginForm />
+            <LoginApiSalarieForm />
           </div>
 
           <div className="mt-9 border-t pt-7">

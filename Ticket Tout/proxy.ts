@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { auth } from "@/lib/auth"
-import { ensureAuthSchema } from "@/lib/auth-schema"
+import { AUTH_COOKIE_NAME, verifyToken } from "@/lib/services/auth_service"
 
 const employeeOnly = ["/", "/transactions", "/partners", "/history", "/credited", "/consumes"]
 const companyOnly = ["/employer"]
+const adminOnly = ["/admin", "/administration"]
+
+function matches(pathname: string, routes: string[]) {
+  return routes.some((route) =>
+    route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
+  )
+}
+
+function homeForRole(role: string) {
+  if (role === "EMPLOYEE") return "/"
+  if (role === "COMPANY") return "/employer"
+  if (role === "ADMIN") return "/admin"
+  return "/profile"
+}
 
 export async function proxy(request: NextRequest) {
-  await ensureAuthSchema()
-  const session = await auth.api.getSession({ headers: request.headers })
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
+  const session = token ? await verifyToken(token) : null
 
   if (!session) {
     const loginUrl = new URL("/login", request.url)
@@ -19,26 +32,33 @@ export async function proxy(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname
-  const isEmployeeRoute = employeeOnly.some((route) =>
-    route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
-  )
 
-  const currentUser = session.user as { employeeAccess?: boolean; accountType?: string }
-  const employeeAccess = currentUser.employeeAccess === true
-  if (isEmployeeRoute && !employeeAccess) {
-    return NextResponse.redirect(new URL(currentUser.accountType === "company" ? "/employer" : "/profile", request.url))
+  if (matches(pathname, employeeOnly) && session.role !== "EMPLOYEE") {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
   }
 
-  const isCompanyRoute = companyOnly.some((route) =>
-    pathname === route || pathname.startsWith(`${route}/`)
-  )
-  if (isCompanyRoute && currentUser.accountType !== "company") {
-    return NextResponse.redirect(new URL("/profile", request.url))
+  if (matches(pathname, companyOnly) && session.role !== "COMPANY") {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
+  }
+
+  if (matches(pathname, adminOnly) && session.role !== "ADMIN") {
+    return NextResponse.redirect(new URL(homeForRole(session.role), request.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/", "/transactions/:path*", "/partners/:path*", "/history/:path*", "/credited/:path*", "/consumes/:path*", "/profile/:path*", "/employer/:path*", "/admin/:path*", "/administration/:path*"],
+  matcher: [
+    "/",
+    "/transactions/:path*",
+    "/partners/:path*",
+    "/history/:path*",
+    "/credited/:path*",
+    "/consumes/:path*",
+    "/profile/:path*",
+    "/employer/:path*",
+    "/admin/:path*",
+    "/administration/:path*",
+  ],
 }

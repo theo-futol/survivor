@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { ROUTE_ROLES, type RouteKey } from '@/lib/roles-config';
 import { isBanned } from '@/lib/services/redis_service';
 
+export const AUTH_COOKIE_NAME = 'ticket_tout_token';
+
 const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET']!);
 const JWT_EXPIRES_IN_SECONDS = process.env['JWT_TTL_SECONDS'] ? parseInt(process.env['JWT_TTL_SECONDS']!, 10) : 1800;
 
@@ -70,10 +72,43 @@ export async function verifyToken(token: string): Promise<{ sub: string; role: s
   }
 }
 
-export async function authorize(request: Request, routeKey: RouteKey): Promise<AuthResult>
+function readCookie(request: Request, name: string): string | null
+{
+  const cookieHeader = request.headers.get('cookie');
+
+  if (!cookieHeader)
+  {
+    return null;
+  }
+
+  for (const part of cookieHeader.split(';'))
+  {
+    const [rawName, ...rawValue] = part.trim().split('=');
+
+    if (rawName === name)
+    {
+      return decodeURIComponent(rawValue.join('='));
+    }
+  }
+
+  return null;
+}
+
+export function getRequestToken(request: Request): string | null
 {
   const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
+
+  if (authHeader?.startsWith('Bearer '))
+  {
+    return authHeader.slice('Bearer '.length);
+  }
+
+  return readCookie(request, AUTH_COOKIE_NAME);
+}
+
+export async function authenticate(request: Request): Promise<AuthResult>
+{
+  const token = getRequestToken(request);
 
   if (!token)
   {
@@ -87,23 +122,38 @@ export async function authorize(request: Request, routeKey: RouteKey): Promise<A
     return { ok: false, status: 401, error: 'Missing or invalid token' };
   }
 
-
-  try {
+  try
+  {
     const banned = await isBanned(payload.sub);
 
-    if (banned) {
-        return { ok: false, status: 403, error: 'Account revoked' };
+    if (banned)
+    {
+      return { ok: false, status: 403, error: 'Account revoked' };
     }
-  } catch {
+  }
+  catch
+  {
     return { ok: false, status: 503, error: 'Auth service temporarily unavailable' };
+  }
+
+  return { ok: true, sub: payload.sub, role: payload.role };
+}
+
+export async function authorize(request: Request, routeKey: RouteKey): Promise<AuthResult>
+{
+  const auth = await authenticate(request);
+
+  if (!auth.ok)
+  {
+    return auth;
   }
 
   const allowedRoles: readonly string[] = ROUTE_ROLES[routeKey];
 
-  if (!allowedRoles.includes(payload.role))
+  if (!allowedRoles.includes(auth.role))
   {
     return { ok: false, status: 403, error: 'Forbidden' };
   }
 
-  return { ok: true, sub: payload.sub, role: payload.role };
+  return auth;
 }

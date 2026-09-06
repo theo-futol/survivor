@@ -15,6 +15,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/employeurs/:employeurId/abondements': ['ADMIN', 'COMPANY'],
 
   'GET /api/v1/salaries': ['ADMIN', 'COMPANY'],
+  'GET /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'POST /api/v1/salaries': ['ADMIN', 'COMPANY'],
   'PATCH /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'DELETE /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY'],
