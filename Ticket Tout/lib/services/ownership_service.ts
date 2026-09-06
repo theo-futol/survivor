@@ -15,6 +15,14 @@ export async function resolveActor(auth: { sub: string; role: string }): Promise
   return { id: user.id, role: user.role, companyId: user.companyId };
 }
 
+export function assertIsAdmin(actor: Actor): void
+{
+  if (actor.role !== 'ADMIN')
+  {
+    throw new AppError('Forbidden', 403);
+  }
+}
+
 // ADMIN may act on any company; every other role only on the one it belongs to.
 export function assertOwnsCompany(actor: Actor, companyId: string): void
 {
