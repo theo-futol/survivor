@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Users, User, Building2, TerminalIcon } from "lucide-react"
+import { Users, User, Building2, Heart, Sparkles, TerminalIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
 
-export type AdminTab = "employee" | "account" | "business"
+export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activeTab: AdminTab
@@ -45,6 +45,16 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
       id: "business" as AdminTab,
       title: "Entreprise",
       icon: Building2,
+    },
+    {
+      id: "favorite" as AdminTab,
+      title: "Coup de cœur",
+      icon: Heart,
+    },
+    {
+      id: "featured" as AdminTab,
+      title: "Mis en avant",
+      icon: Sparkles,
     },
   ]
 

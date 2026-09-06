@@ -28,6 +28,10 @@
       "model": "Document",
       "namespace": "public"
     },
+    "featuredPartner": {
+      "model": "FeaturedPartner",
+      "namespace": "public"
+    },
     "ministerFavorite": {
       "model": "MinisterFavorite",
       "namespace": "public"
@@ -436,6 +440,21 @@
                   "namespace": "public"
                 }
               },
+              "featuredPartners": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "companyId"
+                  ]
+                },
+                "to": {
+                  "model": "FeaturedPartner",
+                  "namespace": "public"
+                }
+              },
               "kbis": {
                 "cardinality": "N:1",
                 "on": {
@@ -712,6 +731,113 @@
               },
               "namespaceId": "public",
               "table": "document"
+            }
+          },
+          "FeaturedPartner": {
+            "fields": {
+              "active": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "clickAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "companyId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "imageKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "message": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "company": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "companyId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Company",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "active": {
+                  "column": "active"
+                },
+                "clickAmount": {
+                  "column": "clickAmount"
+                },
+                "companyId": {
+                  "column": "companyId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "imageKey": {
+                  "column": "imageKey"
+                },
+                "message": {
+                  "column": "message"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "featuredPartner"
             }
           },
           "MinisterFavorite": {
@@ -1839,6 +1965,116 @@
                 }
               ]
             },
+            "featuredPartner": {
+              "columns": {
+                "active": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "clickAmount": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "companyId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "imageKey": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "message": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "companyId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "featuredPartner"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "company"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "active"
+                  ],
+                  "name": "featuredPartner_active_idx_8af4daed",
+                  "prefix": "featuredPartner_active_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "companyId"
+                  ],
+                  "name": "featuredPartner_companyId_idx_33acc5ed",
+                  "prefix": "featuredPartner_companyId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "featuredPartner_createdAt_idx_9575dbd7",
+                  "prefix": "featuredPartner_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "ministerFavorite": {
               "columns": {
                 "companyId": {
@@ -2499,7 +2735,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d7dd146512eb4371934bcd70e7350ddedabb6179a77af8b4701bb1201bbafe9f",
+    "storageHash": "e95c0443e1fd7b6dcf356942fe5d00ca51c321b904f65238b02da3a331bdd3f3",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",
@@ -2512,7 +2748,7 @@
     }
   },
   "execution": {
-    "executionHash": "0bc950693acece6d094115f981f56f85d35eae54fc3421449c27857c3ee8076f",
+    "executionHash": "3993a6b6a796ad86d346d4d629dafee95240fe832d3b1b87000f02730b6cf4a6",
     "mutations": {
       "defaults": [
         {
@@ -2550,6 +2786,21 @@
             "column": "id",
             "namespace": "public",
             "table": "document"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "featuredPartner"
           }
         },
         {

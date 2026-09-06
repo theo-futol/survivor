@@ -5,12 +5,15 @@ import Link from "next/link"
 import { ArrowRight, History, LoaderCircle, MapPin, QrCode, Sparkles, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
+import { PublicHeader } from "@/components/public-header"
+import { FeaturedPartnerBanner } from "@/components/featured-partner-banner"
 import CreditCard from "@/components/credit-card"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import {
   apiFetch,
   formatMoney,
+  roleHome,
   type ApiPartner,
   type ApiTransaction,
   type PaginationMeta,
@@ -29,7 +32,7 @@ type PaymentState = {
 }
 
 export default function Page() {
-  const { data: session, loading: sessionLoading, error: sessionError } = useCurrentUser()
+  const { data: session, loading: sessionLoading } = useCurrentUser()
   const [partners, setPartners] = useState<ApiPartner[]>([])
   const [transactions, setTransactions] = useState<ApiTransaction[]>([])
   const [loadingData, setLoadingData] = useState(true)
@@ -131,12 +134,14 @@ export default function Page() {
 
   return (
     <div className="min-h-svh bg-background">
-      <AccountHeader />
+      {session ? <AccountHeader /> : <PublicHeader />}
 
       <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        {(sessionError || loadError) && (
+        <FeaturedPartnerBanner />
+
+        {loadError && session?.user.role === "EMPLOYEE" && (
           <p role="alert" className="mb-5 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark">
-            {sessionError ?? loadError}
+            {loadError}
           </p>
         )}
 
@@ -144,7 +149,7 @@ export default function Page() {
           <div className="flex min-h-80 items-center justify-center gap-2 text-muted-foreground">
             <LoaderCircle className="animate-spin" aria-hidden="true" /> Chargement de votre espace…
           </div>
-        ) : employee ? (
+        ) : employee?.role === "EMPLOYEE" ? (
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1.22fr)_minmax(340px,.78fr)]">
             <div className="rounded-3xl border bg-card p-5 shadow-sm sm:p-8 lg:p-10">
               <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
@@ -264,7 +269,21 @@ export default function Page() {
               </Link>
             </aside>
           </section>
-        ) : null}
+        ) : (
+          <section className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Ticket Tout</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight">Découvrez le partenaire mis en avant cette semaine.</h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Le partenaire mis en avant ci-dessus est public. L&apos;espace salarié, le solde et les transactions restent privés.
+            </p>
+            <Link
+              href={session ? roleHome(session.user.role) : "/login"}
+              className={buttonVariants({ className: "mt-5" })}
+            >
+              {session ? "Accéder à mon espace" : "Se connecter"} <ArrowRight aria-hidden="true" />
+            </Link>
+          </section>
+        )}
       </main>
     </div>
   )

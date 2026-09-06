@@ -33,6 +33,10 @@ export const ROUTE_ROLES = {
   'POST /api/v1/ministerfavorite': ['ADMIN'],
   'PATCH /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
   'DELETE /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
+
+  'GET /api/v1/featuredpartner': ['ADMIN'],
+  'POST /api/v1/featuredpartner': ['ADMIN'],
+  'PATCH /api/v1/featuredpartner/:highlightId': ['ADMIN'],
 } as const;
 
 export type RouteKey = keyof typeof ROUTE_ROLES;

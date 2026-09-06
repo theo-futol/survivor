@@ -17,6 +17,8 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { AppSidebar } from "@/components/app-sidebar-admin"
+import { AdminFeaturedPartner } from "@/components/admin-featured-partner"
+import { AdminMinisterFavorite } from "@/components/admin-minister-favorite"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -34,7 +36,7 @@ import paiementsData from "../../data/paiements.json"
 import { authClient } from "@/lib/auth-client"
 
 // Types for navigation selections
-export type AdminTab = "employee" | "account" | "business"
+export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
 
 export const iframeHeight = "800px"
 export const description = "An administration page with dynamic tab navigation."
@@ -53,6 +55,8 @@ export default function Page() {
               {activeTab === "employee" && <EmployeeView />}
               {activeTab === "account" && <AccountView />}
               {activeTab === "business" && <BusinessView />}
+              {activeTab === "favorite" && <AdminMinisterFavorite />}
+              {activeTab === "featured" && <AdminFeaturedPartner />}
             </div>
           </SidebarInset>
         </div>

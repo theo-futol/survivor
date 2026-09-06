@@ -98,8 +98,9 @@ model Company {
   active       Boolean                 @default(true)
   createdAt    DateTime                @default(now())
   updatedAt    temporal.updatedAt()
-  transactions Transaction[]
-  employees    Users[]                 @relation("CompanyEmployees")
+  transactions      Transaction[]
+  employees         Users[]
+  featuredPartners  FeaturedPartner[]
 
   @@index([verified])
   @@index([createdAt])
@@ -163,6 +164,22 @@ model MinisterFavorite {
   likeAmount Int
   createdAt  DateTime @default(now())
   updatedAt  temporal.updatedAt()
+}
+
+model FeaturedPartner {
+  id          Int      @id @default(autoincrement())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  message     String
+  imageKey    String
+  clickAmount Int      @default(0)
+  active      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   temporal.updatedAt()
+
+  @@index([companyId])
+  @@index([active])
+  @@index([createdAt])
 }
 
 model BannedUser {

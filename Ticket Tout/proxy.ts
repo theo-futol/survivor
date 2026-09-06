@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { AUTH_COOKIE_NAME, verifyToken } from "@/lib/services/auth_service"
 
-const employeeOnly = ["/", "/transactions", "/partners", "/history", "/credited", "/consumes"]
+const employeeOnly = ["/transactions", "/partners", "/history", "/credited", "/consumes"]
 const companyOnly = ["/employer"]
 const adminOnly = ["/admin", "/administration"]
 
@@ -50,7 +50,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/transactions/:path*",
     "/partners/:path*",
     "/history/:path*",

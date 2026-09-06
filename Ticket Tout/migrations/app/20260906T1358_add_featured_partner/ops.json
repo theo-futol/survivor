@@ -1,0 +1,200 @@
+[
+  {
+    "id": "table.featuredPartner",
+    "label": "Create table \"featuredPartner\"",
+    "summary": "Creates table \"featuredPartner\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"featuredPartner\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"featuredPartner\"",
+        "sql": "CREATE TABLE \"public\".\"featuredPartner\" (\n  \"active\" bool DEFAULT false NOT NULL,\n  \"clickAmount\" int4 DEFAULT 0 NOT NULL,\n  \"companyId\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"imageKey\" text NOT NULL,\n  \"message\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"featuredPartner\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.featuredPartner.featuredPartner_active_idx_8af4daed",
+    "label": "Create index \"featuredPartner_active_idx_8af4daed\" on \"featuredPartner\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "featuredPartner_active_idx_8af4daed",
+        "table": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"featuredPartner_active_idx_8af4daed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_active_idx_8af4daed\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"featuredPartner_active_idx_8af4daed\"",
+        "sql": "CREATE INDEX \"featuredPartner_active_idx_8af4daed\" ON \"public\".\"featuredPartner\" (\"active\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"featuredPartner_active_idx_8af4daed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_active_idx_8af4daed\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.featuredPartner.featuredPartner_companyId_idx_33acc5ed",
+    "label": "Create index \"featuredPartner_companyId_idx_33acc5ed\" on \"featuredPartner\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "featuredPartner_companyId_idx_33acc5ed",
+        "table": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"featuredPartner_companyId_idx_33acc5ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_companyId_idx_33acc5ed\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"featuredPartner_companyId_idx_33acc5ed\"",
+        "sql": "CREATE INDEX \"featuredPartner_companyId_idx_33acc5ed\" ON \"public\".\"featuredPartner\" (\"companyId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"featuredPartner_companyId_idx_33acc5ed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_companyId_idx_33acc5ed\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.featuredPartner.featuredPartner_createdAt_idx_9575dbd7",
+    "label": "Create index \"featuredPartner_createdAt_idx_9575dbd7\" on \"featuredPartner\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "featuredPartner_createdAt_idx_9575dbd7",
+        "table": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"featuredPartner_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"featuredPartner_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"featuredPartner_createdAt_idx_9575dbd7\" ON \"public\".\"featuredPartner\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"featuredPartner_createdAt_idx_9575dbd7\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.featuredPartner.featuredPartner_companyId_fkey",
+    "label": "Add foreign key \"featuredPartner_companyId_fkey\" on \"featuredPartner\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "featuredPartner_companyId_fkey",
+        "table": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"featuredPartner_companyId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "featuredPartner_companyId_fkey",
+          "public",
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"featuredPartner_companyId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"featuredPartner\"\nADD CONSTRAINT \"featuredPartner_companyId_fkey\"\nFOREIGN KEY (\"companyId\")\nREFERENCES \"public\".\"company\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"featuredPartner_companyId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "featuredPartner_companyId_fkey",
+          "public",
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ]
+  }
+]
