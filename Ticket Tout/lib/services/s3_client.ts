@@ -1,4 +1,4 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client } from "@aws-sdk/client-s3"
 
 export const s3Client = new S3Client({
   endpoint: process.env.GARAGE_URL || "http://garage:3900",
@@ -8,6 +8,4 @@ export const s3Client = new S3Client({
     secretAccessKey: process.env.GARAGE_DEFAULT_SECRET_KEY!,
   },
   forcePathStyle: true,
-});
-
-export const DEFAULT_BUCKET = process.env.GARAGE_DEFAULT_BUCKET!;
+})

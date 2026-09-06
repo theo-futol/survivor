@@ -7,6 +7,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/qrcode': ['EMPLOYEE'],
   'GET /api/v1/employees/:id/balance': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'GET /api/v1/admin/transactions.csv': ['ADMIN'],
+  'GET /api/v1/admin/employeurs/:id/kbis': ['ADMIN'],
 
   'GET /api/v1/employeurs': ['ADMIN', 'COMPANY'],
   'POST /api/v1/employeurs': ['ADMIN'],

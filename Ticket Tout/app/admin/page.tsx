@@ -1,45 +1,169 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
-  Check,
-  X,
-  Mail,
-  Phone,
-  Shield,
-  MapPin,
-  Users,
   Building2,
-  Clock,
-  FileText,
-  Download,
-  ExternalLink,
   ChevronRight,
+  Download,
+  FileText,
+  Mail,
+  MapPin,
+  Shield,
+  Users,
+  WalletCards,
 } from "lucide-react"
-import { AppSidebar } from "@/components/app-sidebar-admin"
+
 import { AdminFeaturedPartner } from "@/components/admin-featured-partner"
 import { AdminMinisterFavorite } from "@/components/admin-minister-favorite"
+import { AppSidebar } from "@/components/app-sidebar-admin"
 import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
-import paiementsData from "../../data/paiements.json"
-import { authClient } from "@/lib/auth-client"
+import { Separator } from "@/components/ui/separator"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import {
+  apiFetch,
+  formatMoney,
+  type ApiCompany,
+  type ApiSalary,
+  type MeResponse,
+  type PaginationMeta,
+} from "@/lib/api-client"
 
-// Types for navigation selections
 export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
 
 export const iframeHeight = "800px"
 export const description = "An administration page with dynamic tab navigation."
+
+type PagedResponse<T> = {
+  data: T[]
+  meta: PaginationMeta
+}
+
+export interface Person {
+  id: string
+  name: string
+  email?: string
+}
+
+export interface AdminEmployee extends Person {
+  businessName: string
+  balance: number
+  isBanned: boolean
+  transactionCount: number
+  transactionTotal: number
+  createdAt: string
+}
+
+export interface Business {
+  id: string
+  name: string
+  email: string
+  siret: string
+  kbisUrl: string
+  address: string
+  postalCode: string
+  verified: boolean
+  employees: Person[]
+}
+
+export interface AdminAccount extends Person {
+  role: string
+  createdAt: string
+}
+
+async function fetchAllPages<T>(path: string): Promise<T[]> {
+  const all: T[] = []
+  let page = 1
+
+  while (true) {
+    const separator = path.includes("?") ? "&" : "?"
+    const response = await apiFetch<PagedResponse<T>>(`${path}${separator}page=${page}&limit=100`)
+
+    all.push(...response.data)
+
+    const totalPages =
+      response.meta.totalPages ??
+      Math.max(1, Math.ceil(response.meta.total / Math.max(1, response.meta.limit)))
+
+    if (page >= totalPages || all.length >= response.meta.total || response.data.length === 0) {
+      break
+    }
+
+    page += 1
+  }
+
+  return all
+}
+
+const dbService = {
+  async getEmployees(): Promise<AdminEmployee[]> {
+    const [employees, companies] = await Promise.all([
+      fetchAllPages<ApiSalary>("/api/v1/salaries"),
+      fetchAllPages<ApiCompany>("/api/v1/employeurs"),
+    ])
+
+    const companyNames = new Map(companies.map((company) => [company.id, company.name]))
+
+    return employees.map((employee) => ({
+      id: employee.id,
+      name: `${employee.name} ${employee.surname}`.trim(),
+      email: employee.email,
+      businessName: employee.companyId ? (companyNames.get(employee.companyId) ?? "Entreprise inconnue") : "Non rattaché",
+      balance: employee.balance,
+      isBanned: employee.isBanned,
+      transactionCount: employee.transactionCount,
+      transactionTotal: employee.transactionTotal,
+      createdAt: employee.createdAt,
+    }))
+  },
+
+  async getBusinesses(): Promise<Business[]> {
+    const [companies, employees] = await Promise.all([
+      fetchAllPages<ApiCompany>("/api/v1/employeurs"),
+      fetchAllPages<ApiSalary>("/api/v1/salaries"),
+    ])
+
+    return companies.map((company) => ({
+      id: company.id,
+      name: company.name,
+      email: company.email,
+      siret: company.siret,
+      kbisUrl: `/api/v1/admin/employeurs/${company.id}/kbis`,
+      address: company.address,
+      postalCode: company.postalCode,
+      verified: company.verified,
+      employees: employees
+        .filter((employee) => employee.companyId === company.id)
+        .map((employee) => ({
+          id: employee.id,
+          name: `${employee.name} ${employee.surname}`.trim(),
+          email: employee.email,
+        })),
+    }))
+  },
+
+  async getAdminAccount(): Promise<AdminAccount> {
+    const response = await apiFetch<MeResponse>("/api/v1/me")
+    const user = response.user
+
+    return {
+      id: user.id,
+      name: `${user.name} ${user.surname}`.trim(),
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    }
+  },
+}
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<AdminTab>("employee")
@@ -65,272 +189,80 @@ export default function Page() {
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* UI-facing interfaces (unchanged — this is what the views render)    */
-/* ------------------------------------------------------------------ */
-
-export type RequestStatus = "pending" | "accepted" | "refused"
-
-export interface Person {
-  id: string
-  name: string
-  email?: string
-  phone?: string
-  role?: string
-}
-
-export interface EmployeeRequest {
-  id: string
-  employeeName: string
-  employeeEmail: string
-  businessName: string
-  ceoName: string
-  position: string
-  requestedAt: string
-  status: RequestStatus
-}
-
-export interface Business {
-  id: string
-  name: string
-  siret: string
-  kbisUrl: string
-  address: string
-  ceoName: string
-  employees: Person[]
-  pendingEmployeesCount: number
-}
-
-export interface AdminAccount extends Person {
-  lastLogin: string
-}
-
-/* ------------------------------------------------------------------ */
-/* Raw shape of paiements.json (only the fields this page consumes)    */
-/* ------------------------------------------------------------------ */
-
-interface RawSalarie {
-  id: string
-  nom: string
-  entrepriseId: string
-}
-
-interface RawEntreprise {
-  id: string
-  raisonSociale: string
-  siret: string
-}
-
-// A pending (or already-treated) employee registration request submitted by a
-// business's CEO. "en attente" employees are not yet in `salaries` — they only
-// exist here until an admin accepts or refuses the request.
-interface RawDemandeInscription {
-  id: string
-  entrepriseId: string
-  employeeName: string
-  employeeEmail: string
-  ceoName: string
-  position: string
-  requestedAt: string
-  statut: "en attente" | "acceptée" | "refusée"
-}
-
-interface PaiementsFile {
-  entreprises: RawEntreprise[]
-  salaries: RawSalarie[]
-  demandesInscription: RawDemandeInscription[]
-}
-
-const paiements = paiementsData as unknown as PaiementsFile
-
-function mapStatut(statut: RawDemandeInscription["statut"]): RequestStatus {
-  switch (statut) {
-    case "en attente":
-      return "pending"
-    case "acceptée":
-      return "accepted"
-    case "refusée":
-      return "refused"
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* Data service — now reads from paiements.json instead of mock data   */
-/* ------------------------------------------------------------------ */
-
-const dbService = {
-  async getRequests(): Promise<EmployeeRequest[]> {
-    // Built from paiements.json's demandesInscription — employees a chef
-    // d'entreprise has submitted for registration but who aren't (yet) part
-    // of "salaries".
-    return paiements.demandesInscription.map((req): EmployeeRequest => {
-      const ent = paiements.entreprises.find((e) => e.id === req.entrepriseId)
-      return {
-        id: req.id,
-        employeeName: req.employeeName,
-        employeeEmail: req.employeeEmail,
-        businessName: ent?.raisonSociale ?? "",
-        ceoName: req.ceoName,
-        position: req.position,
-        requestedAt: req.requestedAt,
-        status: mapStatut(req.statut),
-      }
-    })
-  },
-
-  async getBusinesses(): Promise<Business[]> {
-    // Built from paiements.json's entreprises + salaries + demandesInscription.
-    // Fields paiements.json doesn't provide (kbisUrl, address, ceoName)
-    // are left empty rather than invented.
-    return paiements.entreprises.map(
-      (ent): Business => ({
-        id: ent.id,
-        name: ent.raisonSociale,
-        siret: ent.siret,
-        kbisUrl: "",
-        address: "",
-        ceoName: "",
-        employees: paiements.salaries
-          .filter((sal) => sal.entrepriseId === ent.id)
-          .map(
-            (sal): Person => ({
-              id: sal.id,
-              name: sal.nom,
-            })
-          ),
-        pendingEmployeesCount: paiements.demandesInscription.filter(
-          (req) => req.entrepriseId === ent.id && req.statut === "en attente"
-        ).length,
-      })
-    )
-  },
-
-  async getAdminAccount(): Promise<AdminAccount> {
-    // The admin account isn't in paiements.json — it comes from the
-    // logged-in session instead.
-    const session = await authClient.getSession()
-    const user = session.data?.user as
-      | { id?: string; name?: string; email?: string; phone?: string; accountType?: string }
-      | undefined
-
-    if (!user) {
-      return { id: "", name: "", email: "", phone: "", role: "", lastLogin: "" }
-    }
-
-    return {
-      id: user.id ?? "",
-      name: user.name ?? "",
-      email: user.email ?? "",
-      phone: user.phone ?? "",
-      role: user.accountType ?? "",
-      // Better Auth's default session doesn't expose a last-login
-      // timestamp — leaving this empty rather than inventing one.
-      lastLogin: "",
-    }
-  },
-
-  async updateRequestStatus(id: string, status: RequestStatus): Promise<boolean> {
-    // No persistence layer yet — no-op until requests have a real source.
-    return true
-  },
-}
-
-/* ------------------------------------------------------------------ */
-/* Employee tab — registration requests                                */
-/* ------------------------------------------------------------------ */
-
 function EmployeeView() {
-  const [requests, setRequests] = useState<EmployeeRequest[]>([])
+  const [employees, setEmployees] = useState<AdminEmployee[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    dbService.getRequests().then((data) => {
-      setRequests(data)
-      setLoading(false)
-    })
+    dbService
+      .getEmployees()
+      .then(setEmployees)
+      .catch((caught) => {
+        setError(caught instanceof Error ? caught.message : "Impossible de charger les salariés.")
+      })
+      .finally(() => setLoading(false))
   }, [])
 
-  const updateStatus = async (id: string, status: RequestStatus) => {
-    await dbService.updateRequestStatus(id, status)
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+  if (loading) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
+
+  if (error) {
+    return (
+      <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
   }
 
-  const pending = requests.filter((r) => r.status === "pending")
-  const treated = requests.filter((r) => r.status !== "pending")
-
-  if (loading) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
+  const bannedCount = employees.filter((employee) => employee.isBanned).length
+  const transactionCount = employees.reduce((sum, employee) => sum + employee.transactionCount, 0)
 
   return (
     <div className="flex flex-1 flex-col gap-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Demandes d'inscription</h2>
-        <p className="text-muted-foreground text-sm">
-          Les chefs d'entreprise soumettent ici l'inscription de leurs employés. Validez ou refusez chaque demande.
+        <h2 className="text-2xl font-bold tracking-tight">Employés</h2>
+        <p className="text-sm text-muted-foreground">
+          Liste des comptes salariés enregistrés dans la base de données Ticket Tout.
         </p>
       </div>
 
       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <StatCard label="En attente" value={pending.length} />
-        <StatCard label="Acceptées" value={requests.filter((r) => r.status === "accepted").length} />
-        <StatCard label="Refusées" value={requests.filter((r) => r.status === "refused").length} />
+        <StatCard label="Employés" value={employees.length} />
+        <StatCard label="Comptes bannis" value={bannedCount} />
+        <StatCard label="Transactions" value={transactionCount} />
       </div>
 
-      <div className="rounded-xl border bg-muted/20">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">En attente ({pending.length})</h3>
+      {employees.length === 0 ? (
+        <div className="rounded-xl border bg-muted/20 p-8 text-center">
+          <p className="text-sm text-muted-foreground">Aucun salarié enregistré en base.</p>
         </div>
-        {pending.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-sm">Aucune demande en attente pour le moment.</p>
-        ) : (
+      ) : (
+        <div className="rounded-xl border bg-muted/20">
           <div className="divide-y">
-            {pending.map((req) => (
-              <div key={req.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            {employees.map((employee) => (
+              <div key={employee.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <Avatar>
-                    <AvatarFallback>{initials(req.employeeName)}</AvatarFallback>
+                    <AvatarFallback>{initials(employee.name)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium leading-tight">{req.employeeName}</p>
-                    <p className="text-muted-foreground text-sm">{req.employeeEmail}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {req.position} · {req.businessName} · demandé par {req.ceoName}
-                    </p>
-                    <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                      <Clock className="h-3 w-3" /> Demandé le {formatDate(req.requestedAt)}
-                    </p>
+                    <p className="font-medium leading-tight">{employee.name}</p>
+                    <p className="text-sm text-muted-foreground">{employee.email}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{employee.businessName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Créé le {formatDate(employee.createdAt)}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(req.id, "refused")}>
-                    <X className="mr-1 h-4 w-4" /> Refuser
-                  </Button>
-                  <Button size="sm" onClick={() => updateStatus(req.id, "accepted")}>
-                    <Check className="mr-1 h-4 w-4" /> Accepter
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {treated.length > 0 && (
-        <div className="rounded-xl border bg-muted/20">
-          <div className="border-b px-4 py-3">
-            <h3 className="font-medium">Historique</h3>
-          </div>
-          <div className="divide-y">
-            {treated.map((req) => (
-              <div key={req.id} className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium leading-tight">{req.employeeName}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {req.position} · {req.businessName}
-                  </p>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <Badge variant={employee.isBanned ? "destructive" : "secondary"}>
+                    {employee.isBanned ? "Banni" : "Actif"}
+                  </Badge>
+                  <Badge variant="outline">
+                    <WalletCards className="mr-1 h-3 w-3" />
+                    {formatMoney(employee.balance)}
+                  </Badge>
+                  <Badge variant="outline">{employee.transactionCount} transaction{employee.transactionCount > 1 ? "s" : ""}</Badge>
                 </div>
-                <Badge variant={req.status === "accepted" ? "default" : "secondary"}>
-                  {req.status === "accepted" ? "Acceptée" : "Refusée"}
-                </Badge>
               </div>
             ))}
           </div>
@@ -340,20 +272,25 @@ function EmployeeView() {
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Account tab — administrator details                                 */
-/* ------------------------------------------------------------------ */
-
 function AccountView() {
   const [adminAccount, setAdminAccount] = useState<AdminAccount | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    dbService.getAdminAccount().then(setAdminAccount)
+    dbService.getAdminAccount().then(setAdminAccount).catch((caught) => {
+      setError(caught instanceof Error ? caught.message : "Impossible de charger le compte administrateur.")
+    })
   }, [])
 
-  if (!adminAccount) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
+  if (error) {
+    return (
+      <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
 
-  const hasAnyData = adminAccount.name || adminAccount.email || adminAccount.phone || adminAccount.role
+  if (!adminAccount) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -362,177 +299,129 @@ function AccountView() {
       <div className="rounded-xl border bg-muted/20 p-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-14 w-14">
-            <AvatarFallback className="text-lg">
-              {adminAccount.name ? initials(adminAccount.name) : "—"}
-            </AvatarFallback>
+            <AvatarFallback className="text-lg">{initials(adminAccount.name)}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-lg font-semibold leading-tight">
-              {adminAccount.name || "Aucun compte chargé"}
-            </p>
-            {adminAccount.role && (
-              <Badge variant="secondary" className="mt-1">
-                <Shield className="mr-1 h-3 w-3" />
-                {adminAccount.role}
-              </Badge>
-            )}
+            <p className="text-lg font-semibold leading-tight">{adminAccount.name}</p>
+            <Badge variant="secondary" className="mt-1">
+              <Shield className="mr-1 h-3 w-3" />
+              {adminAccount.role}
+            </Badge>
           </div>
         </div>
 
         <Separator className="my-4" />
 
-        {hasAnyData ? (
-          <dl className="grid gap-3 sm:grid-cols-2">
-            {adminAccount.email && <InfoRow icon={Mail} label="Email" value={adminAccount.email} />}
-            {adminAccount.phone && <InfoRow icon={Phone} label="Téléphone" value={adminAccount.phone} />}
-            {adminAccount.lastLogin && (
-              <InfoRow icon={Clock} label="Dernière connexion" value={adminAccount.lastLogin} />
-            )}
-          </dl>
-        ) : (
-          <p className="text-muted-foreground text-sm">Aucune donnée de compte disponible pour le moment.</p>
-        )}
-      </div>
-
-      <div className="grid auto-rows-min gap-4 md:grid-cols-2">
-        <div className="rounded-xl bg-muted/50 p-4">
-          <h3 className="mb-2 font-medium">Sécurité</h3>
-          <p className="text-muted-foreground text-sm">
-            Mot de passe, authentification à deux facteurs et sessions actives.
-          </p>
-          <Button size="sm" variant="outline" className="mt-3">
-            Gérer la sécurité
-          </Button>
-        </div>
-        <div className="rounded-xl bg-muted/50 p-4">
-          <h3 className="mb-2 font-medium">Notifications</h3>
-          <p className="text-muted-foreground text-sm">
-            Choisissez comment vous êtes alerté des nouvelles demandes d'inscription.
-          </p>
-          <Button size="sm" variant="outline" className="mt-3">
-            Gérer les notifications
-          </Button>
-        </div>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          {adminAccount.email && <InfoRow icon={Mail} label="Email" value={adminAccount.email} />}
+          <InfoRow icon={Users} label="Identifiant" value={adminAccount.id} />
+          <InfoRow icon={Shield} label="Rôle" value={adminAccount.role} />
+          <InfoRow icon={WalletCards} label="Compte créé" value={formatDate(adminAccount.createdAt)} />
+        </dl>
       </div>
     </div>
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Business tab — directory of businesses                              */
-/* ------------------------------------------------------------------ */
-
 function BusinessView() {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    dbService.getBusinesses().then((data) => {
-      setBusinesses(data)
-      setLoading(false)
-    })
+    dbService
+      .getBusinesses()
+      .then(setBusinesses)
+      .catch((caught) => {
+        setError(caught instanceof Error ? caught.message : "Impossible de charger les entreprises.")
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <div className="p-4 text-sm text-muted-foreground">Chargement...</div>
 
+  if (error) {
+    return (
+      <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Entreprises Partenaires</h2>
-        <p className="text-muted-foreground text-sm">
-          Cliquez sur une entreprise pour consulter son SIRET et télécharger son extrait KBIS.
+        <h2 className="text-2xl font-bold tracking-tight">Entreprises employeuses</h2>
+        <p className="text-sm text-muted-foreground">
+          Entreprises enregistrées dans la base de données, avec leurs salariés rattachés.
         </p>
       </div>
 
       <div className="grid auto-rows-min gap-4 md:grid-cols-4">
         <StatCard label="Entreprises" value={businesses.length} />
-        <StatCard
-          label="Employés au total"
-          value={businesses.reduce((sum, b) => sum + b.employees.length, 0)}
-        />
-        <StatCard
-          label="Sans employé"
-          value={businesses.filter((b) => b.employees.length === 0).length}
-        />
-        <StatCard
-          label="Employés en attente"
-          value={businesses.reduce((sum, b) => sum + b.pendingEmployeesCount, 0)}
-        />
+        <StatCard label="Employés au total" value={businesses.reduce((sum, business) => sum + business.employees.length, 0)} />
+        <StatCard label="Sans employé" value={businesses.filter((business) => business.employees.length === 0).length} />
+        <StatCard label="Vérifiées" value={businesses.filter((business) => business.verified).length} />
       </div>
 
       {businesses.length === 0 ? (
         <div className="rounded-xl border bg-muted/20 p-8 text-center">
-          <p className="text-muted-foreground text-sm">Aucune entreprise disponible pour le moment.</p>
+          <p className="text-sm text-muted-foreground">Aucune entreprise enregistrée en base.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {businesses.map((biz) => (
-            <div
-              key={biz.id}
-              onClick={() => setSelectedBusiness(biz)}
-              className="group relative cursor-pointer rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40 hover:border-primary/50"
+          {businesses.map((business) => (
+            <button
+              type="button"
+              key={business.id}
+              onClick={() => setSelectedBusiness(business)}
+              className="group relative w-full cursor-pointer rounded-xl border bg-muted/20 p-4 text-left transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div>
-                  <p className="flex items-center gap-2 font-semibold group-hover:text-primary transition-colors">
+                  <p className="flex items-center gap-2 font-semibold transition-colors group-hover:text-primary">
                     <Building2 className="h-4 w-4" />
-                    {biz.name}
-                    <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {business.name}
+                    <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                   </p>
-                  {biz.address && (
-                    <p className="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
-                      <MapPin className="h-3.5 w-3.5" /> {biz.address}
+                  <p className="mt-1 text-sm text-muted-foreground">{business.email}</p>
+                  {business.address && (
+                    <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" /> {business.address} {business.postalCode}
                     </p>
                   )}
-                  {biz.ceoName && (
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      Chef d'entreprise : {biz.ceoName}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    SIRET : {biz.siret}
-                  </p>
+                  <p className="mt-2 font-mono text-xs text-muted-foreground">SIRET : {business.siret}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Badge variant={business.verified ? "default" : "outline"} className="w-fit">
+                    {business.verified ? "Vérifiée" : "À vérifier"}
+                  </Badge>
                   <Badge variant="secondary" className="w-fit">
                     <Users className="mr-1 h-3 w-3" />
-                    {biz.employees.length} employé{biz.employees.length > 1 ? "s" : ""}
+                    {business.employees.length} employé{business.employees.length > 1 ? "s" : ""}
                   </Badge>
-                  {biz.pendingEmployeesCount > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="w-fit border-amber-500/50 text-amber-600 dark:text-amber-400"
-                    >
-                      <Clock className="mr-1 h-3 w-3" />
-                      {biz.pendingEmployeesCount} en attente
-                    </Badge>
-                  )}
                 </div>
               </div>
 
-              {biz.employees.length > 0 && (
+              {business.employees.length > 0 && (
                 <>
                   <Separator className="my-3" />
                   <div className="flex flex-wrap gap-2">
-                    {biz.employees.map((emp) => (
-                      <span
-                        key={emp.id}
-                        className="bg-background rounded-full border px-3 py-1 text-xs"
-                      >
-                        {emp.name} {emp.role ? `(${emp.role})` : ""}
+                    {business.employees.map((employee) => (
+                      <span key={employee.id} className="rounded-full border bg-background px-3 py-1 text-xs">
+                        {employee.name}
                       </span>
                     ))}
                   </div>
                 </>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}
 
-      {/* Modal Dialog for Partner Details (SIRET + KBIS Download) */}
-      <Dialog open={!!selectedBusiness} onOpenChange={() => setSelectedBusiness(null)}>
+      <Dialog open={!!selectedBusiness} onOpenChange={(open) => !open && setSelectedBusiness(null)}>
         {selectedBusiness && (
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -540,65 +429,38 @@ function BusinessView() {
                 <Building2 className="h-5 w-5" />
                 {selectedBusiness.name}
               </DialogTitle>
-              <DialogDescription>
-                Informations légales et documents officiels.
-              </DialogDescription>
+              <DialogDescription>Informations enregistrées dans la base Ticket Tout.</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-2">
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Numéro SIRET :</span>
-                  <span className="font-mono font-medium">{selectedBusiness.siret}</span>
-                </div>
-                {selectedBusiness.ceoName && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Dirigeant :</span>
-                      <span className="font-medium">{selectedBusiness.ceoName}</span>
-                    </div>
-                  </>
-                )}
-                {selectedBusiness.address && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Adresse :</span>
-                      <span className="font-medium text-right max-w-[200px] truncate">
-                        {selectedBusiness.address}
-                      </span>
-                    </div>
-                  </>
-                )}
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <DetailRow label="Email" value={selectedBusiness.email} />
+                <Separator />
+                <DetailRow label="SIRET" value={selectedBusiness.siret} mono />
+                <Separator />
+                <DetailRow
+                  label="Adresse"
+                  value={`${selectedBusiness.address} ${selectedBusiness.postalCode}`.trim()}
+                />
+                <Separator />
+                <DetailRow label="Statut" value={selectedBusiness.verified ? "Vérifiée" : "À vérifier"} />
               </div>
 
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">
-                  Document Administratif
-                </p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Document administratif</p>
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-red-500" />
                     <div>
                       <p className="text-sm font-medium">Extrait KBIS</p>
-                      <p className="text-xs text-muted-foreground">
-                        {selectedBusiness.kbisUrl ? "Document PDF officiel" : "Aucun document disponible"}
-                      </p>
+                      <p className="text-xs text-muted-foreground">Document stocké de manière sécurisée dans Garage</p>
                     </div>
                   </div>
-                  <Button size="sm" asChild={!!selectedBusiness.kbisUrl} variant="default" disabled={!selectedBusiness.kbisUrl}>
-                    {selectedBusiness.kbisUrl ? (
-                      <a href={selectedBusiness.kbisUrl} download target="_blank" rel="noreferrer">
-                        <Download className="mr-2 h-4 w-4" />
-                        Télécharger
-                      </a>
-                    ) : (
-                      <>
-                        <Download className="mr-2 h-4 w-4" />
-                        Télécharger
-                      </>
-                    )}
+                  <Button size="sm" variant="default" asChild>
+                    <a href={selectedBusiness.kbisUrl}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Télécharger
+                    </a>
                   </Button>
                 </div>
               </div>
@@ -610,14 +472,10 @@ function BusinessView() {
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Small shared pieces                                                 */
-/* ------------------------------------------------------------------ */
-
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="aspect-video rounded-xl bg-muted/50 p-4">
-      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
       <p className="text-3xl font-bold">{value}</p>
     </div>
   )
@@ -634,11 +492,20 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon className="text-muted-foreground h-4 w-4" />
-      <div>
-        <dt className="text-muted-foreground text-xs">{label}</dt>
-        <dd className="text-sm">{value}</dd>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="min-w-0">
+        <dt className="text-xs text-muted-foreground">{label}</dt>
+        <dd className="break-all text-sm">{value}</dd>
       </div>
+    </div>
+  )
+}
+
+function DetailRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="text-muted-foreground">{label} :</span>
+      <span className={mono ? "font-mono font-medium" : "text-right font-medium"}>{value || "—"}</span>
     </div>
   )
 }
@@ -646,6 +513,7 @@ function InfoRow({
 function initials(name: string) {
   return name
     .split(" ")
+    .filter(Boolean)
     .map((part) => part[0])
     .join("")
     .slice(0, 2)

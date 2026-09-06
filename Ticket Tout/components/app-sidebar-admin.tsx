@@ -6,27 +6,17 @@ import { Users, User, Building2, Heart, Sparkles, TerminalIcon } from "lucide-re
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavUser } from "@/components/nav-user"
 
 export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activeTab: AdminTab
   onSelectTab: (tab: AdminTab) => void
-}
-
-const data = {
-  user: {
-    name: "Julie Marchand",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
 }
 
 export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps) {
@@ -100,10 +90,6 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
           })}
         </SidebarMenu>
       </SidebarContent>
-
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
     </Sidebar>
   )
 }
