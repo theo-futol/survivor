@@ -1,0 +1,829 @@
+[
+  {
+    "id": "dropConstraint.company.company_agentId_fkey",
+    "label": "Drop constraint \"company_agentId_fkey\" on \"company\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "company_agentId_fkey",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"company_agentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "company_agentId_fkey",
+          "public",
+          "\"public\".\"company\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"company_agentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"company\" DROP CONSTRAINT \"company_agentId_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"company_agentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "company_agentId_fkey",
+          "public",
+          "\"public\".\"company\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropTable.administration",
+    "label": "Drop table \"administration\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "administration"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"administration\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"administration\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"administration\"",
+        "sql": "DROP TABLE \"public\".\"administration\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"administration\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"administration\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.users.users_documentId_fkey",
+    "label": "Drop constraint \"users_documentId_fkey\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "users_documentId_fkey",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_documentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_documentId_fkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"users_documentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_documentId_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_documentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_documentId_fkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.users.users_documentId_key",
+    "label": "Drop constraint \"users_documentId_key\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_documentId_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_documentId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_documentId_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"users_documentId_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_documentId_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_documentId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_documentId_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.users.documentId",
+    "label": "Drop column \"documentId\" from \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "documentId",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"documentId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "documentId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"documentId\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP COLUMN \"documentId\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"documentId\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "documentId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.adminUser",
+    "label": "Create table \"adminUser\"",
+    "summary": "Creates table \"adminUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "adminUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"adminUser\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"adminUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"adminUser\"",
+        "sql": "CREATE TABLE \"public\".\"adminUser\" (\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"userId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"adminUser\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"adminUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.userRefusalReason",
+    "label": "Create table \"userRefusalReason\"",
+    "summary": "Creates table \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"userRefusalReason\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"userRefusalReason\"",
+        "sql": "CREATE TABLE \"public\".\"userRefusalReason\" (\n  \"agentId\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"reason\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"userRefusalReason\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.accountStatus",
+    "label": "Add column \"accountStatus\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "accountStatus",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"accountStatus\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "accountStatus"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"accountStatus\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"accountStatus\" text DEFAULT 'PENDING' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"accountStatus\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "accountStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.transaction.newBalance",
+    "label": "Add column \"newBalance\" to \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "newBalance",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"newBalance\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "newBalance"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"newBalance\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD COLUMN \"newBalance\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"newBalance\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "newBalance"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.transaction.newBalance",
+    "label": "Set NOT NULL on \"transaction\".\"newBalance\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "newBalance",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"newBalance\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "newBalance"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"newBalance\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"transaction\" WHERE \"newBalance\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"newBalance\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ALTER COLUMN \"newBalance\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"newBalance\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "transaction",
+          "newBalance",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterType.company.agentId",
+    "label": "Alter type of \"company\".\"agentId\" to text",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agentId",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agentId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "agentId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"agentId\"",
+        "sql": "ALTER TABLE \"public\".\"company\" ALTER COLUMN \"agentId\" TYPE text USING \"agentId\"::text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agentId\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "agentId",
+          "text"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "checkConstraint.users.users_accountStatus_check_1773ea89",
+    "label": "Add check constraint \"users_accountStatus_check_1773ea89\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "users_accountStatus_check_1773ea89",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_accountStatus_check_1773ea89\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_1773ea89",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"users_accountStatus_check_1773ea89\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_accountStatus_check_1773ea89\" CHECK (\"accountStatus\" IN ('PENDING', 'ACCEPTED', 'REFUSED'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_accountStatus_check_1773ea89\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_1773ea89",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.userRefusalReason.userRefusalReason_agentId_idx_8d0ba4f0",
+    "label": "Create index \"userRefusalReason_agentId_idx_8d0ba4f0\" on \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "userRefusalReason_agentId_idx_8d0ba4f0",
+        "table": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"userRefusalReason_agentId_idx_8d0ba4f0\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_agentId_idx_8d0ba4f0\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"userRefusalReason_agentId_idx_8d0ba4f0\"",
+        "sql": "CREATE INDEX \"userRefusalReason_agentId_idx_8d0ba4f0\" ON \"public\".\"userRefusalReason\" (\"agentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"userRefusalReason_agentId_idx_8d0ba4f0\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_agentId_idx_8d0ba4f0\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.userRefusalReason.userRefusalReason_createdAt_idx_9575dbd7",
+    "label": "Create index \"userRefusalReason_createdAt_idx_9575dbd7\" on \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "userRefusalReason_createdAt_idx_9575dbd7",
+        "table": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"userRefusalReason_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"userRefusalReason_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"userRefusalReason_createdAt_idx_9575dbd7\" ON \"public\".\"userRefusalReason\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"userRefusalReason_createdAt_idx_9575dbd7\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.userRefusalReason.userRefusalReason_userId_idx_a489d58a",
+    "label": "Create index \"userRefusalReason_userId_idx_a489d58a\" on \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "userRefusalReason_userId_idx_a489d58a",
+        "table": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"userRefusalReason_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"userRefusalReason_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"userRefusalReason_userId_idx_a489d58a\" ON \"public\".\"userRefusalReason\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"userRefusalReason_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"userRefusalReason_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.users.users_accountStatus_idx_66d3289d",
+    "label": "Create index \"users_accountStatus_idx_66d3289d\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_accountStatus_idx_66d3289d",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_accountStatus_idx_66d3289d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_accountStatus_idx_66d3289d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"users_accountStatus_idx_66d3289d\"",
+        "sql": "CREATE INDEX \"users_accountStatus_idx_66d3289d\" ON \"public\".\"users\" (\"accountStatus\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_accountStatus_idx_66d3289d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_accountStatus_idx_66d3289d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.adminUser.adminUser_userId_fkey",
+    "label": "Add foreign key \"adminUser_userId_fkey\" on \"adminUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "adminUser_userId_fkey",
+        "table": "adminUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"adminUser_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "adminUser_userId_fkey",
+          "public",
+          "\"public\".\"adminUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"adminUser_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"adminUser\"\nADD CONSTRAINT \"adminUser_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"adminUser_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "adminUser_userId_fkey",
+          "public",
+          "\"public\".\"adminUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.company.company_agentId_fkey",
+    "label": "Add foreign key \"company_agentId_fkey\" on \"company\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "company_agentId_fkey",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"company_agentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "company_agentId_fkey",
+          "public",
+          "\"public\".\"company\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"company_agentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"company\"\nADD CONSTRAINT \"company_agentId_fkey\"\nFOREIGN KEY (\"agentId\")\nREFERENCES \"public\".\"adminUser\" (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"company_agentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "company_agentId_fkey",
+          "public",
+          "\"public\".\"company\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.userRefusalReason.userRefusalReason_agentId_fkey",
+    "label": "Add foreign key \"userRefusalReason_agentId_fkey\" on \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "userRefusalReason_agentId_fkey",
+        "table": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"userRefusalReason_agentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "userRefusalReason_agentId_fkey",
+          "public",
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"userRefusalReason_agentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"userRefusalReason\"\nADD CONSTRAINT \"userRefusalReason_agentId_fkey\"\nFOREIGN KEY (\"agentId\")\nREFERENCES \"public\".\"adminUser\" (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"userRefusalReason_agentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "userRefusalReason_agentId_fkey",
+          "public",
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.userRefusalReason.userRefusalReason_userId_fkey",
+    "label": "Add foreign key \"userRefusalReason_userId_fkey\" on \"userRefusalReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "userRefusalReason_userId_fkey",
+        "table": "userRefusalReason"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"userRefusalReason_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "userRefusalReason_userId_fkey",
+          "public",
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"userRefusalReason_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"userRefusalReason\"\nADD CONSTRAINT \"userRefusalReason_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"userRefusalReason_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "userRefusalReason_userId_fkey",
+          "public",
+          "\"public\".\"userRefusalReason\""
+        ]
+      }
+    ]
+  }
+]

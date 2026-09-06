@@ -38,7 +38,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'58ee6c51ed346c95314b55921487eb7a9979068a90cb8dca78f76f2eb3bfb82b'>;
+  StorageHashBase<'241d03234683e3b9ab81da0765b8f530c9c15f60937cbcf0be6c0a1e2309adaa'>;
 export type ExecutionHash =
   ExecutionHashBase<'0bc950693acece6d094115f981f56f85d35eae54fc3421449c27857c3ee8076f'>;
 export type ProfileHash =
@@ -247,7 +247,6 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 
 export type FieldOutputTypes = {
   readonly public: {
-    readonly AdminUser: { readonly userId: CodecTypes['pg/text@1']['output'] };
     readonly BannedUser: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly userId: CodecTypes['pg/text@1']['output'];
@@ -338,7 +337,6 @@ export type FieldOutputTypes = {
 };
 export type FieldInputTypes = {
   readonly public: {
-    readonly AdminUser: { readonly userId: CodecTypes['pg/text@1']['input'] };
     readonly BannedUser: {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly userId: CodecTypes['pg/text@1']['input'];
@@ -429,7 +427,6 @@ export type FieldInputTypes = {
 };
 export type StorageColumnTypes = {
   readonly public: {
-    readonly adminUser: { readonly userId: CodecTypes['pg/text@1']['output'] };
     readonly bannedUser: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
@@ -520,7 +517,6 @@ export type StorageColumnTypes = {
 };
 export type StorageColumnInputTypes = {
   readonly public: {
-    readonly adminUser: { readonly userId: CodecTypes['pg/text@1']['input'] };
     readonly bannedUser: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -627,32 +623,6 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
-            readonly adminUser: {
-              columns: {
-                readonly userId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['userId'] };
-              uniques: readonly [];
-              indexes: readonly [];
-              foreignKeys: readonly [
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'adminUser';
-                    readonly columns: readonly ['userId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'users';
-                    readonly columns: readonly ['id'];
-                  };
-                },
-              ];
-            };
             readonly bannedUser: {
               columns: {
                 readonly id: {
@@ -871,8 +841,8 @@ type ContractBase = Omit<
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'adminUser';
-                    readonly columns: readonly ['userId'];
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
                   };
                 },
                 {
@@ -1310,8 +1280,8 @@ type ContractBase = Omit<
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'adminUser';
-                    readonly columns: readonly ['userId'];
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
                   };
                 },
                 {
@@ -1491,7 +1461,6 @@ type ContractBase = Omit<
       readonly model: 'CompanyValidationReason';
     };
     readonly document: { readonly namespace: 'public' & NamespaceId; readonly model: 'Document' };
-    readonly adminUser: { readonly namespace: 'public' & NamespaceId; readonly model: 'AdminUser' };
     readonly users: { readonly namespace: 'public' & NamespaceId; readonly model: 'Users' };
     readonly company: { readonly namespace: 'public' & NamespaceId; readonly model: 'Company' };
     readonly transaction: {
@@ -1516,54 +1485,6 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
-          readonly AdminUser: {
-            readonly fields: {
-              readonly userId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-            };
-            readonly relations: {
-              readonly companies: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Company';
-                };
-                readonly cardinality: '1:N';
-                readonly on: {
-                  readonly localFields: readonly ['userId'];
-                  readonly targetFields: readonly ['agentId'];
-                };
-              };
-              readonly refusals: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'UserRefusalReason';
-                };
-                readonly cardinality: '1:N';
-                readonly on: {
-                  readonly localFields: readonly ['userId'];
-                  readonly targetFields: readonly ['agentId'];
-                };
-              };
-              readonly user: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Users';
-                };
-                readonly cardinality: 'N:1';
-                readonly on: {
-                  readonly localFields: readonly ['userId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-            };
-            readonly storage: {
-              readonly table: 'adminUser';
-              readonly namespaceId: 'public';
-              readonly fields: { readonly userId: { readonly column: 'userId' } };
-            };
-          };
           readonly BannedUser: {
             readonly fields: {
               readonly id: {
@@ -1691,12 +1612,12 @@ type ContractBase = Omit<
               readonly agent: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'AdminUser';
+                  readonly model: 'Users';
                 };
                 readonly cardinality: 'N:1';
                 readonly on: {
                   readonly localFields: readonly ['agentId'];
-                  readonly targetFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
                 };
               };
               readonly category: {
@@ -2146,12 +2067,12 @@ type ContractBase = Omit<
               readonly agent: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'AdminUser';
+                  readonly model: 'Users';
                 };
                 readonly cardinality: 'N:1';
                 readonly on: {
                   readonly localFields: readonly ['agentId'];
-                  readonly targetFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
                 };
               };
               readonly user: {
@@ -2239,15 +2160,15 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
-              readonly adminUser: {
+              readonly companiesAsAgent: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'AdminUser';
+                  readonly model: 'Company';
                 };
-                readonly cardinality: '1:1';
+                readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
-                  readonly targetFields: readonly ['userId'];
+                  readonly targetFields: readonly ['agentId'];
                 };
               };
               readonly company: {
@@ -2259,6 +2180,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['companyId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly refusalsAsAgent: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UserRefusalReason';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['agentId'];
                 };
               };
               readonly refusalsAsUser: {
