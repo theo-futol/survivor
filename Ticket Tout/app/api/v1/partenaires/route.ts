@@ -13,7 +13,7 @@ const featuredSchema = z.enum(['true', 'false']).optional();
  * /api/v1/partenaires:
  *   get:
  *     summary: Liste paginée des partenaires
- *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un utilisateur `PARTNER` ne voit que sa propre fiche ; un `ADMIN` les voit toutes.
+ *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un salarié ou un administrateur voit tout le réseau ; un utilisateur `PARTNER` ne voit que sa propre fiche.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -75,7 +75,7 @@ export async function GET(request: Request)
       pagination,
       categorie,
       featured: featured === undefined ? undefined : featured === 'true',
-      id: actor.role === 'ADMIN' ? undefined : (actor.companyId ?? ''),
+      id: actor.role === 'PARTNER' ? (actor.companyId ?? '') : undefined,
     });
 
     return Response.json({ data, meta: buildMeta(pagination, total) }, { status: 200 });

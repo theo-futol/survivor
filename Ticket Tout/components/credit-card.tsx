@@ -1,20 +1,22 @@
 "use client"
 
-import Image from "next/image"
 import { ShieldCheck } from "lucide-react"
 
 import { BrandLogo } from "@/components/brand-logo"
+import { QrCodeSvg } from "@/components/qr-code-svg"
 import { BRAND } from "@/lib/brand"
+import { formatMoney } from "@/lib/api-client"
 
 interface CreditCardProps {
   name: string
   balance?: number
   mode?: "idle" | "payment"
   merchantName?: string
-  paymentAmount?: number
+  qrCode?: string
+  expiresAt?: string
 }
 
-export default function CreditCard({ name, balance = 150, mode = "idle", merchantName, paymentAmount }: CreditCardProps) {
+export default function CreditCard({ name, balance = 0, mode = "idle", merchantName, qrCode, expiresAt }: CreditCardProps) {
   const isPayment = mode === "payment"
 
   return (
@@ -33,7 +35,7 @@ export default function CreditCard({ name, balance = 150, mode = "idle", merchan
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white">{BRAND.name}</p>
-              <p className="mt-2 text-sm text-white/85">{isPayment ? "QR de paiement - SIMULATION" : "Carte salarié"}</p>
+              <p className="mt-2 text-sm text-white/85">{isPayment ? "QR de paiement" : "Carte salarié"}</p>
             </div>
             <BrandLogo inverse compact />
           </div>
@@ -42,15 +44,18 @@ export default function CreditCard({ name, balance = 150, mode = "idle", merchan
             <div className="grid grid-cols-[1fr_auto] items-end gap-4 sm:gap-6">
               <div className="min-w-0">
                 <p className="truncate text-sm text-white/85">{merchantName ?? "Partenaire sélectionné"}</p>
-                <p className="mt-1 text-2xl font-black tracking-tight sm:text-4xl">
-                  {(paymentAmount ?? 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
-                </p>
+                <p className="mt-2 text-xl font-black tracking-tight sm:text-2xl">Présentez ce QR au partenaire</p>
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-2 text-xs font-semibold sm:text-sm">
-                  <ShieldCheck className="size-4" aria-hidden="true" /> QR scannable de démonstration
+                  <ShieldCheck className="size-4" aria-hidden="true" />
+                  {expiresAt ? `Valide jusqu'à ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(expiresAt))}` : "QR dynamique sécurisé"}
                 </div>
               </div>
               <div className="rounded-2xl bg-white p-2 shadow-lg">
-                <Image src="/payment-qr-demo.png" alt="QR code de paiement de démonstration" width={132} height={132} className="size-24 sm:size-32" priority />
+                {qrCode ? (
+                  <QrCodeSvg value={qrCode} size={132} className="size-24 sm:size-32" title={`QR de paiement pour ${merchantName ?? "le partenaire"}`} />
+                ) : (
+                  <div className="grid size-24 place-items-center text-center text-xs font-bold text-slate-700 sm:size-32">Génération du QR…</div>
+                )}
               </div>
             </div>
           ) : (
@@ -62,8 +67,15 @@ export default function CreditCard({ name, balance = 150, mode = "idle", merchan
                 </svg>
               </div>
               <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">Titulaire</p><p className="mt-1 text-lg font-bold sm:text-2xl">{name}</p></div>
-               </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">Titulaire</p>
+                  <p className="mt-1 text-lg font-bold sm:text-2xl">{name}</p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">Solde disponible</p>
+                  <p className="mt-1 text-lg font-black sm:text-2xl">{formatMoney(balance)}</p>
+                </div>
+              </div>
             </>
           )}
         </div>

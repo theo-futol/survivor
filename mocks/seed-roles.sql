@@ -47,4 +47,11 @@ INSERT INTO public.users (id, email, surname, name, role, balance, password, "cr
   ('a0000000-0000-4000-8000-000000000004', 'employee@tickettout.test', 'Employee', 'Test', 'EMPLOYEE', 5000, '13d0629490065e5127d84f544c641e4b187f932044325a3d53c565eeb8a33ce7', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'd0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
+-- Initial employee credit. Keep the financial ledger consistent with the
+-- 50 EUR starting balance above so the employee dashboard and history can be
+-- tested immediately after seeding. TOPUP transactions must have companyId NULL.
+INSERT INTO public.transaction (id, type, "userId", "companyId", amount, "originalTransactionId", status, "createdAt") VALUES
+  ('e0000000-0000-4000-8000-000000000001', 'TOPUP', 'a0000000-0000-4000-8000-000000000004', NULL, 5000, NULL, 'VALIDER', '2026-06-03T00:05:00Z')
+ON CONFLICT (id) DO NOTHING;
+
 COMMIT;

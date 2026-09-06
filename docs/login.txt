@@ -1,5 +1,6 @@
-Identifant du compte d'un salarié permettant de se connecter à l'application.
-
-name: "Julie Marchand"
-email: "julie.marchand@demo.local"
-password: "Demo2026!"
+| Rôle       | Email                      | Mot de passe     |
+| ---------- | -------------------------- | ---------------- |
+| Admin      | `admin@tickettout.test`    | `AdminPass1!`    |
+| Entreprise | `company@tickettout.test`  | `CompanyPass1!`  |
+| Partenaire | `partner@tickettout.test`  | `PartnerPass1!`  |
+| Salarié    | `employee@tickettout.test` | `EmployeePass1!` |

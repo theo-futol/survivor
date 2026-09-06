@@ -3,6 +3,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { z } from 'zod';
 import { ROUTE_ROLES, type RouteKey } from '@/lib/roles-config';
 import { isBanned } from '@/lib/services/redis_service';
+import { db } from '@/lib/prisma/db';
 
 export const AUTH_COOKIE_NAME = 'ticket_tout_token';
 
@@ -131,9 +132,27 @@ export async function authenticate(request: Request): Promise<AuthResult>
       return { ok: false, status: 403, error: 'Account revoked' };
     }
   }
-  catch
+  catch (redisError)
   {
-    return { ok: false, status: 503, error: 'Auth service temporarily unavailable' };
+    // Redis accelerates token revocation, but the PostgreSQL bannedUser table
+    // remains the durable source of truth. A temporary Redis outage must not
+    // make every authenticated page unavailable.
+    console.error('Redis ban lookup failed, falling back to PostgreSQL', redisError);
+
+    try
+    {
+      const bannedUser = await db.orm.public.BannedUser.where({ userId: payload.sub }).first();
+
+      if (bannedUser)
+      {
+        return { ok: false, status: 403, error: 'Account revoked' };
+      }
+    }
+    catch (databaseError)
+    {
+      console.error('PostgreSQL ban fallback failed', databaseError);
+      return { ok: false, status: 503, error: 'Auth service temporarily unavailable' };
+    }
   }
 
   return { ok: true, sub: payload.sub, role: payload.role };

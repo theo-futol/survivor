@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { MapPin, QrCode, Search, X } from "lucide-react"
+import { LoaderCircle, MapPin, QrCode, Search, Sparkles, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
 import CreditCard from "@/components/credit-card"
@@ -15,67 +15,110 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import payments from "@/data/paiements.json"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { apiFetch, formatMoney, parsePoint, type ApiPartner, type PaginationMeta } from "@/lib/api-client"
 
-type Partner = {
-  id: string
-  name: string
-  category: string
-  city: string
-  address: string
-  coordinates: { latitude: number; longitude: number }
-  description: string
-  ministerFavorite: boolean
-  featured: boolean
-  averageSpendingAmount: number
-  image: string
+type PartnerResponse = { data: ApiPartner[]; meta: PaginationMeta }
+type QrResponse = { qrcode: string; expiresAt: string }
+
+type PaymentState = {
+  partner: ApiPartner
+  qrcode: string | null
+  expiresAt: string | null
+  loading: boolean
+  error: string | null
 }
 
 export default function PartnersPage() {
-  const employee = payments.salaries[0]
-  const [partners, setPartners] = useState<Partner[]>([])
+  const { data: session, loading: sessionLoading, error: sessionError } = useCurrentUser()
+  const [partners, setPartners] = useState<ApiPartner[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("all")
-  const [selected, setSelected] = useState<Partner | undefined>()
-  const [paymentPartner, setPaymentPartner] = useState<Partner | null>(null)
+  const [selected, setSelected] = useState<ApiPartner | undefined>()
+  const [payment, setPayment] = useState<PaymentState | null>(null)
   const lastQrTriggerRef = useRef<HTMLButtonElement | null>(null)
 
+  const employee = session?.user
+  const employeeName = employee ? `${employee.name} ${employee.surname}`.trim() : ""
+
   useEffect(() => {
-    fetch("/data/partenaires.json")
-      .then((response) => {
-        if (!response.ok) throw new Error("Impossible de charger les partenaires")
-        return response.json()
+    let cancelled = false
+    setLoading(true)
+    setLoadError(null)
+
+    apiFetch<PartnerResponse>("/api/v1/partenaires?limit=100")
+      .then((payload) => {
+        if (!cancelled) setPartners(payload.data ?? [])
       })
-      .then((data) => setPartners(data.partners ?? []))
-      .catch((error) => console.error(error))
+      .catch((caught) => {
+        if (!cancelled) setLoadError(caught instanceof Error ? caught.message : "Impossible de charger les partenaires.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const categories = useMemo(
-    () => Array.from(new Set(partners.map((partner) => partner.category))).sort(),
+    () => Array.from(new Set(partners.map((partner) => partner.category?.category).filter(Boolean) as string[])).sort(),
     [partners]
   )
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("fr")
     return partners.filter((partner) => {
-      const matchesCategory = category === "all" || partner.category === category
-      const haystack = `${partner.name} ${partner.category} ${partner.city} ${partner.address}`.toLocaleLowerCase("fr")
+      const partnerCategory = partner.category?.category ?? ""
+      const matchesCategory = category === "all" || partnerCategory === category
+      const haystack = `${partner.name} ${partnerCategory} ${partner.address} ${partner.postalCode}`.toLocaleLowerCase("fr")
       return matchesCategory && (!normalized || haystack.includes(normalized))
     })
   }, [category, partners, query])
 
-  function openPaymentDialog(partner: Partner, trigger: HTMLButtonElement) {
+  const mapPartners = useMemo(
+    () => visible.flatMap((partner) => {
+      const coordinates = parsePoint(partner.location)
+      return coordinates ? [{ id: partner.id, name: partner.name, address: `${partner.address}, ${partner.postalCode}`, coordinates }] : []
+    }),
+    [visible]
+  )
+
+  const selectedMapPartner = useMemo(() => {
+    if (!selected) return undefined
+    const coordinates = parsePoint(selected.location)
+    return coordinates ? { id: selected.id, name: selected.name, address: `${selected.address}, ${selected.postalCode}`, coordinates } : undefined
+  }, [selected])
+
+  async function openPaymentDialog(partner: ApiPartner, trigger: HTMLButtonElement) {
+    if (!employee) return
     lastQrTriggerRef.current = trigger
-    setPaymentPartner(partner)
+    setPayment({ partner, qrcode: null, expiresAt: null, loading: true, error: null })
+
+    try {
+      const result = await apiFetch<QrResponse>("/api/v1/qrcode", {
+        method: "POST",
+        body: JSON.stringify({ companyId: partner.id, userId: employee.id }),
+      })
+      setPayment({ partner, qrcode: result.qrcode, expiresAt: result.expiresAt, loading: false, error: null })
+    } catch (caught) {
+      setPayment({
+        partner,
+        qrcode: null,
+        expiresAt: null,
+        loading: false,
+        error: caught instanceof Error ? caught.message : "Impossible de générer le QR.",
+      })
+    }
   }
 
   function handleDialogOpenChange(open: boolean) {
     if (open) return
-
-    setPaymentPartner(null)
-    window.requestAnimationFrame(() => {
-      lastQrTriggerRef.current?.focus()
-    })
+    setPayment(null)
+    window.requestAnimationFrame(() => lastQrTriggerRef.current?.focus())
   }
 
   return (
@@ -86,19 +129,23 @@ export default function PartnersPage() {
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Où dépenser ?</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Trouvez votre prochain partenaire</h1>
-            <p className="mt-2 max-w-2xl text-muted-foreground">Recherchez par nom, activité, ville ou adresse, puis localisez le partenaire sur la carte.</p>
+            <p className="mt-2 max-w-2xl text-muted-foreground">Le réseau affiché provient directement des entreprises partenaires actives en base.</p>
           </div>
           <div className="rounded-2xl bg-secondary px-5 py-4 sm:text-right">
-            <p className="text-sm font-semibold text-primary">Votre budget simulé disponible</p>
-            <p className="text-xl font-black sm:text-2xl">{employee.soldeActuel.toFixed(2)} € simulé à dépenser !</p>
+            <p className="text-sm font-semibold text-primary">Votre budget disponible</p>
+            <p className="text-xl font-black sm:text-2xl">{employee ? `${formatMoney(employee.balance)} à dépenser !` : "—"}</p>
           </div>
         </div>
+
+        {(sessionError || loadError) && (
+          <p role="alert" className="mt-6 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark">{sessionError ?? loadError}</p>
+        )}
 
         <section className="mt-7 grid gap-3 rounded-3xl border bg-card p-4 shadow-sm sm:grid-cols-[1fr_260px] sm:p-5" aria-label="Filtres partenaires">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <span className="sr-only">Rechercher un partenaire</span>
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Nom, ville, adresse, activité…" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Nom, adresse, code postal, activité…" />
           </label>
           <label>
             <span className="sr-only">Filtrer par catégorie</span>
@@ -110,89 +157,84 @@ export default function PartnersPage() {
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(390px,.95fr)]">
-          <ReunionMap className="min-h-[420px] xl:sticky xl:top-24 xl:self-start" partners={visible} partnersSelected={selected} />
+          <ReunionMap className="min-h-[420px] xl:sticky xl:top-24 xl:self-start" partners={mapPartners} partnersSelected={selectedMapPartner} />
 
           <section className="min-w-0" aria-labelledby="partner-list-title">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 id="partner-list-title" className="text-xl font-black">{visible.length} partenaire{visible.length > 1 ? "s" : ""}</h2>
               {(query || category !== "all") && <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setCategory("all") }}>Effacer les filtres</Button>}
             </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-              {visible.map((partner) => (
-                <article key={partner.id} className="overflow-hidden rounded-3xl border bg-card shadow-sm" onMouseEnter={() => setSelected(partner)} onFocus={() => setSelected(partner)}>
-                  <div className="grid sm:grid-cols-[150px_1fr]">
-                    <img src={partner.image} alt="" className="h-44 w-full object-cover sm:h-full" />
-                    <div className="p-5">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
+
+            {sessionLoading || loading ? (
+              <div className="flex items-center justify-center gap-2 rounded-3xl border bg-card p-10 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Chargement des partenaires…
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                {visible.map((partner) => {
+                  const hasCoordinates = parsePoint(partner.location) !== null
+                  return (
+                    <article key={partner.id} className="rounded-3xl border bg-card p-5 shadow-sm" onMouseEnter={() => setSelected(partner)} onFocus={() => setSelected(partner)}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <h3 className="text-lg font-black">{partner.name}</h3>
-                          <p className="text-sm font-semibold text-primary">{partner.category}</p>
+                          <p className="text-sm font-semibold text-primary">{partner.category?.category ?? "Partenaire"}</p>
                         </div>
-                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold">≈ {partner.averageSpendingAmount.toFixed(2)} € simulé</span>
+                        {partner.isFeatured && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-bold"><Sparkles className="size-3.5" aria-hidden="true" /> Mis en avant</span>
+                        )}
                       </div>
-                      <p className="mt-3 text-sm text-muted-foreground">{partner.description}</p>
                       <p className="mt-3 flex items-start gap-2 text-sm">
                         <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                        <span>{partner.address}</span>
+                        <span>{partner.address}, {partner.postalCode}</span>
                       </p>
                       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                        <Button variant="outline" onClick={() => setSelected(partner)}>
+                        <Button variant="outline" onClick={() => setSelected(partner)} disabled={!hasCoordinates} title={hasCoordinates ? undefined : "Coordonnées géographiques indisponibles"}>
                           <MapPin aria-hidden="true" /> Localiser
                         </Button>
-                        <Button onClick={(event) => openPaymentDialog(partner, event.currentTarget)}>
+                        <Button onClick={(event) => void openPaymentDialog(partner, event.currentTarget)} disabled={!employee || payment?.loading === true}>
                           <QrCode aria-hidden="true" /> Générer le QR
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-              {visible.length === 0 && (
-                <div className="rounded-3xl border border-dashed bg-card p-10 text-center text-muted-foreground md:col-span-2 xl:col-span-1">Aucun partenaire ne correspond à votre recherche.</div>
-              )}
-            </div>
+                    </article>
+                  )
+                })}
+                {visible.length === 0 && (
+                  <div className="rounded-3xl border border-dashed bg-card p-10 text-center text-muted-foreground md:col-span-2 xl:col-span-1">Aucun partenaire ne correspond à votre recherche.</div>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </main>
 
-      <Dialog open={paymentPartner !== null} onOpenChange={handleDialogOpenChange}>
-        {paymentPartner && (
-          <DialogContent
-            showCloseButton={false}
-            className="max-h-[calc(100svh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl bg-card p-4 shadow-2xl sm:max-w-2xl sm:p-6"
-          >
-            <DialogClose
-              render={
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-4 top-4 z-10"
-                  aria-label="Fermer le QR code de paiement"
-                />
-              }
-            >
+      <Dialog open={payment !== null} onOpenChange={handleDialogOpenChange}>
+        {payment && (
+          <DialogContent showCloseButton={false} className="max-h-[calc(100svh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl bg-card p-4 shadow-2xl sm:max-w-2xl sm:p-6">
+            <DialogClose render={<Button variant="outline" size="icon" className="absolute right-4 top-4 z-10" aria-label="Fermer le QR code de paiement" />}>
               <X aria-hidden="true" />
             </DialogClose>
 
             <div className="pr-12">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Paiement</p>
-              <DialogTitle className="mt-1 text-2xl font-black leading-tight">
-                Présentez ce QR chez {paymentPartner.name}
-              </DialogTitle>
+              <DialogTitle className="mt-1 text-2xl font-black leading-tight">Présentez ce QR chez {payment.partner.name}</DialogTitle>
               <DialogDescription className="mt-1 text-sm text-muted-foreground">
-                Le QR affiché est un vrai QR code scannable, utilisé ici avec une donnée statique de démonstration.
+                Le code est généré côté serveur, stocké sous forme hachée et expire automatiquement après cinq minutes.
               </DialogDescription>
             </div>
 
             <div className="mt-2">
-              <CreditCard
-                name={employee.nom}
-                balance={employee.soldeActuel}
-                mode="payment"
-                merchantName={paymentPartner.name}
-                paymentAmount={paymentPartner.averageSpendingAmount}
-              />
+              <CreditCard name={employeeName} balance={employee?.balance ?? 0} mode="payment" merchantName={payment.partner.name} qrCode={payment.qrcode ?? undefined} expiresAt={payment.expiresAt ?? undefined} />
             </div>
+
+            {payment.loading && <p className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Génération en cours…</p>}
+            {payment.error && (
+              <p role="alert" className="rounded-xl bg-brand-red-soft px-4 py-3 text-sm font-semibold text-brand-red-dark">
+                {payment.error === "A valid QR code already exists for this company"
+                  ? "Un QR est déjà actif pour ce partenaire. Réessayez après son expiration (5 minutes)."
+                  : payment.error}
+              </p>
+            )}
           </DialogContent>
         )}
       </Dialog>

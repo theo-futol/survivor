@@ -1,41 +1,36 @@
 "use client"
 
-import { BriefcaseBusiness, Building2, LogOut, Mail, MapPin, Phone, UserRound } from "lucide-react"
+import { BadgeCheck, Building2, CircleDollarSign, Hash, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { AccountHeader } from "@/components/account-header"
-import { authClient } from "@/lib/auth-client"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { apiFetch, formatMoney } from "@/lib/api-client"
 import Link from "next/link"
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { data: session, isPending } = authClient.useSession()
-
-  const user = session?.user as
-    | {
-        name: string
-        email: string
-        accountType?: "employee" | "company" | "partner"
-        employeeAccess?: boolean
-        organizationName?: string
-        registrationNumber?: string
-        phone?: string
-        jobTitle?: string
-        address?: string
-        postalCode?: string
-        city?: string
-      }
-    | undefined
+  const { data, loading, error } = useCurrentUser()
+  const user = data?.user
+  const company = data?.company
 
   async function logout() {
-    await authClient.signOut()
-    router.push("/login")
-    router.refresh()
+    try {
+      await apiFetch<{ ok: boolean }>("/api/v1/login", { method: "DELETE" })
+    } finally {
+      router.push("/login")
+      router.refresh()
+    }
   }
 
-  const isEmployee = user?.employeeAccess === true
-  const typeLabel = isEmployee ? "Compte salarié" : user?.accountType === "company" ? "Compte entreprise" : "Compte partenaire"
+  const typeLabel =
+    user?.role === "EMPLOYEE" ? "Compte salarié" :
+    user?.role === "COMPANY" ? "Compte entreprise" :
+    user?.role === "PARTNER" ? "Compte partenaire" :
+    user?.role === "ADMIN" ? "Compte administrateur" : "Compte"
+
+  const fullName = user ? `${user.name} ${user.surname}`.trim() : ""
 
   return (
     <div className="min-h-svh bg-background">
@@ -44,8 +39,10 @@ export default function ProfilePage() {
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Mon compte</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Profil</h1>
 
-        {isPending ? (
-          <div className="mt-8 rounded-3xl border bg-card p-8">Chargement du profil…</div>
+        {loading ? (
+          <div className="mt-8 rounded-3xl border bg-card p-8">Chargement du profil depuis la base…</div>
+        ) : error ? (
+          <p role="alert" className="mt-8 rounded-3xl bg-brand-red-soft p-6 font-semibold text-brand-red-dark">{error}</p>
         ) : user ? (
           <section className="mt-8 overflow-hidden rounded-3xl border bg-card shadow-sm">
             <div className="bg-primary p-7 text-primary-foreground sm:p-8">
@@ -53,34 +50,40 @@ export default function ProfilePage() {
                 <div className="grid size-16 place-items-center rounded-full bg-background text-primary"><UserRound className="size-8" aria-hidden="true" /></div>
                 <div>
                   <p className="text-sm font-semibold text-primary-foreground/80">{typeLabel}</p>
-                  <h2 className="text-2xl font-black">{user.name}</h2>
-                  {user.organizationName && <p className="mt-1 text-primary-foreground/85">{user.organizationName}</p>}
+                  <h2 className="text-2xl font-black">{fullName}</h2>
+                  {company && <p className="mt-1 text-primary-foreground/85">{company.name}</p>}
                 </div>
               </div>
             </div>
 
             <div className="grid gap-5 p-7 sm:grid-cols-2 sm:p-8">
               <ProfileField icon={<Mail />} label="Email" value={user.email} />
-              <ProfileField icon={<Building2 />} label="Organisation" value={user.organizationName ?? "Non renseignée"} />
-              <ProfileField icon={<Phone />} label="Téléphone" value={user.phone || "Non renseigné"} />
-              <ProfileField icon={<UserRound />} label="Fonction" value={user.jobTitle || (isEmployee ? "Salarié" : "Non renseignée")} />
-              {!isEmployee && <ProfileField icon={<Building2 />} label="SIRET" value={user.registrationNumber || "Non renseigné"} />}
-              {!isEmployee && <ProfileField icon={<MapPin />} label="Adresse" value={[user.address, user.postalCode, user.city].filter(Boolean).join(", ") || "Non renseignée"} />}
+              <ProfileField icon={<ShieldCheck />} label="Rôle API" value={user.role} />
+              {user.role === "EMPLOYEE" && <ProfileField icon={<CircleDollarSign />} label="Solde disponible" value={formatMoney(user.balance)} />}
+              {company && <ProfileField icon={<Building2 />} label="Organisation" value={company.name} />}
+              {company && <ProfileField icon={<Hash />} label="SIRET de l'entreprise" value={company.siret} />}
+              {company && <ProfileField icon={<MapPin />} label="Adresse" value={`${company.address}, ${company.postalCode}`} />}
+              {company?.category && <ProfileField icon={<Building2 />} label="Catégorie" value={company.category.category} />}
+              {company && <ProfileField icon={<BadgeCheck />} label="Validation" value={company.verified ? "Entreprise vérifiée" : "Vérification en attente"} />}
             </div>
 
-            {!isEmployee && (
+            {user.role === "COMPANY" && (
               <div className="mx-7 mb-1 rounded-2xl bg-secondary p-5 text-sm sm:mx-8">
-                <p className="font-black">Compte professionnel créé</p>
-                {user.accountType === "company" ? (
-                  <>
-                    <p className="mt-1 text-muted-foreground">Gérez les demandes de comptes salariés et les renouvellements de contrats depuis votre espace employeur.</p>
-                    <Link href="/employer" className={buttonVariants({ className: "mt-4" })}>
-                      <BriefcaseBusiness aria-hidden="true" /> Ouvrir l&apos;espace employeur
-                    </Link>
-                  </>
-                ) : (
-                  <p className="mt-1 text-muted-foreground">Votre espace partenaire pourra être branché sur ce même compte.</p>
-                )}
+                <p className="font-black">Gestion employeur</p>
+                <p className="mt-1 text-muted-foreground">Consultez les salariés réellement rattachés à votre entreprise et effectuez les abondements depuis l&apos;API v1.</p>
+                <Link href="/employer" className={buttonVariants({ className: "mt-4" })}>
+                  <Building2 aria-hidden="true" /> Ouvrir l&apos;espace employeur
+                </Link>
+              </div>
+            )}
+
+            {user.role === "ADMIN" && (
+              <div className="mx-7 mb-1 rounded-2xl bg-secondary p-5 text-sm sm:mx-8">
+                <p className="font-black">Administration</p>
+                <p className="mt-1 text-muted-foreground">Les salariés, employeurs et partenaires affichés dans l&apos;administration proviennent maintenant de PostgreSQL.</p>
+                <Link href="/admin" className={buttonVariants({ className: "mt-4" })}>
+                  <ShieldCheck aria-hidden="true" /> Ouvrir l&apos;administration
+                </Link>
               </div>
             )}
 

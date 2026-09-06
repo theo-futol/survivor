@@ -69,7 +69,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
 {
     try {
         const auth = await authorize(request, 'GET /api/v1/salaries/:salarieId/transactions');
+<<<<<<< HEAD
 
+=======
+>>>>>>> 47fcf6f (feat: load employee data from API and database)
         if (!auth.ok) {
             return Response.json({ error: auth.error }, { status: auth.status });
         }
@@ -79,6 +82,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
             throw new AppError('Invalid parameters', 400);
         });
 
+<<<<<<< HEAD
         const { searchParams } = new URL(request.url);
 
         const queryParseResult = await parsePaginationParams(searchParams);
@@ -121,6 +125,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
             },
             { status: 200 }
         );
+=======
+        const salarie = await db.orm.public.Users.where({ id: salarieId, role: 'EMPLOYEE' }).first();
+        if (!salarie || salarie.expiredAt !== null) {
+            throw new AppError('Salarie not found', 404);
+        }
+
+        const actor = await resolveActor(auth);
+        assertCanAccessSalarie(actor, salarie);
+
+        const transactions = await db.orm.public.Transaction
+            .where({ userId: salarieId })
+            .orderBy((u) => u.createdAt.desc())
+            .all();
+
+        return Response.json({ transactions }, { status: 200 });
+>>>>>>> 47fcf6f (feat: load employee data from API and database)
     } catch (error) {
         console.error('Error fetching salary transactions', JSON.stringify(error));
         const {message, statusCode} = commonErrorHandler(error);

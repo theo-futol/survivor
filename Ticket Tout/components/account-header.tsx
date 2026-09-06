@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { BriefcaseBusiness, History, Home, LogOut, MapPinned, Menu, UserRound } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { BriefcaseBusiness, History, Home, LogOut, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
 
-import { authClient } from "@/lib/auth-client"
 import { BRAND } from "@/lib/brand"
+import { apiFetch, roleHome } from "@/lib/api-client"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { Button } from "@/components/ui/button"
 import { BrandLogo } from "@/components/brand-logo"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -21,24 +22,29 @@ const companyLinks = [
   { href: "/employer", label: "Espace employeur", icon: BriefcaseBusiness },
   { href: "/profile", label: "Profil", icon: UserRound },
 ]
-
 const partnerLinks = [{ href: "/profile", label: "Profil", icon: UserRound }]
+const adminLinks = [
+  { href: "/admin", label: "Administration", icon: ShieldCheck },
+  { href: "/profile", label: "Profil", icon: UserRound },
+]
 
 export function AccountHeader() {
   const router = useRouter()
-  const { data: session } = authClient.useSession()
-  const currentUser = session?.user as
-    | { employeeAccess?: boolean; accountType?: "employee" | "company" | "partner"; name?: string }
-    | undefined
-  const employeeAccess = currentUser?.employeeAccess === true
-  const isCompany = currentUser?.accountType === "company"
-  const links = employeeAccess ? employeeLinks : isCompany ? companyLinks : partnerLinks
-  const homeHref = employeeAccess ? "/" : isCompany ? "/employer" : "/profile"
+  const pathname = usePathname()
+  const { data } = useCurrentUser()
+  const role = data?.user.role
+  const employeePath = pathname === "/" || pathname.startsWith("/transactions") || pathname.startsWith("/partners") || pathname.startsWith("/history") || pathname.startsWith("/credited") || pathname.startsWith("/consumes")
+  const links = role === "EMPLOYEE" || (!role && employeePath) ? employeeLinks : role === "COMPANY" ? companyLinks : role === "ADMIN" ? adminLinks : partnerLinks
+  const homeHref = role ? roleHome(role) : employeePath ? "/" : "/profile"
+  const displayName = data ? `${data.user.name} ${data.user.surname}`.trim() : ""
 
   async function logout() {
-    await authClient.signOut()
-    router.push("/login")
-    router.refresh()
+    try {
+      await apiFetch<{ ok: boolean }>("/api/v1/login", { method: "DELETE" })
+    } finally {
+      router.push("/login")
+      router.refresh()
+    }
   }
 
   return (
@@ -60,7 +66,7 @@ export function AccountHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-3">
-          {currentUser?.name && <span className="hidden max-w-40 truncate text-sm font-semibold text-muted-foreground lg:inline">{currentUser.name}</span>}
+          {displayName && <span className="hidden max-w-48 truncate text-sm font-semibold text-muted-foreground lg:inline">{displayName}</span>}
           <ThemeToggle />
           <Button variant="outline" size="icon" onClick={logout} className="hidden md:inline-flex" aria-label="Se déconnecter" title="Se déconnecter">
             <LogOut aria-hidden="true" />
