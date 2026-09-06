@@ -25,6 +25,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/partenaires': ['ADMIN'],
   'PATCH /api/v1/partenaires/:partenaireId': ['ADMIN', 'PARTNER'],
   'DELETE /api/v1/partenaires/:partenaireId': ['ADMIN'],
+  'GET /api/v1/partenaires/:partenaireId/transactions': ['ADMIN'],
 
   'POST /api/v1/admin/ban': ['ADMIN'],
 

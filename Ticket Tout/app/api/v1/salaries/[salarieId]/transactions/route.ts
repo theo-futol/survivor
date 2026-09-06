@@ -1,9 +1,14 @@
-import {db} from '@/lib/prisma/db';
-import {z} from 'zod';
-import {withTransaction} from '@/lib/services/postgres_client';
-import {AppError, commonErrorHandler} from '@/lib/services/error_service';
-import {authorize} from '@/lib/services/auth_service';
-import {assertCanAccessSalarie, resolveActor} from '@/lib/services/ownership_service';
+import { db } from '@/lib/prisma/db';
+import { z } from 'zod';
+import { withTransaction } from '@/lib/services/postgres_client';
+import { AppError, commonErrorHandler } from '@/lib/services/error_service';
+import { authorize } from '@/lib/services/auth_service';
+import { assertCanAccessSalarie, resolveActor } from '@/lib/services/ownership_service';
+import {
+  parsePaginationParams,
+  computeOffset,
+  buildPaginationMeta,
+} from '@/lib/pagination';
 
 const salaryParamsSchema = z.object({
   salarieId: z.uuid(),
@@ -20,7 +25,7 @@ const transactionBodySchema = z.object({
  * /api/v1/salaries/{salarieId}/transactions:
  *   get:
  *     summary: Historique des transactions d'un salarié
- *     description: "Retourne toutes les transactions du salarié, de la plus récente à la plus ancienne. La liste n'est pas paginée : les filtres `page`, `limit`, `from`, `to` et `type` décrits dans docs/API.md ne sont pas implémentés. Un `ADMIN` consulte n'importe quel salarié, une entreprise `COMPANY` uniquement ses propres salariés, et un `EMPLOYEE` uniquement les siennes."
+ *     description: "Retourne les transactions paginées du salarié, de la plus récente à la plus ancienne. Un `ADMIN` consulte n'importe quel salarié, une entreprise `COMPANY` uniquement ses propres salariés, et un `EMPLOYEE` uniquement les siennes."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -28,6 +33,12 @@ const transactionBodySchema = z.object({
  *         name: salarieId
  *         required: true
  *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
  *     responses:
  *       '200':
  *         description: Transactions récupérées avec succès.
@@ -39,7 +50,16 @@ const transactionBodySchema = z.object({
  *                 transactions:
  *                   type: array
  *                   items: { type: object }
- *       '400': { description: Identifiant invalide. }
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     totalCount: { type: integer }
+ *                     totalPages: { type: integer }
+ *                     hasNextPage: { type: boolean }
+ *                     hasPrevPage: { type: boolean }
+ *       '400': { description: Identifiant ou paramètres de requête invalides. }
  *       '401': { description: Token manquant ou invalide. }
  *       '403': { description: Rôle insuffisant, ou tentative de consulter les transactions d'un autre salarié. }
  *       '404': { description: Salarié introuvable. }
@@ -59,6 +79,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
             throw new AppError('Invalid parameters', 400);
         });
 
+        const { searchParams } = new URL(request.url);
+
+        const queryParseResult = await parsePaginationParams(searchParams);
+        if (!queryParseResult.success) {
+            console.error('Invalid query parameters', JSON.stringify(queryParseResult.error));
+            throw new AppError('Invalid query parameters', 400);
+        }
+        const { limit, page } = queryParseResult.data;
+        const offset = computeOffset(page, limit);
+
         const salarie = await db.orm.public.Users.where({ id: salarieId }).first();
 
         if (!salarie) {
@@ -68,11 +98,29 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
         const actor = await resolveActor(auth);
         assertCanAccessSalarie(actor, salarie);
 
-        const transactions = await db.orm.public.Transaction.where({ userId: salarieId }).orderBy((u) => u.createdAt.desc()).all();
+        const [transactions, totalCount] = await Promise.all([
+            db.orm.public.Transaction
+                .where({ userId: salarieId })
+                .orderBy((u) => u.createdAt.desc())
+                .limit(limit)
+                .offset(offset)
+                .all(),
+            db.orm.public.Transaction
+                .where({ userId: salarieId })
+                .aggregate((a) => ({ total: a.count() })),
+        ]);
+
         if (!transactions) {
             throw new AppError('No transactions found for this salarie', 404);
         }
-        return Response.json({ transactions }, { status: 200 });
+
+        return Response.json(
+            {
+                transactions,
+                meta: buildPaginationMeta(totalCount.total, page, limit),
+            },
+            { status: 200 }
+        );
     } catch (error) {
         console.error('Error fetching salary transactions', JSON.stringify(error));
         const {message, statusCode} = commonErrorHandler(error);
