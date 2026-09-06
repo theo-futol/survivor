@@ -110,7 +110,7 @@ describe('sendEmail', () =>
   {
     setEmailProvider({
       name: 'failing',
-      send: async () => { throw new AppError('mailgun: domain not found', 502); },
+      send: async () => { throw new AppError('brevo: sender not found', 502); },
     });
 
     const failure = sendEmail({ to: 'dest@example.fr', subject: 'Info', text: 'Bonjour' });
@@ -124,9 +124,9 @@ describe('provider selection', () =>
 {
   afterEach(() => resetEmailProvider());
 
-  it('defaults to mailgun', () =>
+  it('defaults to brevo', () =>
   {
-    expect(getEmailProviderName()).toBe('mailgun');
+    expect(getEmailProviderName()).toBe('brevo');
   });
 
   it('swaps in another library without touching callers', async () =>
@@ -159,6 +159,6 @@ describe('provider selection', () =>
 
     resetEmailProvider();
 
-    expect(getEmailProviderName()).toBe('mailgun');
+    expect(getEmailProviderName()).toBe('brevo');
   });
 });

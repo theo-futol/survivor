@@ -1,5 +1,5 @@
 import { AppError } from '@/lib/services/error_service';
-import { createMailgunProvider } from '@/lib/services/email/mailgun_provider';
+import { createBrevoProvider } from '@/lib/services/email/brevo_provider';
 import type { EmailProvider, SendEmailParams, SendEmailResult } from '@/lib/services/email/types';
 
 export type { EmailProvider, SendEmailParams, SendEmailResult };
@@ -9,7 +9,7 @@ const FROM_EMAIL = 'Ticket Tout <noreply@tickettout.fr>';
 // The library in use. Swap it by writing another EmailProvider (see
 // lib/services/email/types.ts) and either changing this line or calling
 // setEmailProvider() — no caller of sendEmail() has to change.
-const defaultProvider = createMailgunProvider;
+const defaultProvider = createBrevoProvider;
 
 let provider: EmailProvider | undefined;
 

@@ -78,6 +78,7 @@
 - `POST /api/v1/salaries`
   - Roles: `admin`, `employeur`
   - Body example:
+  - Behavior: server creates the employee, generates a temporary password, hashes it, and sends an email to the employee with the temporary password using the Brevo service.
 
 ```json
 { "employeurId": "...", "nom": "Dupont", "prenom": "Jean", "email": "j.dupont@ex.com", "numeroSalarie": "S123" }
@@ -88,6 +89,7 @@
 - `PATCH /api/v1/salaries/{salarieId}`
   - Roles: `admin`, `employeur` (own), `salarie` (self, limited)
   - Success: `200` updated.
+  - Behavior: function check if the modification is the verification of the account, in case of the account is verified, send an email using the brevo service to notify the employee that his account is verified and provide the temporary password.
 
 - `DELETE /api/v1/salaries/{salarieId}`
   - Roles: `admin`, `employeur` (own)
@@ -219,7 +221,6 @@
 | `employeur` | Manages their company account, employees, transactions and abondements. Can view reports and balances. |
 | `partenaire` | Read access to their profile and transactions; may initiate certain transactions by contract (e.g., payments). |
 | `salarie` | View own profile and transactions, view balance; limited actions (e.g., refund request). |
-| `sirh` | (optional) Internal HR service: limited read/write within scope, access to balances for SIRH integration. |
 
 ---
 

@@ -1,6 +1,6 @@
 // In-memory stand-in for @/lib/services/email_service, wired in via jest.config.ts's
 // moduleNameMapper so route/service code gets it transparently, without reaching
-// the Mailgun API during unit tests.
+// the Brevo API during unit tests.
 //
 // Tests that exercise the real service (and its provider seam) import it by
 // relative path instead — see tests/api/email_service.test.ts.
