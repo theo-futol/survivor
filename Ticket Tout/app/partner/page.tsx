@@ -1,21 +1,30 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { QrCodeSvg } from "@/components/qr-code-svg"
-import { X } from "lucide-react"
+import { X, LogOut } from "lucide-react"
 
 function PartnerSidebar({ activeTab, onSelectTab }) {
+  const router = useRouter()
   const navItems = [
     { id: "products", title: "Produits" },
     { id: "info", title: "Infos Partenaire" },
     { id: "history", title: "Historique des transactions" },
     { id: "scan", title: "Scanner QR Code" },
   ]
+
+  // TODO: brancher sur la vraie logique de déconnexion (session/auth) une
+  // fois disponible ; pour l'instant on redirige simplement vers /login.
+  function handleLogout() {
+    router.push("/login")
+  }
+
   return (
     <aside className="w-56 border-r bg-muted/30 flex flex-col">
       <div className="p-4 font-bold text-lg">Espace Partenaire</div>
@@ -30,6 +39,15 @@ function PartnerSidebar({ activeTab, onSelectTab }) {
           </button>
         ))}
       </nav>
+      <div className="p-2 border-t">
+        <button
+          className="w-full flex items-center gap-2 text-left px-4 py-2 rounded-md text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
+        >
+          <LogOut className="size-4" />
+          Déconnexion
+        </button>
+      </div>
     </aside>
   )
 }
