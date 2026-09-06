@@ -17,7 +17,7 @@ export const companyCreateSchema = z.object({
   kbisId: z.uuid(),
   address: safeText(255),
   postalCode: z.string().regex(/^\d{5}$/, { message: 'Le code postal doit contenir exactement 5 chiffres.' }),
-  agentId: z.number().int().positive(),
+  agentId: z.uuid(),
   reasonId: z.number().int().positive(),
   categoryId: z.number().int().positive(),
   location: z.object({
