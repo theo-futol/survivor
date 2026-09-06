@@ -17,16 +17,6 @@ type LoginResponse = {
   }
 }
 
-type SalarieResponse = {
-  id: string
-  email: string
-  surname: string
-  name: string
-  balance: number
-  companyId: string | null
-  role: "EMPLOYEE"
-}
-
 async function readError(response: Response) {
   const payload = await response.json().catch(() => null) as { error?: string } | null
 
@@ -35,6 +25,14 @@ async function readError(response: Response) {
   }
 
   return payload?.error ?? "Connexion impossible."
+}
+
+function homeForRole(role: string) {
+  if (role === "EMPLOYEE") return "/"
+  if (role === "COMPANY") return "/employer"
+  if (role === "ADMIN") return "/admin"
+  if (role === "PARTNER") return "/profile"
+  return null
 }
 
 export function LoginApiSalarieForm() {
@@ -65,34 +63,17 @@ export function LoginApiSalarieForm() {
       }
 
       const login = await loginResponse.json() as LoginResponse
+      const roleHome = homeForRole(login.user.role)
 
-      if (login.user.role !== "EMPLOYEE") {
+      if (!roleHome) {
         await fetch("/api/v1/login", { method: "DELETE", credentials: "same-origin" })
-        throw new Error("Ce premier lot de connexion est réservé aux comptes salariés.")
-      }
-
-      const salarieResponse = await fetch(`/api/v1/salaries/${login.user.id}`, {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-      })
-
-      if (!salarieResponse.ok) {
-        await fetch("/api/v1/login", { method: "DELETE", credentials: "same-origin" })
-        throw new Error(await readError(salarieResponse))
-      }
-
-      const salarie = await salarieResponse.json() as SalarieResponse
-
-      if (salarie.id !== login.user.id || salarie.role !== "EMPLOYEE") {
-        await fetch("/api/v1/login", { method: "DELETE", credentials: "same-origin" })
-        throw new Error("Le compte connecté ne correspond pas à un salarié actif.")
+        throw new Error("Ce type de compte n'est pas pris en charge.")
       }
 
       const requestedNext = searchParams.get("next")
       const safeNext = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
         ? requestedNext
-        : "/"
+        : roleHome
 
       router.push(safeNext)
       router.refresh()
@@ -137,7 +118,7 @@ export function LoginApiSalarieForm() {
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-        Se connecter à mon espace salarié
+        Se connecter à mon espace
       </Button>
     </form>
   )

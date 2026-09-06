@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/prisma/db';
 import { authorize } from '@/lib/services/auth_service';
@@ -102,19 +103,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ emp
 
       await client.query('UPDATE users SET balance = balance + $1 WHERE id = ANY($2::text[])', [montant, ids]);
 
+      // TOPUPs are employer funding operations. The database constraint
+      // transaction_type_matches_company requires companyId to be NULL for TOPUP.
+      // Keep the balance update and ledger rows in the same PostgreSQL transaction
+      // so a failed history insert also rolls the balance back.
+      for (const userId of ids)
+      {
+        await client.query(
+          `INSERT INTO "transaction" (id, type, "userId", "companyId", amount, status)
+           VALUES ($1, 'TOPUP', $2, NULL, $3, 'VALIDER')`,
+          [randomUUID(), userId, montant],
+        );
+      }
+
       return ids;
     });
-
-    for (const userId of creditedIds)
-    {
-      await db.orm.public.Transaction.create({
-        userId,
-        companyId: employeurId,
-        amount: montant,
-        type: 'TOPUP',
-        status: 'VALIDER',
-      });
-    }
 
     return Response.json({
       montant,
