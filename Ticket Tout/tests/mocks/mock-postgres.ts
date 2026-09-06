@@ -24,6 +24,29 @@ function query(text: string, values: unknown[] = []): QueryResult
     return { rows, rowCount: rows.length };
   }
 
+  // app/api/v1/salaries/[salarieId]/transactions — reads one balance under a row
+  // lock, then writes the recomputed value back absolutely.
+  if (/^SELECT balance FROM users WHERE id = \$1 FOR UPDATE$/i.test(sql))
+  {
+    const rows = mockTables['Users']!
+      .filter((row) => row['id'] === values[0])
+      .map((row) => ({ balance: row['balance'] }));
+
+    return { rows, rowCount: rows.length };
+  }
+
+  if (/^UPDATE users SET balance = \$1 WHERE id = \$2$/i.test(sql))
+  {
+    const targets = mockTables['Users']!.filter((row) => row['id'] === values[1]);
+
+    for (const row of targets)
+    {
+      row['balance'] = Number(values[0]);
+    }
+
+    return { rows: [], rowCount: targets.length };
+  }
+
   if (/^UPDATE users SET balance = balance \+ \$1 WHERE id = ANY\(\$2::text\[\]\)$/i.test(sql))
   {
     const ids = values[1] as string[];

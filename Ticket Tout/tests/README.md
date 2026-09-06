@@ -29,7 +29,7 @@ Every other route validates its path params and body ids with `z.uuid()`, so the
 
 `mock-db.ts` is a small query engine over plain arrays, covering the operations the routes actually use: `.where()` with either an equality object or a field-proxy lambda (`.eq`, `.neq`, `.lt/.lte/.gt/.gte`, `.in`, `.like/.ilike`, `.isNull/.isNotNull`), `.select()`, `.orderBy()`, `.limit()`, `.offset()`, `.include()`, `.aggregate()` (`count`/`sum`/`avg`/`min`/`max`), `.all()`, `.first()`, `.create()`, `.update()` and `.delete()`. Relations available to `.include()` are declared in the `RELATIONS` map at the top of the file — add an entry there when a route eager-loads a new relation.
 
-`mock-postgres.ts` deliberately understands only the two raw statements the abondement route issues (the `SELECT … FOR UPDATE` and the batched balance `UPDATE`) and throws on anything else, so a newly added raw query fails loudly instead of silently doing nothing.
+`mock-postgres.ts` deliberately understands only the raw statements the routes actually issue and throws on anything else, so a newly added raw query fails loudly instead of silently doing nothing. Currently supported: the abondement route's `SELECT id … FOR UPDATE` and batched `UPDATE … balance = balance + $1`, and the transactions route's `SELECT balance … FOR UPDATE` and absolute `UPDATE … balance = $1`. Add a branch there when a route starts issuing new SQL.
 
 ### Running the tests
 

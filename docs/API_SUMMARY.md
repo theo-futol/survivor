@@ -41,6 +41,10 @@ All routes require `Authorization: Bearer <token>`. The role column is the coars
 | `POST /api/v1/ministerfavorite` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/route.ts` |
 | `PATCH /api/v1/ministerfavorite/{partnerId}` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/[partnerId]/route.ts` |
 | `DELETE /api/v1/ministerfavorite/{partnerId}` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/[partnerId]/route.ts` |
+| `GET /api/v1/employees/{id}/balance` | ADMIN, COMPANY, EMPLOYEE | COMPANY: own employees; EMPLOYEE: self | 200 | `app/api/v1/employees/[id]/balance/route.ts` |
+| `GET /api/v1/admin/transactions.csv` | ADMIN | — | 200 | `app/api/v1/admin/transactions.csv/route.ts` |
+| `GET /api/v1/salaries/{salarieId}/transactions` | ADMIN, COMPANY, EMPLOYEE | COMPANY: own employees; EMPLOYEE: self | 200 | `app/api/v1/salaries/[salarieId]/transactions/route.ts` |
+| `POST /api/v1/salaries/{salarieId}/transactions` | ADMIN, COMPANY, PARTNER | — | 201 | `app/api/v1/salaries/[salarieId]/transactions/route.ts` |
 
 Employers and partners are the **same `Company` table**, told apart by `isPartner`
 (`false` = employeur, `true` = partenaire). Asking for an employer by a partner's id returns
@@ -230,22 +234,32 @@ engine over arrays), `mock-redis.ts` and `mock-postgres.ts` are swapped in via
 `jest.config.ts`'s `moduleNameMapper`. See `tests/README.md` for what the mocks support and which
 fixture constants to use.
 
+## Coverage
+
+Every route handler under `app/api/v1/` now carries an `@openapi` block and a test file, as
+`CLAUDE.md` requires. The three that previously lacked one or both —
+`employees/{id}/balance`, `admin/transactions.csv` and `salaries/{salarieId}/transactions` — were
+also the three that never called `authorize()`; they are now guarded, so the tests assert 401/403
+rather than freezing the open behaviour in place.
+
+That closed the first four known gaps: the unauthenticated admin routes, the `transaction.csv` key
+typo in `lib/roles-config.ts` (the roles map now keys on the real path), and the transactions
+route's missing docs and auth. `GET /employees/{id}/balance` was widened from ADMIN-only to
+`['ADMIN', 'COMPANY', 'EMPLOYEE']` to match `API.md`, with `assertCanAccessSalarie` enforcing the
+`(own)` / `(self)` half.
+
 ## Known gaps
 
-Found while building this, deliberately **not** fixed because they sit outside this scope:
+Still open, outside the scope of the work so far:
 
-1. `GET /api/v1/employees/{id}/balance` and `GET /api/v1/admin/transactions.csv` never call
-   `authorize()` — both are documented as ADMIN-only but are effectively public.
-2. `lib/roles-config.ts` has `'GET /api/v1/admin/transaction.csv'`, missing the `s`, so it can
-   never match the real route path.
-3. `lib/swagger.ts` defines no `components.securitySchemes.bearerAuth`, so every
-   `security: - bearerAuth: []` block — the pre-existing qrcode one and all the new ones — points
-   at an undefined scheme in Swagger UI.
-4. `app/api/v1/salaries/[salarieId]/transactions/route.ts` has neither an `authorize()` call nor
-   an `@openapi` block.
-5. **No document-upload endpoint exists**, yet `Users.documentId` and `Company.kbisId` are both
+1. `lib/swagger.ts` defines no `components.securitySchemes.bearerAuth`, so every
+   `security: - bearerAuth: []` block points at an undefined scheme in Swagger UI.
+2. `POST /api/v1/salaries/{salarieId}/transactions` does not implement the `qrcode` /
+   `originalTransactionId` behaviour described in `API.md` — its body is `{ amount, status, type }`.
+   `GET` on the same path is unpaginated and ignores `page` / `limit` / `from` / `to` / `type`.
+3. **No document-upload endpoint exists**, yet `Users.documentId` and `Company.kbisId` are both
    non-null and unique. Creating a salarié or a company therefore requires a `Document` row to
    already exist. `lib/services/s3_client.ts` is present but unused — someone needs to own this.
-6. Seed data does not set `Users.companyId`. Until `dev/generate-seed.ts` is updated, a freshly
+4. Seed data does not set `Users.companyId`. Until `dev/generate-seed.ts` is updated, a freshly
    seeded database has every user unattached, so the ownership checks and
    `GET /salaries?employeurId=` return nothing for non-admin callers.

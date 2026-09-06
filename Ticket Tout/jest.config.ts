@@ -13,6 +13,7 @@ const config: Config = {
     '^@/lib/prisma/db$': '<rootDir>/tests/mocks/mock-db.ts',
     '^@/lib/services/redis_service$': '<rootDir>/tests/mocks/mock-redis.ts',
     '^@/lib/services/postgres_client$': '<rootDir>/tests/mocks/mock-postgres.ts',
+    '^@/lib/services/email_service$': '<rootDir>/tests/mocks/mock-email.ts',
     '^@/(.*)$': '<rootDir>/$1',
   },
   transform: {

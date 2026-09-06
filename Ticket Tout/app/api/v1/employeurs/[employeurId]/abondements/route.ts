@@ -57,7 +57,7 @@ const abondementSchema = z.object({
  *       '404': { description: Employeur introuvable, ou aucun salarié actif à créditer. }
  *       '500': { description: Erreur serveur interne. }
  */
-export async function POST(request: Request, { params }: { params: Promise<{ employeurId: string }> })
+export async function POST(request: Request, { params }: { params: Promise<{ employeurId: string }> }) // TO DO : instead of trust employeurId from params, check that the user is authorized to credit this employer's employees through her userId -> role -> companyId
 {
   try
   {

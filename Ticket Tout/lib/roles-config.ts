@@ -5,8 +5,8 @@
 
 export const ROUTE_ROLES = {
   'POST /api/v1/qrcode': ['EMPLOYEE'],
-  'GET /api/v1/employees/:id/balance': ['ADMIN'],
-  'GET /api/v1/admin/transaction.csv': ['ADMIN'],
+  'GET /api/v1/employees/:id/balance': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
+  'GET /api/v1/admin/transactions.csv': ['ADMIN'],
 
   'GET /api/v1/employeurs': ['ADMIN', 'COMPANY'],
   'POST /api/v1/employeurs': ['ADMIN'],
@@ -18,6 +18,8 @@ export const ROUTE_ROLES = {
   'POST /api/v1/salaries': ['ADMIN', 'COMPANY'],
   'PATCH /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'DELETE /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY'],
+  'GET /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
+  'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER'],
 
   'GET /api/v1/partenaires': ['ADMIN', 'PARTNER'],
   'POST /api/v1/partenaires': ['ADMIN'],
