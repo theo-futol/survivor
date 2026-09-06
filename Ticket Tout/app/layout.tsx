@@ -4,6 +4,7 @@ import { Spectral } from "next/font/google"
 
 import "./globals.css"
 import { PrivacyNotice } from "@/components/privacy-notice"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const marianne = localFont({
   src: [
@@ -90,18 +91,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body
         className={`${marianne.variable} ${spectral.variable} antialiased`}
       >
-        <a
-          href="#contenu-principal"
-          className="fixed left-4 top-4 z-[200] -translate-y-24 rounded-lg bg-background px-4 py-3 font-bold shadow-lg transition-transform focus:translate-y-0"
-        >
-          Aller au contenu principal
-        </a>
-        <PrivacyNotice />
-        {children}
+        <ThemeProvider>
+          <a
+            href="#contenu-principal"
+            className="fixed left-4 top-4 z-[200] -translate-y-24 rounded-lg bg-background px-4 py-3 font-bold shadow-lg transition-transform focus:translate-y-0"
+          >
+            Aller au contenu principal
+          </a>
+          <PrivacyNotice />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )
