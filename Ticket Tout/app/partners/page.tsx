@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { LoaderCircle, MapPin, QrCode, Search, Sparkles, X } from "lucide-react"
+import { Heart, LoaderCircle, MapPin, QrCode, Search, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
 import CreditCard from "@/components/credit-card"
@@ -19,6 +19,7 @@ import { useCurrentUser } from "@/hooks/use-current-user"
 import { apiFetch, formatMoney, parsePoint, type ApiPartner, type PaginationMeta } from "@/lib/api-client"
 
 type PartnerResponse = { data: ApiPartner[]; meta: PaginationMeta }
+type FavoriteResponse = { favorites: Array<{ partnerId: string; name: string; likeAmount: number }> }
 type QrResponse = { qrcode: string; expiresAt: string }
 
 type PaymentState = {
@@ -32,10 +33,12 @@ type PaymentState = {
 export default function PartnersPage() {
   const { data: session, loading: sessionLoading, error: sessionError } = useCurrentUser()
   const [partners, setPartners] = useState<ApiPartner[]>([])
+  const [favoritePartnerIds, setFavoritePartnerIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("all")
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [selected, setSelected] = useState<ApiPartner | undefined>()
   const [payment, setPayment] = useState<PaymentState | null>(null)
   const lastQrTriggerRef = useRef<HTMLButtonElement | null>(null)
@@ -48,12 +51,24 @@ export default function PartnersPage() {
     setLoading(true)
     setLoadError(null)
 
-    apiFetch<PartnerResponse>("/api/v1/partenaires?limit=100")
-      .then((payload) => {
-        if (!cancelled) setPartners(payload.data ?? [])
-      })
-      .catch((caught) => {
-        if (!cancelled) setLoadError(caught instanceof Error ? caught.message : "Impossible de charger les partenaires.")
+    Promise.allSettled([
+      apiFetch<PartnerResponse>("/api/v1/partenaires?limit=100"),
+      apiFetch<FavoriteResponse>("/api/v1/ministerfavorite"),
+    ])
+      .then(([partnerResult, favoriteResult]) => {
+        if (cancelled) return
+
+        if (partnerResult.status === "fulfilled") {
+          setPartners(partnerResult.value.data ?? [])
+        } else {
+          setLoadError(partnerResult.reason instanceof Error ? partnerResult.reason.message : "Impossible de charger les partenaires.")
+        }
+
+        if (favoriteResult.status === "fulfilled") {
+          setFavoritePartnerIds(new Set((favoriteResult.value.favorites ?? []).map((favorite) => favorite.partnerId)))
+        } else if (partnerResult.status === "fulfilled") {
+          setLoadError(favoriteResult.reason instanceof Error ? favoriteResult.reason.message : "Impossible de charger les coups de cœur.")
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -74,10 +89,11 @@ export default function PartnersPage() {
     return partners.filter((partner) => {
       const partnerCategory = partner.category?.category ?? ""
       const matchesCategory = category === "all" || partnerCategory === category
+      const matchesFavorite = !favoritesOnly || favoritePartnerIds.has(partner.id)
       const haystack = `${partner.name} ${partnerCategory} ${partner.address} ${partner.postalCode}`.toLocaleLowerCase("fr")
-      return matchesCategory && (!normalized || haystack.includes(normalized))
+      return matchesCategory && matchesFavorite && (!normalized || haystack.includes(normalized))
     })
-  }, [category, partners, query])
+  }, [category, favoritePartnerIds, favoritesOnly, partners, query])
 
   const mapPartners = useMemo(
     () => visible.flatMap((partner) => {
@@ -141,7 +157,7 @@ export default function PartnersPage() {
           <p role="alert" className="mt-6 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark">{sessionError ?? loadError}</p>
         )}
 
-        <section className="mt-7 grid gap-3 rounded-3xl border bg-card p-4 shadow-sm sm:grid-cols-[1fr_260px] sm:p-5" aria-label="Filtres partenaires">
+        <section className="mt-7 grid gap-3 rounded-3xl border bg-card p-4 shadow-sm sm:grid-cols-[1fr_240px_auto] sm:p-5" aria-label="Filtres partenaires">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <span className="sr-only">Rechercher un partenaire</span>
@@ -154,6 +170,15 @@ export default function PartnersPage() {
               {categories.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
+          <Button
+            type="button"
+            variant={favoritesOnly ? "default" : "outline"}
+            onClick={() => setFavoritesOnly((value) => !value)}
+            aria-pressed={favoritesOnly}
+            className="h-9"
+          >
+            <Heart className={favoritesOnly ? "fill-current" : undefined} aria-hidden="true" /> Coups de cœur
+          </Button>
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(390px,.95fr)]">
@@ -162,7 +187,7 @@ export default function PartnersPage() {
           <section className="min-w-0" aria-labelledby="partner-list-title">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 id="partner-list-title" className="text-xl font-black">{visible.length} partenaire{visible.length > 1 ? "s" : ""}</h2>
-              {(query || category !== "all") && <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setCategory("all") }}>Effacer les filtres</Button>}
+              {(query || category !== "all" || favoritesOnly) && <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setCategory("all"); setFavoritesOnly(false) }}>Effacer les filtres</Button>}
             </div>
 
             {sessionLoading || loading ? (
@@ -180,8 +205,10 @@ export default function PartnersPage() {
                           <h3 className="text-lg font-black">{partner.name}</h3>
                           <p className="text-sm font-semibold text-primary">{partner.category?.category ?? "Partenaire"}</p>
                         </div>
-                        {partner.isFeatured && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-bold"><Sparkles className="size-3.5" aria-hidden="true" /> Mis en avant</span>
+                        {favoritePartnerIds.has(partner.id) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-red-soft px-2.5 py-1 text-xs font-bold text-brand-red-dark">
+                            <Heart className="size-3.5 fill-current" aria-hidden="true" /> Coup de cœur
+                          </span>
                         )}
                       </div>
                       <p className="mt-3 flex items-start gap-2 text-sm">

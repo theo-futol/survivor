@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, History, LoaderCircle, MapPin, QrCode, Sparkles, X } from "lucide-react"
+import { ArrowRight, Heart, History, LoaderCircle, MapPin, QrCode, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
 import { PublicHeader } from "@/components/public-header"
@@ -22,6 +22,7 @@ import {
 type PartnerListResponse = { data: ApiPartner[]; meta: PaginationMeta }
 type TransactionResponse = { transactions: ApiTransaction[] }
 type QrResponse = { qrcode: string; expiresAt: string }
+type FavoriteResponse = { favorites: Array<{ partnerId: string; name: string; likeAmount: number }> }
 
 type PaymentState = {
   partner: ApiPartner
@@ -37,7 +38,8 @@ export default function Page() {
   const [transactions, setTransactions] = useState<ApiTransaction[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [featuredOnly, setFeaturedOnly] = useState(false)
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [favoritePartnerIds, setFavoritePartnerIds] = useState<Set<string>>(new Set())
   const [payment, setPayment] = useState<PaymentState | null>(null)
   const qrTriggerRef = useRef<HTMLButtonElement | null>(null)
   const closeQrButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -55,8 +57,9 @@ export default function Page() {
     Promise.allSettled([
       apiFetch<TransactionResponse>(`/api/v1/salaries/${employee.id}/transactions`),
       apiFetch<PartnerListResponse>("/api/v1/partenaires?limit=100"),
+      apiFetch<FavoriteResponse>("/api/v1/ministerfavorite"),
     ])
-      .then(([transactionResult, partnerResult]) => {
+      .then(([transactionResult, partnerResult, favoriteResult]) => {
         if (cancelled) return
 
         if (transactionResult.status === "fulfilled") {
@@ -69,6 +72,12 @@ export default function Page() {
           setPartners(partnerResult.value.data ?? [])
         } else if (transactionResult.status === "fulfilled") {
           setLoadError(partnerResult.reason instanceof Error ? partnerResult.reason.message : "Impossible de charger les partenaires.")
+        }
+
+        if (favoriteResult.status === "fulfilled") {
+          setFavoritePartnerIds(new Set((favoriteResult.value.favorites ?? []).map((favorite) => favorite.partnerId)))
+        } else if (transactionResult.status === "fulfilled" && partnerResult.status === "fulfilled") {
+          setLoadError(favoriteResult.reason instanceof Error ? favoriteResult.reason.message : "Impossible de charger les coups de cœur.")
         }
       })
       .finally(() => {
@@ -86,8 +95,8 @@ export default function Page() {
   }, [payment?.partner.id])
 
   const visiblePartners = useMemo(
-    () => (featuredOnly ? partners.filter((partner) => partner.isFeatured) : partners),
-    [featuredOnly, partners]
+    () => (favoritesOnly ? partners.filter((partner) => favoritePartnerIds.has(partner.id)) : partners),
+    [favoritePartnerIds, favoritesOnly, partners]
   )
 
   const totals = useMemo(() => {
@@ -229,8 +238,8 @@ export default function Page() {
                   <h2 id="offers-title" className="mt-1 text-2xl font-black">Partenaires</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Choisissez un partenaire et générez votre QR dynamique.</p>
                 </div>
-                <Button variant={featuredOnly ? "default" : "outline"} size="sm" onClick={() => setFeaturedOnly((value) => !value)} aria-pressed={featuredOnly}>
-                  <Sparkles aria-hidden="true" /> Mis en avant
+                <Button variant={favoritesOnly ? "default" : "outline"} size="sm" onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>
+                  <Heart aria-hidden="true" /> Coups de cœur
                 </Button>
               </div>
 
@@ -249,7 +258,11 @@ export default function Page() {
                           <h3 className="font-black leading-tight">{partner.name}</h3>
                           <p className="mt-1 text-sm text-muted-foreground">{partner.category?.category ?? "Partenaire"}</p>
                         </div>
-                        {partner.isFeatured && <Sparkles className="size-4 text-brand-red" aria-label="Partenaire mis en avant" />}
+                        {favoritePartnerIds.has(partner.id) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-red-soft px-2.5 py-1 text-xs font-bold text-brand-red-dark">
+                            <Heart className="size-3.5 fill-current" aria-hidden="true" /> Coup de cœur
+                          </span>
+                        )}
                       </div>
                       <p className="mt-3 flex items-start gap-1 text-sm text-muted-foreground">
                         <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" /> {partner.address} · {partner.postalCode}

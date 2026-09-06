@@ -10,7 +10,7 @@ const favoriteSchema = z.object({ partnerId: z.uuid() });
  * /api/v1/ministerfavorite:
  *   get:
  *     summary: Liste des partenaires favoris du ministre
- *     description: Retourne les partenaires présents dans la liste des favoris du ministre, avec le nom de chaque entreprise. Réservé aux administrateurs.
+ *     description: Retourne les partenaires présents dans la liste des favoris du ministre, avec le nom de chaque entreprise. Accessible aux administrateurs et aux salariés afin d'afficher et filtrer les coups de cœur dans l'espace salarié.
  *     security:
  *       - bearerAuth: []
  *     responses:

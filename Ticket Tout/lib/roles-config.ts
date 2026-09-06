@@ -29,7 +29,7 @@ export const ROUTE_ROLES = {
 
   'POST /api/v1/admin/ban': ['ADMIN'],
 
-  'GET /api/v1/ministerfavorite': ['ADMIN'],
+  'GET /api/v1/ministerfavorite': ['ADMIN', 'EMPLOYEE'],
   'POST /api/v1/ministerfavorite': ['ADMIN'],
   'PATCH /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
   'DELETE /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
