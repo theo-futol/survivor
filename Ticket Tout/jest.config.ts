@@ -8,6 +8,7 @@ const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'node',
   testMatch: ['<rootDir>/tests/**/*.test.ts'],
+  setupFiles: ['<rootDir>/tests/setup-env.ts'],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^@/lib/prisma/db$': '<rootDir>/tests/mocks/mock-db.ts',

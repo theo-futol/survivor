@@ -124,6 +124,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
     } catch (error) {
         console.error('Error fetching salary transactions', JSON.stringify(error));
         const {message, statusCode} = commonErrorHandler(error);
+        console.log('Error message:', message, 'Status code:', statusCode);
         return Response.json({ error: message }, { status: statusCode });
     }
 }
@@ -133,7 +134,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * /api/v1/salaries/{salarieId}/transactions:
  *   post:
  *     summary: Création d'une transaction pour un salarié
- *     description: "Crée une transaction et recalcule le solde du salarié dans une transaction PostgreSQL, la ligne du salarié étant verrouillée (`SELECT … FOR UPDATE`) le temps du calcul. Un type `PAYMENT` débite le solde, tout autre type le crédite ; un statut `REFUSER` enregistre la transaction sans toucher au solde. Un solde final négatif est refusé. Le corps attendu est `{ amount, status, type }` — la gestion du `qrcode` et de `originalTransactionId` décrite dans docs/API.md n'est pas implémentée."
+ *     description: "Crée une transaction et recalcule le solde du salarié dans une transaction PostgreSQL, la ligne du salarié étant verrouillée (`SELECT … FOR UPDATE`) le temps du calcul. Un type `PAYMENT` débite le solde, tout autre type le crédite. Le `status` est **déduit du solde par le serveur**, jamais repris du corps de la requête : si le solde ne couvre pas le débit, la transaction est enregistrée en `REFUSER` (réponse `201`) et le solde reste inchangé, sinon en `VALIDER`. Le corps attendu est `{ amount, status, type }` — la gestion du `qrcode` et de `originalTransactionId` décrite dans docs/API.md n'est pas implémentée."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -150,7 +151,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *             required: [amount, status, type]
  *             properties:
  *               amount: { type: number, minimum: 1 }
- *               status: { type: string, enum: [REFUSER, VALIDER] }
+ *               status: { type: string, enum: [REFUSER, VALIDER], description: "Validé par le schéma mais ignoré : le serveur déduit le statut du solde." }
  *               type: { type: string, enum: [PAYMENT, REFUND, TOPUP] }
  *     responses:
  *       '201':
@@ -161,7 +162,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *               type: object
  *               properties:
  *                 message: { type: string }
- *       '400': { description: Identifiant ou corps de requête invalide, ou solde insuffisant. }
+ *       '400': { description: Identifiant ou corps de requête invalide. }
  *       '401': { description: Token manquant ou invalide. }
  *       '403': { description: Rôle insuffisant. }
  *       '404': { description: Salarié introuvable. }

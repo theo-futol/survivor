@@ -1,19 +1,19 @@
 # Fiche de référence — Registre des activités de traitement (RGPD)
 
-### Activité : Ticket Tout — Le dispositif de crédit pour les salariés chez les partenaires référencés par le Ministère
+### Activité : CartePro — Le dispositif de crédit pour les salariés chez les partenaires référencés
 
 #### Informations générales
 
 | Champ | Valeur |
 |---|---|
 | Date de création de la fiche | 1 septembre 2026 |
-| Date de dernière mise à jour de la fiche | 4 septembre 2026 |
+| Date de dernière mise à jour de la fiche | 7 septembre 2026 |
 
 #### Objectifs poursuivis
 
 **Finalité principale**
 
-Permettre aux employeurs de créditer leurs salariés de crédits (simulation) utilisables auprès d'un réseau de partenaires référencés par le Ministère.
+Permettre aux employeurs de créditer leurs salariés de crédits (simulation) utilisables auprès d'un réseau de partenaires référencés.
 
 **Finalités secondaires**
 
@@ -27,7 +27,7 @@ Permettre aux employeurs de créditer leurs salariés de crédits (simulation) u
 | 1 | Salariés |
 | 2 | Employeurs |
 | 3 | Partenaires |
-| 4 | Agents de l'administration (Ministère) |
+| 4 | Agents de l'administration |
 
 #### Catégories de données collectées
 
@@ -54,14 +54,14 @@ Permettre aux employeurs de créditer leurs salariés de crédits (simulation) u
 
 | # | Valeur |
 |---|---|
-| 1 | Administration (Ministère) |
+| 1 | Administration |
 | 2 | Entreprise de services |
 
 **Organismes externes**
 
 | # | Valeur |
 |---|---|
-| 1 | Partenaires référencés par le Ministère |
+| 1 | Partenaires référencés |
 
 **Hebergement des données et de l'application**
 
@@ -161,13 +161,6 @@ QR code de paiement généré côté salarié pour valider une transaction ; cou
 | userId | text | Oui (relie le QR code au salarié) | Accès restreint par rôle applicatif |
 | companyId | text | Non (référence technique) | — |
 | expiredAt | timestamp | Non (métadonnée technique) | Expiration à 5 minutes |
-
-### `ministerFavorite`
-
-| Colonne | Type | Donnée personnelle | Sécurisation |
-|---|---|---|---|
-| id | integer | Non (identifiant technique) | — |
-| companyId | text | Non (référence technique, favori du Ministère sur une entreprise) | — |
 
 ### `administration`
 

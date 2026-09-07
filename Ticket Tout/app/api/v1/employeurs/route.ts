@@ -94,15 +94,16 @@ export async function GET(request: Request)
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, siret, kbisId, address, postalCode, agentId, reasonId, categoryId, location]
+ *             required: [name, email, siret, kbisId, description, address, postalCode, agentId, reasonId, categoryId, location]
  *             properties:
  *               name: { type: string }
  *               email: { type: string, format: email }
  *               siret: { type: string, pattern: '^\d{14}$' }
  *               kbisId: { type: string, format: uuid }
+ *               description: { type: string, maxLength: 500 }
  *               address: { type: string }
  *               postalCode: { type: string, pattern: '^\d{5}$' }
- *               agentId: { type: integer }
+ *               agentId: { type: string, format: uuid, description: "Identifiant de l'agent ADMIN validant le dossier (`adminUser.userId`)." }
  *               reasonId: { type: integer }
  *               categoryId: { type: integer }
  *               location:

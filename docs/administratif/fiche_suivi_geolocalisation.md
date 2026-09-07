@@ -3,14 +3,14 @@
 > **Note** : la géolocalisation utilisateur est une fonctionnalité **prévue** mais **non encore implémentée** dans le code à la date de rédaction — aucun appel à l'API `navigator.geolocation` du navigateur n'existe aujourd'hui, et le schéma de données ne comporte aucun champ latitude/longitude. Cette fiche décrit le traitement tel qu'il est prévu, pour cadrer son implémentation future.
 
 ## 1. Informations Générales
-* **Nom du traitement :** Géolocalisation des utilisateurs de Ticket Tout
+* **Nom du traitement :** Géolocalisation des utilisateurs de CartePro
 * **Date de création :** 03/09/2026
-* **Dernière mise à jour :** 03/09/2026
-* **Responsable du traitement :** Entreprise de services (en charge du développement et de l'exploitation de Ticket Tout)
+* **Dernière mise à jour :** 07/09/2026
+* **Responsable du traitement :** Entreprise de services (en charge du développement et de l'exploitation de CartePro)
 * **Délégué à la Protection des Données (DPO) :** Florine Pontaillac
 
 ## 2. Finalités & Justification du Traitement
-* **Objectif principal :** Permettre au salarié de trouver le partenaire référencé par le Ministère le plus proche de chez lui (page `/partners`)
+* **Objectif principal :** Permettre au salarié de trouver le partenaire référencé le plus proche de chez lui (page `/partners`)
 * **Objectifs secondaires :** La fonctionnalité est limitée à la recherche du partenaire le plus proche
 * **Base légale retenue :** Consentement de l'utilisateur (Pop-up/Bandeau), cohérent avec le caractère optionnel.
 

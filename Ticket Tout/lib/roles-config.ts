@@ -20,7 +20,7 @@ export const ROUTE_ROLES = {
   'DELETE /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY'],
   'GET /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'GET /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
-  'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER'],
+  'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER', 'EMPLOYEE'],
 
   'GET /api/v1/partenaires': ['ADMIN', 'PARTNER'],
   'POST /api/v1/partenaires': ['ADMIN'],
