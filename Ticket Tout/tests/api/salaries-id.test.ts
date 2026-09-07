@@ -116,6 +116,38 @@ describe('PATCH /api/v1/salaries/{salarieId}', () =>
 
     expect(json.data[0].password).toBeUndefined();
   });
+
+  it('lets the employer deactivate and reactivate one of its employees', async () =>
+  {
+    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+
+    const deactivated = await patch(EMPLOYEE_ID, { active: false }, token);
+    const deactivatedJson = await deactivated.json();
+
+    expect(deactivated.status).toBe(200);
+    expect(deactivatedJson.active).toBe(false);
+
+    const activeOnly = await GET(new Request('http://localhost/api/v1/salaries', { headers: headersFor(token) }));
+    expect((await activeOnly.json()).data).toHaveLength(0);
+
+    const includingInactive = await GET(new Request('http://localhost/api/v1/salaries?includeInactive=true', { headers: headersFor(token) }));
+    const inactiveJson = await includingInactive.json();
+    expect(inactiveJson.data).toHaveLength(1);
+    expect(inactiveJson.data[0].active).toBe(false);
+
+    const reactivated = await patch(EMPLOYEE_ID, { active: true }, token);
+    const reactivatedJson = await reactivated.json();
+
+    expect(reactivated.status).toBe(200);
+    expect(reactivatedJson.active).toBe(true);
+  });
+
+  it('does not let an employee change its own active status', async () =>
+  {
+    const { token } = await signToken({ sub: EMPLOYEE_ID, role: 'EMPLOYEE' });
+
+    expect((await patch(EMPLOYEE_ID, { active: false }, token)).status).toBe(400);
+  });
 });
 
 describe('PATCH /api/v1/salaries/{salarieId} — account verification', () =>

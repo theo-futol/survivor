@@ -46,6 +46,8 @@ export default function EmployerPage() {
   const [showEmployeeForm, setShowEmployeeForm] = useState(false)
   const [editing, setEditing] = useState<EditingEmployee>(null)
   const [showTopupForm, setShowTopupForm] = useState(false)
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   const loadSalaries = useCallback(async () => {
     if (!company?.id || !isCompany) return
@@ -55,7 +57,7 @@ export default function EmployerPage() {
 
     try {
       const payload = await apiFetch<SalariesResponse>(
-        `/api/v1/salaries?employeurId=${encodeURIComponent(company.id)}&page=1&limit=100`,
+        `/api/v1/salaries?employeurId=${encodeURIComponent(company.id)}&includeInactive=true&page=1&limit=100`,
       )
       setSalaries(payload.data ?? [])
     } catch (caught) {
@@ -70,13 +72,32 @@ export default function EmployerPage() {
   }, [loadSalaries])
 
   const stats = useMemo(() => {
+    const activeSalaries = salaries.filter((salary) => salary.active)
+
     return {
-      employees: salaries.length,
-      totalBalance: salaries.reduce((sum, salary) => sum + salary.balance, 0),
-      transactionCount: salaries.reduce((sum, salary) => sum + salary.transactionCount, 0),
-      transactionTotal: salaries.reduce((sum, salary) => sum + salary.transactionTotal, 0),
+      employees: activeSalaries.length,
+      totalBalance: activeSalaries.reduce((sum, salary) => sum + salary.balance, 0),
+      transactionCount: activeSalaries.reduce((sum, salary) => sum + salary.transactionCount, 0),
+      transactionTotal: activeSalaries.reduce((sum, salary) => sum + salary.transactionTotal, 0),
     }
   }, [salaries])
+
+  async function toggleSalaryStatus(salary: ApiSalary) {
+    setStatusUpdatingId(salary.id)
+    setStatusError(null)
+
+    try {
+      await apiFetch(`/api/v1/salaries/${encodeURIComponent(salary.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !salary.active }),
+      })
+      await loadSalaries()
+    } catch (caught) {
+      setStatusError(caught instanceof Error ? caught.message : "Impossible de modifier le statut du salarié.")
+    } finally {
+      setStatusUpdatingId(null)
+    }
+  }
 
   if (sessionLoading) {
     return (
@@ -220,7 +241,7 @@ export default function EmployerPage() {
             </div>
             <TopupForm
               companyId={company.id}
-              employeeCount={salaries.length}
+              employeeCount={stats.employees}
               onCompleted={() => {
                 setShowTopupForm(false)
                 void loadSalaries()
@@ -239,6 +260,12 @@ export default function EmployerPage() {
               {loading ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />} Actualiser
             </Button>
           </div>
+
+          {statusError && (
+            <p role="alert" className="m-5 mb-0 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark sm:m-7 sm:mb-0">
+              {statusError}
+            </p>
+          )}
 
           {loadError ? (
             <p role="alert" className="m-5 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark sm:m-7">{loadError}</p>
@@ -266,7 +293,16 @@ export default function EmployerPage() {
               {salaries.map((salary) => (
                 <article key={salary.id} className="grid gap-5 p-5 sm:p-7 xl:grid-cols-[1.4fr_1fr_1fr_auto] xl:items-center">
                   <div className="min-w-0">
-                    <p className="truncate text-lg font-black">{salary.name} {salary.surname}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-lg font-black">{salary.name} {salary.surname}</p>
+                      <span
+                        className={salary.active
+                          ? "rounded-full bg-brand-success-soft px-2.5 py-1 text-xs font-bold text-brand-success"
+                          : "rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground"}
+                      >
+                        {salary.active ? "Actif" : "Inactif"}
+                      </span>
+                    </div>
                     <p className="mt-1 truncate text-sm text-muted-foreground">{salary.email}</p>
                     {salary.isBanned && <p className="mt-2 text-sm font-bold text-brand-red-dark">Compte banni</p>}
                   </div>
@@ -282,18 +318,30 @@ export default function EmployerPage() {
                     <p className="mt-1 text-xs text-muted-foreground">{formatMoney(salary.transactionTotal)} enregistrés</p>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() => {
-                      setEditing(salary)
-                      setShowEmployeeForm(false)
-                      setShowTopupForm(false)
-                      window.requestAnimationFrame(() => document.getElementById("employee-form-title")?.focus())
-                    }}
-                  >
-                    <PencilLine aria-hidden="true" /> Modifier
-                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        setEditing(salary)
+                        setShowEmployeeForm(false)
+                        setShowTopupForm(false)
+                        window.requestAnimationFrame(() => document.getElementById("employee-form-title")?.focus())
+                      }}
+                    >
+                      <PencilLine aria-hidden="true" /> Modifier
+                    </Button>
+                    <Button
+                      variant={salary.active ? "outline" : "default"}
+                      type="button"
+                      disabled={statusUpdatingId === salary.id}
+                      onClick={() => void toggleSalaryStatus(salary)}
+                      aria-label={`${salary.active ? "Désactiver" : "Activer"} le compte de ${salary.name} ${salary.surname}`}
+                    >
+                      {statusUpdatingId === salary.id && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+                      {salary.active ? "Désactiver" : "Activer"}
+                    </Button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -326,13 +374,11 @@ function EmployeeForm({
     const surname = String(form.get("surname") ?? "").trim()
     const email = String(form.get("email") ?? "").trim()
     const password = String(form.get("password") ?? "")
-    const documentId = String(form.get("documentId") ?? "").trim()
 
     try {
       if (employee) {
         const patch: Record<string, string> = { name, surname, email }
         if (password) patch.password = password
-        if (documentId) patch.documentId = documentId
 
         await apiFetch(`/api/v1/salaries/${encodeURIComponent(employee.id)}`, {
           method: "PATCH",
@@ -346,7 +392,6 @@ function EmployeeForm({
             surname,
             email,
             password,
-            documentId,
             companyId,
           }),
         })
@@ -388,21 +433,7 @@ function EmployeeForm({
             autoComplete="new-password"
           />
         </div>
-        <div>
-          <Label htmlFor="employee-document-id">{employee ? "Nouveau document ID (facultatif)" : "Document ID"}</Label>
-          <Input
-            id="employee-document-id"
-            name="documentId"
-            className="mt-2"
-            required={!employee}
-            placeholder="UUID du justificatif"
-          />
-        </div>
       </fieldset>
-
-      <p className="rounded-2xl bg-secondary p-4 text-sm text-muted-foreground">
-        Le champ Document ID est temporaire : le prochain patch branchera le sélecteur PDF sur le stockage Garage sans modifier les routes API existantes.
-      </p>
 
       {error && <p role="alert" className="rounded-xl bg-brand-red-soft px-4 py-3 text-sm font-semibold text-brand-red-dark">{error}</p>}
 

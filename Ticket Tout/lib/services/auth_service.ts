@@ -125,6 +125,29 @@ export async function authenticate(request: Request): Promise<AuthResult>
 
   try
   {
+    const user = await db.orm.public.Users
+      .where({ id: payload.sub })
+      .select('expiredAt')
+      .first();
+
+    if (!user)
+    {
+      return { ok: false, status: 401, error: 'Missing or invalid token' };
+    }
+
+    if (user.expiredAt !== null)
+    {
+      return { ok: false, status: 403, error: 'Account inactive' };
+    }
+  }
+  catch (databaseError)
+  {
+    console.error('PostgreSQL account status lookup failed', databaseError);
+    return { ok: false, status: 503, error: 'Auth service temporarily unavailable' };
+  }
+
+  try
+  {
     const banned = await isBanned(payload.sub);
 
     if (banned)

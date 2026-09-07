@@ -60,6 +60,7 @@ export type ApiSalary = {
   balance: number
   companyId: string | null
   createdAt: string
+  active: boolean
   isBanned: boolean
   transactionCount: number
   transactionTotal: number

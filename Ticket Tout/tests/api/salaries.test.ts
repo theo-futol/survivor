@@ -7,7 +7,6 @@ import {
   COMPANY_USER_ID,
   EMPLOYEE_ID,
   EMPLOYER_COMPANY_ID,
-  FREE_DOCUMENT_ID,
   OTHER_COMPANY_ID,
   UNKNOWN_ID,
 } from '../mocks/fixtures';
@@ -117,6 +116,7 @@ describe('POST /api/v1/salaries', () =>
     expect((await post({ ...validBody, password: 'weak' }, token)).status).toBe(400);
   });
 
+<<<<<<< HEAD
   it('returns 400 when the password is missing', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
@@ -143,8 +143,16 @@ describe('POST /api/v1/salaries', () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const { email: _omitted, ...incomplete } = validBody;
+=======
+  it('creates without requiring a contract or document id', async () =>
+  {
+    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+    const response = await post(validBody, token);
+    const json = await response.json();
+>>>>>>> 10a568e (feat: add button on employer page to switch state of salaries (active or not))
 
-    expect((await post(incomplete, token)).status).toBe(400);
+    expect(response.status).toBe(201);
+    expect(json.documentId).toBeUndefined();
   });
 
   it('returns 404 for an unknown company', async () =>

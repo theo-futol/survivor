@@ -24,7 +24,7 @@ const salariePatchSchema = z.object({
   surname: safeText(80).optional(),
   name: safeText(80).optional(),
   password: passwordSchema.optional(),
-  accountStatus: z.enum(['PENDING', 'ACCEPTED', 'REFUSED']).optional(),
+  active: z.boolean().optional(),
 }).refine((patch) => Object.keys(patch).length > 0, {
   message: 'Le corps de la requête ne doit pas être vide.',
 });
@@ -40,11 +40,11 @@ const selfPatchSchema = z.object({
   message: 'Le corps de la requête ne doit pas être vide.',
 });
 
-async function loadSalarie(salarieId: string)
+async function loadSalarie(salarieId: string, includeInactive = false)
 {
   const salarie = await db.orm.public.Users.where({ id: salarieId, role: 'EMPLOYEE' }).first();
 
-  if (!salarie || salarie.expiredAt !== null)
+  if (!salarie || (!includeInactive && salarie.expiredAt !== null))
   {
     throw new AppError('Salarie not found', 404);
   }
@@ -110,7 +110,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * /api/v1/salaries/{salarieId}:
  *   patch:
  *     summary: Mise à jour d'un salarié
- *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `password` et `accountStatus` ; un salarié modifiant sa propre fiche est limité à `surname`, `name` et `password`, tout autre champ étant refusé par un `400`. Le mot de passe est haché avant stockage ; `role`, `balance`, `companyId` et `expiredAt` sont pilotés par le serveur.\n\n**Vérification du compte** : faire passer `accountStatus` de `PENDING` à `ACCEPTED` déclenche l'envoi au salarié d'un email lui annonçant que son compte est validé, avec un lien vers l'application ; il s'y connecte avec le mot de passe que son entreprise lui a communiqué à la création. L'email part *avant* toute écriture : s'il échoue la réponse est un `502` et le salarié reste `PENDING`. Les autres transitions de statut sont de simples mises à jour."
+ *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `documentId`, `password` et `active` ; un salarié modifiant sa propre fiche est limité à `surname`, `name` et `password`. `active=false` renseigne `expiredAt` et désactive le compte ; `active=true` remet `expiredAt` à null."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -129,10 +129,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *               surname: { type: string }
  *               name: { type: string }
  *               password: { type: string }
- *               accountStatus:
- *                 type: string
- *                 enum: [PENDING, ACCEPTED, REFUSED]
- *                 description: "Réservé à `ADMIN` / `COMPANY`. `PENDING` → `ACCEPTED` vaut vérification du compte et envoie le lien d'activation."
+ *               active: { type: boolean }
  *     responses:
  *       '200':
  *         description: Salarié mis à jour. Le mot de passe haché n'est jamais retourné.
@@ -161,22 +158,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
     const { salarieId } = paramsSchema.parse(await params);
 
     const actor = await resolveActor(auth);
-    const salarie = await loadSalarie(salarieId);
+    const salarie = await loadSalarie(salarieId, actor.role !== 'EMPLOYEE');
     assertCanAccessSalarie(actor, salarie);
 
     const body = await request.json().catch(() =>
     {
       throw new AppError('Invalid JSON in request body', 400);
     });
-    const patch: {
-      email?: string;
-      surname?: string;
-      name?: string;
-      password?: string;
-      accountStatus?: 'PENDING' | 'ACCEPTED' | 'REFUSED';
-    } = actor.role === 'EMPLOYEE' ? selfPatchSchema.parse(body) : salariePatchSchema.parse(body);
+    const patch: { email?: string; surname?: string; name?: string; documentId?: string; password?: string; active?: boolean } =
+      actor.role === 'EMPLOYEE' ? selfPatchSchema.parse(body) : salariePatchSchema.parse(body);
 
-    const { email } = patch;
+    const { email, documentId, active } = patch;
 
     if (email !== undefined)
     {
@@ -188,39 +180,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
       }
     }
 
-    // Account verification: PENDING -> ACCEPTED, and only that transition.
-    const isVerification = patch.accountStatus === 'ACCEPTED' && salarie.accountStatus === 'PENDING';
-
-    if (isVerification)
-    {
-      // The mail goes out before anything is written, so a provider failure
-      // (502 from the Brevo provider) leaves the salarié PENDING and the
-      // verification can simply be retried.
-      await sendEmail({
-        to: salarie.email,
-        subject: 'Votre compte Ticket Tout est validé',
-        text: [
-          `Bonjour ${salarie.name} ${salarie.surname},`,
-          '',
-          "Votre compte Ticket Tout vient d'être validé par l'administration.",
-          'Vous pouvez désormais vous connecter avec cette adresse email et le mot de passe',
-          'qui vous a été communiqué par votre entreprise :',
-          buildLoginLink(),
-          '',
-          "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
-        ].join('\n'),
-      });
-    }
-
-    const { password, ...rest } = patch;
-    const values = password === undefined ? rest : { ...rest, password: hashPassword(password) };
+    const { password, active: _active, ...rest } = patch;
+    const values = {
+      ...rest,
+      ...(password === undefined ? {} : { password: hashPassword(password) }),
+      ...(active === undefined ? {} : { expiredAt: active ? null : Temporal.Now.instant() }),
+    };
 
     await db.orm.public.Users.where({ id: salarieId }).update(values);
 
-    const updated = await loadSalarie(salarieId);
+    const updated = await loadSalarie(salarieId, true);
     const { password: _password, ...safe } = updated;
 
-    return Response.json(safe, { status: 200 });
+    return Response.json({ ...safe, active: safe.expiredAt === null }, { status: 200 });
   }
   catch (error)
   {

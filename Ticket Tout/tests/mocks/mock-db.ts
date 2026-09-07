@@ -237,6 +237,7 @@ export function resetMockDb()
 {
   const seed: Record<string, Row[]> = {
     Users: usersFixture,
+    Document: [],
     Company: companyFixture,
     CompanyCategory: companyCategoryFixture,
     Transaction: transactionFixture,

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/prisma/db';
 import { authorize, hashPassword, passwordSchema } from '@/lib/services/auth_service';
@@ -8,32 +9,35 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 const safeText = (max: number) =>
   z.string().min(1).max(max).regex(/^[^<>'"&]*$/, { message: "Les caractères spéciaux (<, >, ', \", &) sont interdits." });
 
-// Strict: `documentId` no longer exists on Users, so supplying it is a 400
-// rather than a silent no-op. The same goes for `numeroSalarie` from
-// docs/API.md, which has never had a column, and for `accountStatus`, which the
-// server pins to PENDING.
+// The company no longer uploads a contract/document when it creates an
+// employee. `Users.documentId` is still non-nullable in the current database
+// contract, so the API creates an internal zero-byte Document row only to
+// satisfy that legacy relation. No file is sent to Garage.
 const salarieCreateSchema = z.object({
   email: z.email(),
   surname: safeText(80),
   name: safeText(80),
-  password: passwordSchema,
   companyId: z.uuid(),
 }).strict();
 
 const employeurIdSchema = z.uuid().optional();
+const includeInactiveSchema = z.enum(['true', 'false']).default('false').transform((value) => value === 'true');
 
 /**
  * @openapi
  * /api/v1/salaries:
  *   get:
  *     summary: Liste paginée des salariés
- *     description: Retourne les salariés actifs (ceux dont `expiredAt` est nul). Chaque salarié est enrichi de son statut de bannissement (`isBanned`, lu dans la table `BannedUser`) ainsi que du nombre et du montant total de ses transactions. Un utilisateur `COMPANY` ne voit que les salariés de sa propre entreprise ; un `ADMIN` les voit tous.
+ *     description: Retourne les salariés. Par défaut, seuls les comptes actifs (`expiredAt` nul) sont inclus ; `includeInactive=true` permet à l'entreprise ou à l'administrateur d'afficher aussi les comptes désactivés. Chaque salarié est enrichi de son statut `active`, de son statut de bannissement (`isBanned`) ainsi que du nombre et du montant total de ses transactions. Un utilisateur `COMPANY` ne voit que les salariés de sa propre entreprise ; un `ADMIN` les voit tous.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: employeurId
  *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: includeInactive
+ *         schema: { type: boolean, default: false }
  *       - in: query
  *         name: page
  *         schema: { type: integer, minimum: 1, default: 1 }
@@ -59,6 +63,7 @@ const employeurIdSchema = z.uuid().optional();
  *                       name: { type: string }
  *                       balance: { type: integer }
  *                       companyId: { type: string, nullable: true }
+ *                       active: { type: boolean }
  *                       isBanned: { type: boolean }
  *                       transactionCount: { type: integer }
  *                       transactionTotal: { type: integer }
@@ -88,6 +93,7 @@ export async function GET(request: Request)
     const url = new URL(request.url);
     const pagination = parsePagination(url);
     const employeurId = employeurIdSchema.parse(url.searchParams.get('employeurId') ?? undefined);
+    const includeInactive = includeInactiveSchema.parse(url.searchParams.get('includeInactive') ?? undefined);
 
     // Non-admins are pinned to their own company whatever they ask for.
     const companyId = actor.role === 'ADMIN' ? employeurId : (actor.companyId ?? '');
@@ -99,16 +105,15 @@ export async function GET(request: Request)
 
     const scoped = () =>
     {
-      const base = db.orm.public.Users
-        .where({ role: 'EMPLOYEE' })
-        .where((u) => u.expiredAt.isNull());
+      const employees = db.orm.public.Users.where({ role: 'EMPLOYEE' });
+      const base = includeInactive ? employees : employees.where((u) => u.expiredAt.isNull());
 
       return companyId === undefined ? base : base.where({ companyId });
     };
 
     const { total } = await scoped().aggregate((aggregate) => ({ total: aggregate.count() }));
     const salaries = await scoped()
-      .select('id', 'email', 'surname', 'name', 'balance', 'companyId', 'createdAt')
+      .select('id', 'email', 'surname', 'name', 'balance', 'companyId', 'createdAt', 'expiredAt')
       .orderBy((u) => u.createdAt.desc())
       .limit(pagination.limit)
       .offset(pagination.offset)
@@ -125,7 +130,14 @@ export async function GET(request: Request)
         }));
 
       return {
-        ...salarie,
+        id: salarie.id,
+        email: salarie.email,
+        surname: salarie.surname,
+        name: salarie.name,
+        balance: salarie.balance,
+        companyId: salarie.companyId,
+        createdAt: salarie.createdAt,
+        active: salarie.expiredAt === null,
         isBanned: banned !== null,
         transactionCount: totals.transactionCount,
         transactionTotal: totals.transactionTotal ?? 0,
@@ -146,7 +158,7 @@ export async function GET(request: Request)
  * /api/v1/salaries:
  *   post:
  *     summary: Création d'un salarié
- *     description: "Crée un salarié rattaché à une entreprise. Le mot de passe est choisi par l'employeur dans le corps de la requête ; il doit respecter les règles de complexité (8 à 32 caractères, une majuscule, une minuscule, un chiffre, un caractère spécial) et n'est stocké que haché. Le serveur impose `role = EMPLOYEE`, `balance = 0` et `accountStatus = PENDING` : la connexion est refusée tant qu'un agent n'a pas vérifié le compte (`PATCH /api/v1/salaries/{salarieId}` avec `accountStatus = ACCEPTED`), ce qui envoie au salarié un email l'invitant à se connecter avec ce mot de passe. Le corps est strict — un champ inconnu est un `400`, ce qui vaut pour `accountStatus`, pour `documentId` (la colonne `Users.documentId` n'existe plus) et pour `numeroSalarie` de docs/API.md. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
+ *     description: "Crée un salarié rattaché à une entreprise. Le serveur impose `role = EMPLOYEE`, `balance = 0` et un compte actif ; le mot de passe est haché avant stockage. Aucun contrat ni document n'est demandé à l'entreprise. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -155,13 +167,12 @@ export async function GET(request: Request)
  *         application/json:
  *           schema:
  *             type: object
- *             additionalProperties: false
  *             required: [email, surname, name, password, companyId]
  *             properties:
  *               email: { type: string, format: email }
  *               surname: { type: string, description: "Nom de famille (`nom` dans docs/API.md)." }
  *               name: { type: string, description: "Prénom (`prenom` dans docs/API.md)." }
- *               password: { type: string, description: "Mot de passe initial du salarié, à lui communiquer par l'employeur. 8 à 32 caractères, avec majuscule, minuscule, chiffre et caractère spécial." }
+ *               password: { type: string }
  *               companyId: { type: string, format: uuid, description: "Entreprise employeuse (`employeurId` dans docs/API.md)." }
  *     responses:
  *       '201':
@@ -207,26 +218,37 @@ export async function POST(request: Request)
 
     if (existingEmail)
     {
-      throw new AppError('A user with these identifiers already exists', 409);
+      throw new AppError('A user with this email already exists', 409);
     }
 
-    // The password is chosen by the employer and communicated to the salarié
-    // out of band; only its hash is ever stored. The account is created PENDING
-    // and login is refused until an agent verifies it.
-    const created = await db.orm.public.Users.create({
-      email: input.email,
-      surname: input.surname,
-      name: input.name,
-      companyId: input.companyId,
-      password: hashPassword(input.password),
-      role: 'EMPLOYEE',
-      balance: 0,
-      accountStatus: 'PENDING',
+    const technicalDocument = await db.orm.public.Document.create({
+      storageKey: `internal/employee-without-contract/${randomUUID()}`,
+      mimeType: 'application/x-ticket-tout-no-contract',
+      size: 0,
     });
 
-    const { password: _password, ...salarie } = created;
+    try
+    {
+      const created = await db.orm.public.Users.create({
+        email: input.email,
+        surname: input.surname,
+        name: input.name,
+        documentId: technicalDocument.id,
+        companyId: input.companyId,
+        password: hashPassword(input.password),
+        role: 'EMPLOYEE',
+        balance: 0,
+      });
 
-    return Response.json(salarie, { status: 201 });
+      const { password: _password, documentId: _documentId, ...salarie } = created;
+
+      return Response.json(salarie, { status: 201 });
+    }
+    catch (error)
+    {
+      await db.orm.public.Document.where({ id: technicalDocument.id }).delete();
+      throw error;
+    }
   }
   catch (error)
   {

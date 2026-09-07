@@ -10,4 +10,5 @@ garage/
 Ticket Tout/certificate/
 Ticket Tout/certificates/
 package-lock.json
+package.json
 node_modules/
