@@ -1,99 +1,330 @@
 /*
- * PALETTE UNIQUE DE L'APPLICATION
- * Modifiez les valeurs ici : toute l'interface suit automatiquement.
- */
+* TICKET TOUT
+* Palette accessible — Vert sauge + Lavande
+*
+* Contrastes pensés pour WCAG/RGAA :
+* - Texte normal : couleurs foncées sur fonds clairs
+* - Couleurs pastel utilisées principalement en background
+* - Dark mode avec couleurs adaptées
+*/
+
+
+
 :root {
-  --background: #f7f9fc;
-  --foreground: #13253f;
-  --card: #ffffff;
-  --card-foreground: #13253f;
-  --popover: #ffffff;
-  --popover-foreground: #13253f;
+  /* ─────────────────────────────
+   * BASE
+   * ───────────────────────────── */
 
-  --primary: #1b3a6b;
-  --primary-foreground: #ffffff;
-  --brand-navy-deep: #102b52;
-  --brand-blue-bright: #2f6fb2;
-  --brand-red: #d7263d;
-  --brand-red-dark: #c51f34;
-  --brand-red-soft: #fff0f2;
-  --brand-gold: #e6c36a;
-  --brand-gold-dark: #b78a2f;
-  --brand-success: #147a4b;
-  --brand-success-soft: #e9f8f0;
 
-  --secondary: #eaf1fb;
-  --secondary-foreground: #1b3a6b;
-  --muted: #eef3f8;
-  --muted-foreground: #49627f;
-  --accent: #dce9f8;
-  --accent-foreground: #1b3a6b;
-  --destructive: #d7263d;
-  --border: #7086a1;
-  --input: #7086a1;
-  --ring: #2f6fb2;
 
-  --chart-1: #1b3a6b;
-  --chart-2: #d7263d;
-  --chart-3: #2f6fb2;
-  --chart-4: #6d8fba;
-  --chart-5: #c51f34;
+  --background: #FAFBF8;
+  --foreground: #17251F;
+
+
+
+  --card: #FFFFFF;
+  --card-foreground: #17251F;
+
+
+
+  --popover: #FFFFFF;
+  --popover-foreground: #17251F;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — VERT
+   * ───────────────────────────── */
+
+
+
+  --primary: #246B4A;
+  --primary-foreground: #FFFFFF;
+
+
+
+  --brand-green-deep: #246B4A;
+  --brand-green: #3F8F68;
+  --brand-green-light: #A9D8BF;
+  --brand-green-soft: #E5F3EB;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — LAVANDE
+   * ───────────────────────────── */
+
+
+
+  --brand-purple-deep: #604A78;
+  --brand-purple: #80669A;
+  --brand-purple-light: #C9B9D9;
+  --brand-purple-soft: #F0EAF5;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SECONDARY
+   * ───────────────────────────── */
+
+
+
+  --secondary: #E5F3EB;
+  --secondary-foreground: #246B4A;
+
+
+
+  --muted: #F0F2EF;
+  --muted-foreground: #53635B;
+
+
+
+  --accent: #F0EAF5;
+  --accent-foreground: #604A78;
+
+
+
+
+
+  /* ─────────────────────────────
+   * STATES
+   * ───────────────────────────── */
+
+
+
+  --destructive: #B42332;
+  --destructive-foreground: #FFFFFF;
+
+
+
+
+
+  /* ─────────────────────────────
+   * FORM / BORDER
+   * ───────────────────────────── */
+
+
+
+  --border: #CBD7D0;
+  --input: #B8C8BF;
+  --ring: #246B4A;
+
+
+
+
+
+  /* ─────────────────────────────
+   * DATA VISUALIZATION
+   * ───────────────────────────── */
+
+
+
+  --chart-1: #246B4A;
+  --chart-2: #604A78;
+  --chart-3: #3F8F68;
+  --chart-4: #80669A;
+  --chart-5: #B42332;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SIDEBAR
+   * ───────────────────────────── */
+
+
+
+  --sidebar: #F3F8F4;
+  --sidebar-foreground: #17251F;
+
+
+
+  --sidebar-primary: #246B4A;
+  --sidebar-primary-foreground: #FFFFFF;
+
+
+
+  --sidebar-accent: #E5F3EB;
+  --sidebar-accent-foreground: #246B4A;
+
+
+
+  --sidebar-border: #CBD7D0;
+  --sidebar-ring: #246B4A;
+
+
+
+
 
   --radius: 0.75rem;
-
-  --sidebar: #f2f6fc;
-  --sidebar-foreground: #13253f;
-  --sidebar-primary: #1b3a6b;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eaf1fb;
-  --sidebar-accent-foreground: #1b3a6b;
-  --sidebar-border: #7086a1;
-  --sidebar-ring: #2f6fb2;
 }
 
+
+
+
+
+/* ═══════════════════════════════
+* DARK MODE
+* ═══════════════════════════════ */
+
+
+
 .dark {
-  --background: #0b1220;
-  --foreground: #edf4ff;
-  --card: #111c2e;
-  --card-foreground: #edf4ff;
-  --popover: #111c2e;
-  --popover-foreground: #edf4ff;
 
-  --primary: #7eade8;
-  --primary-foreground: #08111f;
-  --brand-navy-deep: #07101e;
-  --brand-blue-bright: #73aaf0;
-  --brand-red: #ff6075;
-  --brand-red-dark: #ff7d8e;
-  --brand-red-soft: #35141c;
-  --brand-gold: #f1cf79;
-  --brand-gold-dark: #bd8f35;
-  --brand-success: #65d39b;
-  --brand-success-soft: #102c21;
 
-  --secondary: #172943;
-  --secondary-foreground: #dbeaff;
-  --muted: #172337;
-  --muted-foreground: #9fb3cc;
-  --accent: #203758;
-  --accent-foreground: #eef6ff;
-  --destructive: #ff6075;
-  --border: #354b67;
-  --input: #405877;
-  --ring: #7eade8;
 
-  --chart-1: #7eade8;
-  --chart-2: #ff6075;
-  --chart-3: #73aaf0;
-  --chart-4: #9dbce4;
-  --chart-5: #ff94a2;
+  /* ─────────────────────────────
+   * BASE
+   * ───────────────────────────── */
 
-  --sidebar: #0e192a;
-  --sidebar-foreground: #edf4ff;
-  --sidebar-primary: #7eade8;
-  --sidebar-primary-foreground: #08111f;
-  --sidebar-accent: #172943;
-  --sidebar-accent-foreground: #edf4ff;
-  --sidebar-border: #354b67;
-  --sidebar-ring: #7eade8;
+
+
+  --background: #121A16;
+  --foreground: #F1F7F3;
+
+
+
+  --card: #1A2520;
+  --card-foreground: #F1F7F3;
+
+
+
+  --popover: #1A2520;
+  --popover-foreground: #F1F7F3;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — VERT
+   * ───────────────────────────── */
+
+
+
+  --primary: #8ED1AD;
+  --primary-foreground: #102018;
+
+
+
+  --brand-green-deep: #8ED1AD;
+  --brand-green: #71B990;
+  --brand-green-light: #A9D8BF;
+  --brand-green-soft: #1D3327;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — LAVANDE
+   * ───────────────────────────── */
+
+
+
+  --brand-purple-deep: #D0BDE0;
+  --brand-purple: #BCA4D0;
+  --brand-purple-light: #D8C9E4;
+  --brand-purple-soft: #2B2333;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SECONDARY
+   * ───────────────────────────── */
+
+
+
+  --secondary: #1D3327;
+  --secondary-foreground: #DDF2E5;
+
+
+
+  --muted: #202A25;
+  --muted-foreground: #B0BDB6;
+
+
+
+  --accent: #2B2333;
+  --accent-foreground: #E7DDF0;
+
+
+
+
+
+  /* ─────────────────────────────
+   * STATES
+   * ───────────────────────────── */
+
+
+
+  --destructive: #FF8B96;
+  --destructive-foreground: #241014;
+
+
+
+
+
+  /* ─────────────────────────────
+   * FORM / BORDER
+   * ───────────────────────────── */
+
+
+
+  --border: #3A4941;
+  --input: #4A5B51;
+  --ring: #8ED1AD;
+
+
+
+
+
+  /* ─────────────────────────────
+   * DATA VISUALIZATION
+   * ───────────────────────────── */
+
+
+
+  --chart-1: #8ED1AD;
+  --chart-2: #D0BDE0;
+  --chart-3: #71B990;
+  --chart-4: #BCA4D0;
+  --chart-5: #FF8B96;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SIDEBAR
+   * ───────────────────────────── */
+
+
+
+  --sidebar: #151F1A;
+  --sidebar-foreground: #F1F7F3;
+
+
+
+  --sidebar-primary: #8ED1AD;
+  --sidebar-primary-foreground: #102018;
+
+
+
+  --sidebar-accent: #1D3327;
+  --sidebar-accent-foreground: #DDF2E5;
+
+
+
+  --sidebar-border: #3A4941;
+  --sidebar-ring: #8ED1AD;
 }
