@@ -1,0 +1,330 @@
+/*
+* TICKET TOUT
+* Palette accessible — Vert sauge + Lavande
+*
+* Contrastes pensés pour WCAG/RGAA :
+* - Texte normal : couleurs foncées sur fonds clairs
+* - Couleurs pastel utilisées principalement en background
+* - Dark mode avec couleurs adaptées
+*/
+
+
+
+:root {
+  /* ─────────────────────────────
+   * BASE
+   * ───────────────────────────── */
+
+
+
+  --background: #FAFBF8;
+  --foreground: #17251F;
+
+
+
+  --card: #FFFFFF;
+  --card-foreground: #17251F;
+
+
+
+  --popover: #FFFFFF;
+  --popover-foreground: #17251F;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — VERT
+   * ───────────────────────────── */
+
+
+
+  --primary: #246B4A;
+  --primary-foreground: #FFFFFF;
+
+
+
+  --brand-green-deep: #246B4A;
+  --brand-green: #3F8F68;
+  --brand-green-light: #A9D8BF;
+  --brand-green-soft: #E5F3EB;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — LAVANDE
+   * ───────────────────────────── */
+
+
+
+  --brand-purple-deep: #604A78;
+  --brand-purple: #80669A;
+  --brand-purple-light: #C9B9D9;
+  --brand-purple-soft: #F0EAF5;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SECONDARY
+   * ───────────────────────────── */
+
+
+
+  --secondary: #E5F3EB;
+  --secondary-foreground: #246B4A;
+
+
+
+  --muted: #F0F2EF;
+  --muted-foreground: #53635B;
+
+
+
+  --accent: #F0EAF5;
+  --accent-foreground: #604A78;
+
+
+
+
+
+  /* ─────────────────────────────
+   * STATES
+   * ───────────────────────────── */
+
+
+
+  --destructive: #B42332;
+  --destructive-foreground: #FFFFFF;
+
+
+
+
+
+  /* ─────────────────────────────
+   * FORM / BORDER
+   * ───────────────────────────── */
+
+
+
+  --border: #CBD7D0;
+  --input: #B8C8BF;
+  --ring: #246B4A;
+
+
+
+
+
+  /* ─────────────────────────────
+   * DATA VISUALIZATION
+   * ───────────────────────────── */
+
+
+
+  --chart-1: #246B4A;
+  --chart-2: #604A78;
+  --chart-3: #3F8F68;
+  --chart-4: #80669A;
+  --chart-5: #B42332;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SIDEBAR
+   * ───────────────────────────── */
+
+
+
+  --sidebar: #F3F8F4;
+  --sidebar-foreground: #17251F;
+
+
+
+  --sidebar-primary: #246B4A;
+  --sidebar-primary-foreground: #FFFFFF;
+
+
+
+  --sidebar-accent: #E5F3EB;
+  --sidebar-accent-foreground: #246B4A;
+
+
+
+  --sidebar-border: #CBD7D0;
+  --sidebar-ring: #246B4A;
+
+
+
+
+
+  --radius: 0.75rem;
+}
+
+
+
+
+
+/* ═══════════════════════════════
+* DARK MODE
+* ═══════════════════════════════ */
+
+
+
+.dark {
+
+
+
+  /* ─────────────────────────────
+   * BASE
+   * ───────────────────────────── */
+
+
+
+  --background: #121A16;
+  --foreground: #F1F7F3;
+
+
+
+  --card: #1A2520;
+  --card-foreground: #F1F7F3;
+
+
+
+  --popover: #1A2520;
+  --popover-foreground: #F1F7F3;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — VERT
+   * ───────────────────────────── */
+
+
+
+  --primary: #8ED1AD;
+  --primary-foreground: #102018;
+
+
+
+  --brand-green-deep: #8ED1AD;
+  --brand-green: #71B990;
+  --brand-green-light: #A9D8BF;
+  --brand-green-soft: #1D3327;
+
+
+
+
+
+  /* ─────────────────────────────
+   * BRAND — LAVANDE
+   * ───────────────────────────── */
+
+
+
+  --brand-purple-deep: #D0BDE0;
+  --brand-purple: #BCA4D0;
+  --brand-purple-light: #D8C9E4;
+  --brand-purple-soft: #2B2333;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SECONDARY
+   * ───────────────────────────── */
+
+
+
+  --secondary: #1D3327;
+  --secondary-foreground: #DDF2E5;
+
+
+
+  --muted: #202A25;
+  --muted-foreground: #B0BDB6;
+
+
+
+  --accent: #2B2333;
+  --accent-foreground: #E7DDF0;
+
+
+
+
+
+  /* ─────────────────────────────
+   * STATES
+   * ───────────────────────────── */
+
+
+
+  --destructive: #FF8B96;
+  --destructive-foreground: #241014;
+
+
+
+
+
+  /* ─────────────────────────────
+   * FORM / BORDER
+   * ───────────────────────────── */
+
+
+
+  --border: #3A4941;
+  --input: #4A5B51;
+  --ring: #8ED1AD;
+
+
+
+
+
+  /* ─────────────────────────────
+   * DATA VISUALIZATION
+   * ───────────────────────────── */
+
+
+
+  --chart-1: #8ED1AD;
+  --chart-2: #D0BDE0;
+  --chart-3: #71B990;
+  --chart-4: #BCA4D0;
+  --chart-5: #FF8B96;
+
+
+
+
+
+  /* ─────────────────────────────
+   * SIDEBAR
+   * ───────────────────────────── */
+
+
+
+  --sidebar: #151F1A;
+  --sidebar-foreground: #F1F7F3;
+
+
+
+  --sidebar-primary: #8ED1AD;
+  --sidebar-primary-foreground: #102018;
+
+
+
+  --sidebar-accent: #1D3327;
+  --sidebar-accent-foreground: #DDF2E5;
+
+
+
+  --sidebar-border: #3A4941;
+  --sidebar-ring: #8ED1AD;
+}
