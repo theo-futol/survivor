@@ -18,6 +18,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/salaries': ['ADMIN', 'COMPANY'],
   'PATCH /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'DELETE /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY'],
+  'GET /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'GET /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER'],
 
@@ -28,6 +29,7 @@ export const ROUTE_ROLES = {
   'GET /api/v1/partenaires/:partenaireId/transactions': ['ADMIN'],
 
   'POST /api/v1/admin/ban': ['ADMIN'],
+  'GET /api/v1/admin/employeurs/:id/kbis': ['ADMIN'],
 
   'GET /api/v1/ministerfavorite': ['ADMIN'],
   'POST /api/v1/ministerfavorite': ['ADMIN'],
@@ -42,6 +44,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/featuredpartner': ['ADMIN'],
   'PATCH /api/v1/featuredpartner/:partnerId': ['ADMIN'],
   'DELETE /api/v1/featuredpartner/:partnerId': ['ADMIN'],
+  'PATCH /api/v1/featuredpartner/:highlightId': ['ADMIN'],
 } as const;
 
 export type RouteKey = keyof typeof ROUTE_ROLES;
