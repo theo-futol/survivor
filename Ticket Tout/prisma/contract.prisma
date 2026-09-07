@@ -157,15 +157,6 @@ model QrCode {
   @@index([companyId])
 }
 
-model MinisterFavorite {
-  id Int              @id @default(autoincrement())
-  companyId  String   @unique
-  company    Company  @relation(fields: [companyId], references: [id])
-  likeAmount Int
-  createdAt  DateTime @default(now())
-  updatedAt  temporal.updatedAt()
-}
-
 model FeaturedPartner {
   id          Int      @id @default(autoincrement())
   companyId   String
