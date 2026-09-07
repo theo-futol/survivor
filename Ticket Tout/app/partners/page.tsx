@@ -5,7 +5,7 @@ import { Heart, LoaderCircle, MapPin, QrCode, Search, X } from "lucide-react"
 
 import { AccountHeader } from "@/components/account-header"
 import CreditCard from "@/components/credit-card"
-import { ReunionMap } from "@/components/reunion-map"
+import { Map } from "@/components/map"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -182,7 +182,7 @@ export default function PartnersPage() {
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(390px,.95fr)]">
-          <ReunionMap className="min-h-[420px] xl:sticky xl:top-24 xl:self-start" partners={mapPartners} partnersSelected={selectedMapPartner} />
+          <Map className="min-h-[420px] xl:sticky xl:top-24 xl:self-start" partners={mapPartners} partnersSelected={selectedMapPartner} />
 
           <section className="min-w-0" aria-labelledby="partner-list-title">
             <div className="mb-4 flex items-center justify-between gap-3">

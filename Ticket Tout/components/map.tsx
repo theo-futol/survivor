@@ -117,9 +117,9 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
           marker.setStyle({ weight: 2 })
         })
 
-        markerElement.addEventListener("keydown", (event: KeyboardEvent) => {
+        ;(markerElement as HTMLElement).addEventListener("keydown", (event: KeyboardEvent) => {
           if (event.key !== "Enter" && event.key !== " ") return
-
+                
           event.preventDefault()
           mapRef.current?.panTo(coordinates)
           marker.openPopup()
