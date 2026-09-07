@@ -12,15 +12,15 @@ type PartnersMap = {
   coordinates: { latitude: number; longitude: number }
 }
 
-type ReunionMapProps = {
+type MapProps = {
   className?: string
   partners: PartnersMap[]
   partnersSelected?: PartnersMap
 }
 
-const REUNION_CENTER: [number, number] = [-21.1151, 55.5364]
+const CENTER: [number, number] = [-21.1151, 55.5364]
 
-export function ReunionMap({ className, partners, partnersSelected }: ReunionMapProps) {
+export function Map({ className, partners, partnersSelected }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import("leaflet").Map | null>(null)
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null)
@@ -42,7 +42,7 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
       if (cancelled) return
 
       const map = L.map(container, {
-        center: REUNION_CENTER,
+        center: CENTER,
         zoom: 10,
         scrollWheelZoom: false,
       })
@@ -143,7 +143,7 @@ export function ReunionMap({ className, partners, partnersSelected }: ReunionMap
       <div className="border-b px-4 py-3 sm:px-5">
         <h2 className="font-black">Carte des partenaires</h2>
         <p id="map-instructions" className="text-sm text-muted-foreground">
-          La Réunion · utilisez Tab pour parcourir les marqueurs, puis Entrée ou Espace pour afficher l&apos;adresse.
+          Map · utilisez Tab pour parcourir les marqueurs, puis Entrée ou Espace pour afficher l&apos;adresse.
         </p>
       </div>
       <div
