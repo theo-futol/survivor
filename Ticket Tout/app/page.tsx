@@ -203,7 +203,6 @@ export default function Page() {
                 <p className="mt-2 text-2xl font-black sm:text-3xl">
                   {formatMoney(employee.balance)} à dépenser chez vos partenaires préférés !
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">Solde courant issu de la table utilisateurs.</p>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
