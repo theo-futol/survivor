@@ -625,20 +625,38 @@ companies.forEach((p, i) => {
   const reasonId = validationReasons[i % validationReasons.length]!.id;
   const categoryId = categoryIdByName.get(c.category)!;
   lines.push(
+<<<<<<< Updated upstream
     `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", ` +
+<<<<<<< HEAD:CartePro/dev/generate-seed.ts
       `"reasonId", verified, "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+=======
+      `"reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+=======
+    `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", ` +
+      `"agentId", "reasonId", ` +
+      `verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+>>>>>>> Stashed changes
+>>>>>>> ea33df3 (refactor: use new company partner):Ticket Tout/dev/generate-seed.ts
       [
         sqlStr(p.id),
         sqlStr(c.name),
         sqlStr(`contact@${slug(c.name)}.fr`),
         sqlStr(c.siret),
         sqlStr(p.kbisId),
+<<<<<<< Updated upstream
         sqlStr(COMPANY_DESCRIPTION),
+=======
+        sqlStr(c.description),
+>>>>>>> Stashed changes
         sqlStr(`${randInt(1, 120)} rue de la République`),
         sqlStr(c.postalCode),
         // Half the companies on agent 1, half on agent 2.
         sqlStr(i < companies.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
         sqlInt(reasonId),
+<<<<<<< HEAD:CartePro/dev/generate-seed.ts
+=======
+        sqlBool(true),
+>>>>>>> ea33df3 (refactor: use new company partner):Ticket Tout/dev/generate-seed.ts
         sqlBool(p.isPartner && i % 3 === 0),
         sqlInt(categoryId),
         sqlPoint(c.lon, c.lat),
@@ -655,7 +673,11 @@ lines.push('-- users: 50 employees');
 for (const e of employees) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+<<<<<<< Updated upstream
       `"expiredAt", "accountStatus") VALUES (` +
+=======
+      `"expiredAt", "accountStatus", "companyId") VALUES (` +
+>>>>>>> Stashed changes
       [
         sqlStr(e.id),
         sqlStr(e.email),
@@ -667,7 +689,12 @@ for (const e of employees) {
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
+<<<<<<< Updated upstream
         sqlStr(randomAccountStatus()),
+=======
+        sqlStr('ACCEPTED'),
+        sqlStr(e.companyId),
+>>>>>>> Stashed changes
       ].join(', ') +
       ') ON CONFLICT DO NOTHING;',
   );
@@ -677,7 +704,11 @@ lines.push('');
 lines.push('-- users: 1 admin (for exercising admin-only routes)');
 lines.push(
   `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+<<<<<<< Updated upstream
     `"expiredAt", "accountStatus") VALUES (` +
+=======
+    `"expiredAt", "accountStatus", "companyId") VALUES (` +
+>>>>>>> Stashed changes
     [
       sqlStr(admin.id),
       sqlStr(admin.email),
@@ -690,6 +721,10 @@ lines.push(
       sqlTs(EMPLOYEE_CREATED_AT),
       'NULL',
       sqlStr('ACCEPTED'),
+<<<<<<< Updated upstream
+=======
+      'NULL',
+>>>>>>> Stashed changes
     ].join(', ') +
     ') ON CONFLICT DO NOTHING;',
 );
