@@ -1,0 +1,39 @@
+[
+  {
+    "id": "dropTable.ministerFavorite",
+    "label": "Drop table \"ministerFavorite\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ministerFavorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ministerFavorite\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ministerFavorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"ministerFavorite\"",
+        "sql": "DROP TABLE \"public\".\"ministerFavorite\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ministerFavorite\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ministerFavorite\""
+        ]
+      }
+    ]
+  }
+]
