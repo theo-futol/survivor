@@ -59,10 +59,10 @@ L'authentification utilise Better Auth et SQLite (`data/app-auth.sqlite`). Les r
 Variables utiles en déploiement :
 
 ```text
-BETTER_AUTH_SECRET=une-cle-secrete-forte
-BETTER_AUTH_URL=https://votre-domaine.fr
-BETTER_AUTH_TRUSTED_ORIGINS=https://votre-domaine.fr
-BETTER_AUTH_DB_PATH=/chemin/persistant/app-auth.sqlite
+
+
+
+
 ```
 
 En production, stocker la base hors du répertoire éphémère de build et définir un secret fort.
@@ -104,7 +104,7 @@ Puis lancez Lighthouse sur `http://localhost:3000/login`.
 - URL locale par défaut : `http://localhost:3000`.
 - Base locale persistante par défaut : `data/app-auth.sqlite`.
 - L'ancien fichier `app-auth.sqlite` est migré automatiquement vers `data/app-auth.sqlite` si vous mettez à jour les fichiers dans le même dossier.
-- En production, configurez `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_TRUSTED_ORIGINS` et un chemin/base persistant.
+
 - L'avertissement Node concernant `node:sqlite` vient du runtime Node.js et n'empêche pas l'authentification. Pour une production durable, une base partagée (PostgreSQL/MySQL) reste préférable si l'application tourne sur plusieurs instances.
 
 Pour contrôler rapidement la persistance des comptes locaux :

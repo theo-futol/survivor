@@ -48,8 +48,7 @@ docker compose --env-file .env.development --profile dev config   # verify: no "
 | `DATABASE_URL` | Full Postgres connection string used by the app — the host must be `db` (the database service name in `docker-compose.yml`) and the port must match `POSTGRES_PORT` |
 | `JWT_SECRET` | Secret key used to sign/verify authentication JWTs |
 | `JWT_TTL_SECONDS` | JWT lifetime in seconds (e.g. `1800`) |
-| `BETTER_AUTH_SECRET` | Secret used by Better Auth |
-| `BETTER_AUTH_URL` | Public base URL of the app — `https://localhost:3000` in dev, `https://localhost` in prod (nginx terminates TLS on 443) |
+
 | `ENABLE_DEMO_EMPLOYEE` | `true` to expose the demo employee endpoint |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | Redis connection settings (host must be `redis`) |
 | `REDIS_DATA_DIR` | In-container Redis data directory (e.g. `/data`), also the mount point of the `redis_data` volume |
