@@ -42,6 +42,15 @@ function pick<T>(arr: readonly T[]): T {
   return arr[randInt(0, arr.length - 1)]!;
 }
 
+// Weighted so most seeded employees can still log in — POST /api/v1/login
+// refuses anything that is not ACCEPTED — while both unverified states still
+// appear often enough over 50 rows to be worth testing against.
+function randomAccountStatus(): string {
+  const roll = randInt(1, 10);
+
+  return roll <= 7 ? 'ACCEPTED' : roll <= 9 ? 'PENDING' : 'REFUSED';
+}
+
 /** Deterministic, unique, UUID-shaped id derived from a stable label. */
 function seededId(label: string): string {
   const hex = createHash('sha256').update(label).digest('hex');
@@ -113,6 +122,10 @@ if (FIRST_NAMES.length !== 50 || LAST_NAMES.length !== 50) {
 }
 
 const CATEGORIES = ['Restauration', 'Librairie & Papeterie', 'Sport & Bien-être', 'Culture & Loisirs'] as const;
+
+// Company.description is NOT NULL in the contract but carries no meaning for the
+// seed, so every partner gets the same placeholder rather than 12 invented ones.
+const COMPANY_DESCRIPTION = 'Établissement partenaire du dispositif Ticket Tout.';
 
 type Company = {
   name: string;
@@ -518,7 +531,7 @@ lines.push('-- users: 2 agents (ADMIN) — referenced by company."agentId" throu
 for (const a of AGENTS) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-      `"expiredAt") VALUES (` +
+      `"expiredAt", "accountStatus") VALUES (` +
       [
         sqlStr(a.id),
         sqlStr(a.email),
@@ -530,6 +543,7 @@ for (const a of AGENTS) {
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
+        sqlStr('ACCEPTED'),
       ].join(', ') +
       ');',
   );
@@ -549,14 +563,15 @@ partners.forEach((p, i) => {
   const reasonId = validationReasons[i % validationReasons.length]!.id;
   const categoryId = categoryIdByName.get(c.category)!;
   lines.push(
-    `INSERT INTO public.company (id, name, email, siret, "kbisId", address, "postalCode", "agentId", "reasonId", ` +
-      `verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+    `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", ` +
+      `"reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
       [
         sqlStr(p.id),
         sqlStr(c.name),
         sqlStr(`contact@${c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}.fr`),
         sqlStr(c.siret),
         sqlStr(p.kbisId),
+        sqlStr(COMPANY_DESCRIPTION),
         sqlStr(`${randInt(1, 120)} rue de la République`),
         sqlStr(c.postalCode),
         // Half the partners on agent 1, half on agent 2.
@@ -579,7 +594,7 @@ lines.push('-- users: 50 employees');
 for (const e of employees) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-      `"expiredAt") VALUES (` +
+      `"expiredAt", "accountStatus") VALUES (` +
       [
         sqlStr(e.id),
         sqlStr(e.email),
@@ -591,6 +606,7 @@ for (const e of employees) {
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
+        sqlStr(randomAccountStatus()),
       ].join(', ') +
       ');',
   );
@@ -600,7 +616,7 @@ lines.push('');
 lines.push('-- users: 1 admin (for exercising admin-only routes)');
 lines.push(
   `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-    `"expiredAt") VALUES (` +
+    `"expiredAt", "accountStatus") VALUES (` +
     [
       sqlStr(admin.id),
       sqlStr(admin.email),
@@ -612,6 +628,7 @@ lines.push(
       sqlTs(EMPLOYEE_CREATED_AT),
       sqlTs(EMPLOYEE_CREATED_AT),
       'NULL',
+      sqlStr('ACCEPTED'),
     ].join(', ') +
     ');',
 );

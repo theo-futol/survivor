@@ -15,13 +15,31 @@ function query(text: string, values: unknown[] = []): QueryResult
     return { rows: [], rowCount: 0 };
   }
 
-  if (/^SELECT id FROM users WHERE "companyId" = \$1 AND role = \$2 AND "expiredAt" IS NULL FOR UPDATE$/i.test(sql))
+  if (/^SELECT id, balance FROM users WHERE "companyId" = \$1 AND role = \$2 AND "expiredAt" IS NULL FOR UPDATE$/i.test(sql))
   {
     const rows = mockTables['Users']!
       .filter((row) => row['companyId'] === values[0] && row['role'] === values[1] && (row['expiredAt'] ?? null) === null)
-      .map((row) => ({ id: row['id'] }));
+      .map((row) => ({ id: row['id'], balance: row['balance'] }));
 
     return { rows, rowCount: rows.length };
+  }
+
+  // The abondement ledger row, one INSERT per credited employee.
+  if (/^INSERT INTO "transaction" \(id, type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, 'TOPUP', \$2, NULL, \$3, \$4, 'VALIDER'\)$/i.test(sql))
+  {
+    mockTables['Transaction']!.push({
+      id: values[0],
+      type: 'TOPUP',
+      userId: values[1],
+      companyId: null,
+      amount: values[2],
+      newBalance: values[3],
+      originalTransactionId: null,
+      status: 'VALIDER',
+      createdAt: new Date().toISOString(),
+    });
+
+    return { rows: [], rowCount: 1 };
   }
 
   // app/api/v1/salaries/[salarieId]/transactions — reads one balance under a row

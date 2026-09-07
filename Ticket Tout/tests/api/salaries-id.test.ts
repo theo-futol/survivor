@@ -127,13 +127,17 @@ describe('PATCH /api/v1/salaries/{salarieId}', () =>
     expect(deactivated.status).toBe(200);
     expect(deactivatedJson.active).toBe(false);
 
+    // Asserted by identity, not by count: the employer has other employees in
+    // the fixtures, and adding one more must not break this test.
     const activeOnly = await GET(new Request('http://localhost/api/v1/salaries', { headers: headersFor(token) }));
-    expect((await activeOnly.json()).data).toHaveLength(0);
+    const activeIds = (await activeOnly.json()).data.map((s: { id: string }) => s.id);
+    expect(activeIds).not.toContain(EMPLOYEE_ID);
 
     const includingInactive = await GET(new Request('http://localhost/api/v1/salaries?includeInactive=true', { headers: headersFor(token) }));
     const inactiveJson = await includingInactive.json();
-    expect(inactiveJson.data).toHaveLength(1);
-    expect(inactiveJson.data[0].active).toBe(false);
+    const deactivatedRow = inactiveJson.data.find((s: { id: string }) => s.id === EMPLOYEE_ID);
+    expect(deactivatedRow).toBeDefined();
+    expect(deactivatedRow.active).toBe(false);
 
     const reactivated = await patch(EMPLOYEE_ID, { active: true }, token);
     const reactivatedJson = await reactivated.json();

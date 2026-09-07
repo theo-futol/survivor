@@ -25,6 +25,7 @@ const salariePatchSchema = z.object({
   name: safeText(80).optional(),
   password: passwordSchema.optional(),
   active: z.boolean().optional(),
+  accountStatus: z.enum(['PENDING', 'ACCEPTED', 'REFUSED']).optional(),
 }).refine((patch) => Object.keys(patch).length > 0, {
   message: 'Le corps de la requête ne doit pas être vide.',
 });
@@ -110,7 +111,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * /api/v1/salaries/{salarieId}:
  *   patch:
  *     summary: Mise à jour d'un salarié
- *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `documentId`, `password` et `active` ; un salarié modifiant sa propre fiche est limité à `surname`, `name` et `password`. `active=false` renseigne `expiredAt` et désactive le compte ; `active=true` remet `expiredAt` à null."
+ *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `password`, `active` et `accountStatus` ; un salarié modifiant sa propre fiche est limité à `surname`, `name` et `password`, tout autre champ étant refusé par un `400`. `active=false` renseigne `expiredAt` et désactive le compte ; `active=true` remet `expiredAt` à null.\n\n**Vérification du compte** : faire passer `accountStatus` de `PENDING` à `ACCEPTED` déclenche l'envoi au salarié d'un email lui annonçant que son compte est validé, avec un lien vers l'application ; il s'y connecte avec le mot de passe que son entreprise lui a communiqué à la création. L'email part *avant* toute écriture : s'il échoue la réponse est un `502` et le salarié reste `PENDING`. Les autres transitions de statut sont de simples mises à jour."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -130,6 +131,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *               name: { type: string }
  *               password: { type: string }
  *               active: { type: boolean }
+ *               accountStatus:
+ *                 type: string
+ *                 enum: [PENDING, ACCEPTED, REFUSED]
+ *                 description: "Réservé à `ADMIN` / `COMPANY`. `PENDING` → `ACCEPTED` vaut vérification du compte et envoie l'email de validation."
  *     responses:
  *       '200':
  *         description: Salarié mis à jour. Le mot de passe haché n'est jamais retourné.
@@ -165,10 +170,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
     {
       throw new AppError('Invalid JSON in request body', 400);
     });
-    const patch: { email?: string; surname?: string; name?: string; documentId?: string; password?: string; active?: boolean } =
-      actor.role === 'EMPLOYEE' ? selfPatchSchema.parse(body) : salariePatchSchema.parse(body);
+    const patch: {
+      email?: string;
+      surname?: string;
+      name?: string;
+      password?: string;
+      active?: boolean;
+      accountStatus?: 'PENDING' | 'ACCEPTED' | 'REFUSED';
+    } = actor.role === 'EMPLOYEE' ? selfPatchSchema.parse(body) : salariePatchSchema.parse(body);
 
-    const { email, documentId, active } = patch;
+    const { email, active } = patch;
 
     if (email !== undefined)
     {
@@ -178,6 +189,30 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
       {
         throw new AppError('A user with these identifiers already exists', 409);
       }
+    }
+
+    // Account verification: PENDING -> ACCEPTED, and only that transition.
+    if (patch.accountStatus === 'ACCEPTED' && salarie.accountStatus === 'PENDING')
+    {
+      // The mail goes out before anything is written, so a provider failure
+      // (502 from the Brevo provider) leaves the salarié PENDING and the
+      // verification can simply be retried.
+      await sendEmail({
+        to: salarie.email,
+        subject: 'Votre compte Ticket Tout est validé',
+        text: [
+          `Bonjour ${salarie.name} ${salarie.surname},`,
+          '',
+          "Votre compte Ticket Tout vient d'être validé par l'administration.",
+          'Vous pouvez désormais vous connecter avec cette adresse email et le mot de passe',
+          'qui vous a été communiqué par votre entreprise :',
+          buildLoginLink(),
+          '',
+          "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
+          '',
+          "Démonstrateur technique, ne constitue pas un service public en exploitation.",
+        ].join('\n'),
+      });
     }
 
     const { password, active: _active, ...rest } = patch;

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/prisma/db';
 import { authorize, hashPassword, passwordSchema } from '@/lib/services/auth_service';
@@ -9,14 +8,11 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 const safeText = (max: number) =>
   z.string().min(1).max(max).regex(/^[^<>'"&]*$/, { message: "Les caractères spéciaux (<, >, ', \", &) sont interdits." });
 
-// The company no longer uploads a contract/document when it creates an
-// employee. `Users.documentId` is still non-nullable in the current database
-// contract, so the API creates an internal zero-byte Document row only to
-// satisfy that legacy relation. No file is sent to Garage.
 const salarieCreateSchema = z.object({
   email: z.email(),
   surname: safeText(80),
   name: safeText(80),
+  password: passwordSchema,
   companyId: z.uuid(),
 }).strict();
 
@@ -158,7 +154,7 @@ export async function GET(request: Request)
  * /api/v1/salaries:
  *   post:
  *     summary: Création d'un salarié
- *     description: "Crée un salarié rattaché à une entreprise. Le serveur impose `role = EMPLOYEE`, `balance = 0` et un compte actif ; le mot de passe est haché avant stockage. Aucun contrat ni document n'est demandé à l'entreprise. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
+ *     description: "Crée un salarié rattaché à une entreprise. Le mot de passe est choisi par l'employeur dans le corps de la requête ; il doit respecter les règles de complexité (8 à 32 caractères, une majuscule, une minuscule, un chiffre, un caractère spécial) et n'est stocké que haché. Le serveur impose `role = EMPLOYEE`, `balance = 0`, un compte actif et `accountStatus = PENDING` : la connexion est refusée tant qu'un agent n'a pas vérifié le compte (`PATCH /api/v1/salaries/{salarieId}` avec `accountStatus = ACCEPTED`). Aucun contrat ni document n'est demandé à l'entreprise. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -180,7 +176,7 @@ export async function GET(request: Request)
  *         content:
  *           application/json:
  *             schema: { type: object }
- *       '400': { description: Corps de requête invalide (mot de passe trop faible…), ou champ non accepté (`accountStatus`, `documentId`…). }
+ *       '400': { description: Corps de requête invalide (mot de passe trop faible…), ou champ non accepté (`accountStatus`…). }
  *       '401': { description: Token manquant ou invalide. }
  *       '403': { description: Rôle insuffisant, ou tentative de créer un salarié dans une autre entreprise. }
  *       '404': { description: Entreprise introuvable. }
@@ -221,34 +217,23 @@ export async function POST(request: Request)
       throw new AppError('A user with this email already exists', 409);
     }
 
-    const technicalDocument = await db.orm.public.Document.create({
-      storageKey: `internal/employee-without-contract/${randomUUID()}`,
-      mimeType: 'application/x-ticket-tout-no-contract',
-      size: 0,
+    // The password is chosen by the employer and communicated to the salarié
+    // out of band; only its hash is ever stored. The account is created PENDING
+    // and login is refused until an agent verifies it.
+    const created = await db.orm.public.Users.create({
+      email: input.email,
+      surname: input.surname,
+      name: input.name,
+      companyId: input.companyId,
+      password: hashPassword(input.password),
+      role: 'EMPLOYEE',
+      balance: 0,
+      accountStatus: 'PENDING',
     });
 
-    try
-    {
-      const created = await db.orm.public.Users.create({
-        email: input.email,
-        surname: input.surname,
-        name: input.name,
-        documentId: technicalDocument.id,
-        companyId: input.companyId,
-        password: hashPassword(input.password),
-        role: 'EMPLOYEE',
-        balance: 0,
-      });
+    const { password: _password, ...salarie } = created;
 
-      const { password: _password, documentId: _documentId, ...salarie } = created;
-
-      return Response.json(salarie, { status: 201 });
-    }
-    catch (error)
-    {
-      await db.orm.public.Document.where({ id: technicalDocument.id }).delete();
-      throw error;
-    }
+    return Response.json(salarie, { status: 201 });
   }
   catch (error)
   {

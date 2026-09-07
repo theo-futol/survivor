@@ -119,40 +119,11 @@ describe('POST /api/v1/salaries', () =>
     expect(json.error).toBe('Le mot de passe doit contenir au moins 8 caractères.');
   });
 
-<<<<<<< HEAD
-  it('returns 400 when the password is missing', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const { password: _omitted, ...incomplete } = validBody;
-
-    expect((await post(incomplete, token)).status).toBe(400);
-  });
-
-  it('rejects documentId, whose column no longer exists', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-
-    expect((await post({ ...validBody, documentId: FREE_DOCUMENT_ID }, token)).status).toBe(400);
-  });
-
-  it('rejects accountStatus: a new salarié cannot be born ACCEPTED', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-
-    expect((await post({ ...validBody, accountStatus: 'ACCEPTED' }, token)).status).toBe(400);
-  });
-
-  it('returns 400 when a required field is missing', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const { email: _omitted, ...incomplete } = validBody;
-=======
   it('creates without requiring a contract or document id', async () =>
   {
     const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
     const response = await post(validBody, token);
     const json = await response.json();
->>>>>>> 10a568e (feat: add button on employer page to switch state of salaries (active or not))
 
     expect(response.status).toBe(201);
     expect(json.documentId).toBeUndefined();

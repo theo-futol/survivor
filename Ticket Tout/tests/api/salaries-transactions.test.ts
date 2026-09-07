@@ -8,6 +8,7 @@ import {
   EMPLOYEE_ID,
   OTHER_COMPANY_USER_ID,
   PARTNER_USER_ID,
+  PENDING_EMPLOYEE_ID,
   UNKNOWN_ID,
 } from '../mocks/fixtures';
 
@@ -92,11 +93,13 @@ describe('GET /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await get(EMPLOYEE_ID, token)).status).toBe(403);
   });
 
+  // Another salarié, not an admin: GET scopes its lookup to role EMPLOYEE, so a
+  // non-employee target is a 404 before ownership is ever considered.
   it('returns 403 when an employee reads someone else', async () =>
   {
     const { token } = await signToken({ sub: EMPLOYEE_ID, role: 'EMPLOYEE' });
 
-    expect((await get(ADMIN_ID, token)).status).toBe(403);
+    expect((await get(PENDING_EMPLOYEE_ID, token)).status).toBe(403);
   });
 
   it('lists the transactions newest first', async () =>
@@ -170,13 +173,21 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(UNKNOWN_ID, payment, token)).status).toBe(404);
   });
 
-  it('refuses a payment larger than the balance', async () =>
+  // An overdraft is not rejected, it is recorded: the movement is kept in the
+  // ledger with status REFUSER and the balance is left alone.
+  it('records a payment larger than the balance as REFUSER', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, amount: 5000 }, token);
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
+
+    const json = await (await get(EMPLOYEE_ID, token)).json();
+    const recorded = json.transactions.find((t: { amount: number }) => t.amount === 5000);
+
+    expect(recorded.status).toBe('REFUSER');
+    expect(recorded.newBalance).toBe(1000);
   });
 
   it('debits the balance on a PAYMENT', async () =>
@@ -197,18 +208,20 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1250);
   });
 
-  it('records a REFUSER transaction without touching the balance', async () =>
+  // `status` is still accepted in the body but the server decides it from the
+  // balance, so a client cannot mark an affordable payment as refused.
+  it('ignores a client-supplied status and derives it from the balance', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, status: 'REFUSER' }, token);
 
     expect(response.status).toBe(201);
-    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
 
-    const listed = await get(EMPLOYEE_ID, token);
-    const json = await listed.json();
+    const json = await (await get(EMPLOYEE_ID, token)).json();
+    const recorded = json.transactions.find((t: { amount: number }) => t.amount === payment.amount);
 
-    expect(json.transactions).toHaveLength(3);
+    expect(recorded.status).toBe('VALIDER');
   });
 
   it('lets a partner initiate a payment', async () =>

@@ -23,6 +23,11 @@ What each account is attached to
   EMPLOYEE  Employeur Test SA — same employer, balance 5000
   PARTNER   Le Bistrot des Halles (a0f9dfc0-b6d4-4001-8880-c12c01b44f24, isPartner = true)
 
+All four are seeded with accountStatus = ACCEPTED. Login answers 403 ("Compte
+non validé") for any account that is not ACCEPTED, so the 50 employees in
+seed.sql — seeded with a random mix of ACCEPTED, PENDING and REFUSED — cannot
+all log in; that is deliberate, not a bug.
+
 The COMPANY and EMPLOYEE accounts share an employer, so the employer-scoped
 endpoints (GET /api/v1/salaries, the abondement route) return data instead of an
 empty list. Every company in seed.sql is a partner, which is why seed-roles.sql

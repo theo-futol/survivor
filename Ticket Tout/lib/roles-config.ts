@@ -21,6 +21,9 @@ export const ROUTE_ROLES = {
   'PATCH /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'DELETE /api/v1/salaries/:salarieId': ['ADMIN', 'COMPANY'],
   'GET /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
+  // A salarié never initiates their own movement: a partner charges them, the
+  // employer or an admin corrects them.
+  'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER'],
 
   'GET /api/v1/partenaires': ['ADMIN', 'PARTNER', 'EMPLOYEE'],
   'POST /api/v1/partenaires': ['ADMIN'],

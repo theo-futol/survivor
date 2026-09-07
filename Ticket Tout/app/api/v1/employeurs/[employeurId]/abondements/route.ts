@@ -89,8 +89,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ emp
 
     const creditedIds = await withTransaction(async (client) =>
     {
-      const locked = await client.query<{ id: string }>(
-        'SELECT id FROM users WHERE "companyId" = $1 AND role = $2 AND "expiredAt" IS NULL FOR UPDATE',
+      // The balance comes back with the id because each ledger row has to record
+      // the balance the credit produced (`transaction.newBalance` is NOT NULL).
+      const locked = await client.query<{ id: string; balance: number }>(
+        'SELECT id, balance FROM users WHERE "companyId" = $1 AND role = $2 AND "expiredAt" IS NULL FOR UPDATE',
         [employeurId, 'EMPLOYEE'],
       );
 
@@ -107,12 +109,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ emp
       // transaction_type_matches_company requires companyId to be NULL for TOPUP.
       // Keep the balance update and ledger rows in the same PostgreSQL transaction
       // so a failed history insert also rolls the balance back.
-      for (const userId of ids)
+      for (const row of locked.rows)
       {
         await client.query(
-          `INSERT INTO "transaction" (id, type, "userId", "companyId", amount, status)
-           VALUES ($1, 'TOPUP', $2, NULL, $3, 'VALIDER')`,
-          [randomUUID(), userId, montant],
+          `INSERT INTO "transaction" (id, type, "userId", "companyId", amount, "newBalance", status)
+           VALUES ($1, 'TOPUP', $2, NULL, $3, $4, 'VALIDER')`,
+          [randomUUID(), row.id, montant, Number(row.balance) + montant],
         );
       }
 
