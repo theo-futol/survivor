@@ -298,6 +298,13 @@
                   "kind": "scalar"
                 }
               },
+              "description": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "email": {
                 "nullable": false,
                 "type": {
@@ -491,6 +498,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
                 },
                 "email": {
                   "column": "email"
@@ -1493,6 +1503,11 @@
                   "nativeType": "timestamptz",
                   "nullable": false
                 },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
                 "email": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2484,7 +2499,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ff5ecc7689bd7343b15626058ece053115bb52dbeb6612d87c36042bf4f4638a",
+    "storageHash": "d7dd146512eb4371934bcd70e7350ddedabb6179a77af8b4701bb1201bbafe9f",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",

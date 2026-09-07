@@ -82,6 +82,7 @@ model Company {
   siret        String                  @unique
   kbisId       String                  @unique
   kbis         Document                @relation(fields: [kbisId], references: [id])
+  description  String
   address      String
   postalCode   String
   agentId      String
