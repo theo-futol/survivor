@@ -78,7 +78,6 @@ describe('brevo provider', () =>
   {
     await createBrevoProvider().send({
       ...MESSAGE,
-      from: { email: 'futoltheo@gmail.com', name: 'Theo' },
       to: ['un@example.fr', 'deux@example.fr'],
     });
 

@@ -9,3 +9,5 @@ export const s3Client = new S3Client({
   },
   forcePathStyle: true,
 })
+
+export const DEFAULT_BUCKET = process.env.GARAGE_DEFAULT_BUCKET!
