@@ -94,7 +94,8 @@ describe('POST /api/v1/employeurs/{employeurId}/abondements', () =>
     const json = await response.json();
 
     expect(response.status).toBe(201);
-    expect(json).toEqual({ montant: 5000, salariesCredites: 1, montantTotal: 5000 });
+    // Both of the company's employees are credited, PENDING one included.
+    expect(json).toEqual({ montant: 5000, salariesCredites: 2, montantTotal: 10000 });
 
     const listed = await GET(new Request('http://localhost/api/v1/salaries', { headers: headersFor(token) }));
     const salaries = await listed.json();

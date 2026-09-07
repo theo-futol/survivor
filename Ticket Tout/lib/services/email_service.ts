@@ -4,7 +4,7 @@ import type { EmailProvider, SendEmailParams, SendEmailResult } from '@/lib/serv
 
 export type { EmailProvider, SendEmailParams, SendEmailResult };
 
-const FROM_EMAIL = 'Ticket Tout <noreply@tickettout.fr>';
+const FROM_EMAIL = 'Theo <futoltheo@gmail.com>';
 
 // The library in use. Swap it by writing another EmailProvider (see
 // lib/services/email/types.ts) and either changing this line or calling

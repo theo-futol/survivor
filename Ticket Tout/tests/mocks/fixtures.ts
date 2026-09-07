@@ -10,6 +10,10 @@ export const COMPANY_USER_ID = '22222222-2222-4222-8222-222222222222';
 export const EMPLOYEE_ID = '33333333-3333-4333-8333-333333333333';
 export const PARTNER_USER_ID = '44444444-4444-4444-8444-444444444444';
 export const OTHER_COMPANY_USER_ID = '99999999-9999-4999-8999-999999999999';
+// A salarié still awaiting verification, for the account-activation flow. Its
+// createdAt is deliberately the oldest of the EMPLOYER_COMPANY_ID employees, so
+// `GET /salaries` (ordered createdAt desc) still lists EMPLOYEE_ID first.
+export const PENDING_EMPLOYEE_ID = '77777777-7777-4777-8777-777777777777';
 
 export const EMPLOYER_COMPANY_ID = '55555555-5555-4555-8555-555555555555';
 export const PARTNER_COMPANY_ID = '66666666-6666-4666-8666-666666666666';
@@ -19,14 +23,15 @@ export const UNKNOWN_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 export const FREE_DOCUMENT_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 export const usersFixture = [
-  { id: 'user-test-1', email: 'test-login@example.com', surname: 'Test', name: 'User', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-test-1', companyId: null, expiredAt: null, createdAt: '2026-01-01T00:00:00Z' },
-  { id: 'user-test-2', email: 'test-salarie@example.com', surname: 'Test', name: 'Salarie', role: 'EMPLOYEE', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-test-2', companyId: null, expiredAt: null, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'user-test-1', email: 'test-login@example.com', surname: 'Test', name: 'User', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, companyId: null, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'user-test-2', email: 'test-salarie@example.com', surname: 'Test', name: 'Salarie', role: 'EMPLOYEE', balance: 0, password: SEED_PASSWORD_HASH, companyId: null, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-01-01T00:00:00Z' },
 
-  { id: ADMIN_ID, email: 'admin@example.com', surname: 'Root', name: 'Admin', role: 'ADMIN', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-admin', companyId: null, expiredAt: null, createdAt: '2026-02-01T00:00:00Z' },
-  { id: COMPANY_USER_ID, email: 'company@example.com', surname: 'Boss', name: 'Company', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-company', companyId: EMPLOYER_COMPANY_ID, expiredAt: null, createdAt: '2026-02-02T00:00:00Z' },
-  { id: EMPLOYEE_ID, email: 'employee@example.com', surname: 'Dupont', name: 'Jean', role: 'EMPLOYEE', balance: 1000, password: SEED_PASSWORD_HASH, documentId: 'doc-employee', companyId: EMPLOYER_COMPANY_ID, expiredAt: null, createdAt: '2026-02-03T00:00:00Z' },
-  { id: PARTNER_USER_ID, email: 'partner-user@example.com', surname: 'Martin', name: 'Partner', role: 'PARTNER', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-partner', companyId: PARTNER_COMPANY_ID, expiredAt: null, createdAt: '2026-02-04T00:00:00Z' },
-  { id: OTHER_COMPANY_USER_ID, email: 'other-company@example.com', surname: 'Other', name: 'Company', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, documentId: 'doc-other', companyId: OTHER_COMPANY_ID, expiredAt: null, createdAt: '2026-02-05T00:00:00Z' },
+  { id: ADMIN_ID, email: 'admin@example.com', surname: 'Root', name: 'Admin', role: 'ADMIN', balance: 0, password: SEED_PASSWORD_HASH, companyId: null, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-02-01T00:00:00Z' },
+  { id: COMPANY_USER_ID, email: 'company@example.com', surname: 'Boss', name: 'Company', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, companyId: EMPLOYER_COMPANY_ID, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-02-02T00:00:00Z' },
+  { id: EMPLOYEE_ID, email: 'employee@example.com', surname: 'Dupont', name: 'Jean', role: 'EMPLOYEE', balance: 1000, password: SEED_PASSWORD_HASH, companyId: EMPLOYER_COMPANY_ID, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-02-03T00:00:00Z' },
+  { id: PENDING_EMPLOYEE_ID, email: 'pending@example.com', surname: 'Attente', name: 'Paul', role: 'EMPLOYEE', balance: 0, password: SEED_PASSWORD_HASH, companyId: EMPLOYER_COMPANY_ID, accountStatus: 'PENDING', expiredAt: null, createdAt: '2026-01-15T00:00:00Z' },
+  { id: PARTNER_USER_ID, email: 'partner-user@example.com', surname: 'Martin', name: 'Partner', role: 'PARTNER', balance: 0, password: SEED_PASSWORD_HASH, companyId: PARTNER_COMPANY_ID, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-02-04T00:00:00Z' },
+  { id: OTHER_COMPANY_USER_ID, email: 'other-company@example.com', surname: 'Other', name: 'Company', role: 'COMPANY', balance: 0, password: SEED_PASSWORD_HASH, companyId: OTHER_COMPANY_ID, accountStatus: 'ACCEPTED', expiredAt: null, createdAt: '2026-02-05T00:00:00Z' },
 ];
 
 export const companyFixture = [

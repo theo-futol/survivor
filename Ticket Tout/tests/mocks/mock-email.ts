@@ -14,6 +14,16 @@ const sentEmails: SendEmailParams[] = [];
 
 let provider: EmailProvider | undefined;
 
+// Armed by failNextEmail(): makes the next send fail the way a provider outage
+// does — a 502 AppError, exactly what brevo_provider.ts raises — so callers can
+// be tested for what they do when the mail does not go out.
+let failNext = false;
+
+function failNextEmail(): void
+{
+  failNext = true;
+}
+
 async function sendEmail(params: SendEmailParams): Promise<SendEmailResult>
 {
   // Mirrors the real service's guard, so a caller that forgets a body fails the
@@ -21,6 +31,13 @@ async function sendEmail(params: SendEmailParams): Promise<SendEmailResult>
   if (params.html === undefined && params.text === undefined)
   {
     throw new AppError('An email needs an html or text body', 400);
+  }
+
+  if (failNext)
+  {
+    failNext = false;
+
+    throw new AppError('brevo: message was not accepted', 502);
   }
 
   sentEmails.push({ ...params });
@@ -47,11 +64,13 @@ function resetMockEmail(): void
 {
   sentEmails.length = 0;
   provider = undefined;
+  failNext = false;
 }
 
 export {
   sendEmail,
   sentEmails,
+  failNextEmail,
   setEmailProvider,
   resetEmailProvider,
   getEmailProviderName,

@@ -33,7 +33,7 @@ jest.unstable_mockModule('@getbrevo/brevo', () => ({
 const { createBrevoProvider } = await import('../../lib/services/email/brevo_provider');
 
 const MESSAGE = {
-  from: 'Ticket Tout <noreply@tickettout.fr>',
+  from: 'Theo <futoltheo@gmail.com>',
   to: 'dest@example.fr',
   subject: 'Info',
   text: 'Bonjour',
@@ -66,7 +66,7 @@ describe('brevo provider', () =>
 
     expect(sendTransacEmail).toHaveBeenCalledTimes(1);
     expect(sentRequest()).toEqual({
-      sender: { email: 'noreply@tickettout.fr', name: 'Ticket Tout' },
+      sender: { email: 'futoltheo@gmail.com', name: 'Theo' },
       to: [{ email: 'dest@example.fr' }],
       subject: 'Info',
       htmlContent: '<p>Bonjour</p>',
@@ -78,11 +78,11 @@ describe('brevo provider', () =>
   {
     await createBrevoProvider().send({
       ...MESSAGE,
-      from: 'noreply@tickettout.fr',
+      from: { email: 'futoltheo@gmail.com', name: 'Theo' },
       to: ['un@example.fr', 'deux@example.fr'],
     });
 
-    expect(sentRequest().sender).toEqual({ email: 'noreply@tickettout.fr' });
+    expect(sentRequest().sender).toEqual({ email: 'futoltheo@gmail.com', name: 'Theo' });
     expect(sentRequest().to).toEqual([{ email: 'un@example.fr' }, { email: 'deux@example.fr' }]);
   });
 

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { jwtVerify, SignJWT } from 'jose';
+import { z } from 'zod';
 import { ROUTE_ROLES, type RouteKey } from '@/lib/roles-config';
 import { isBanned } from '@/lib/services/redis_service';
 
@@ -9,6 +10,16 @@ const JWT_EXPIRES_IN_SECONDS = process.env['JWT_TTL_SECONDS'] ? parseInt(process
 export type AuthResult =
   | { ok: true; sub: string; role: string }
   | { ok: false; status: 401 | 403 | 503; error: string };
+
+// Shared by the salarié POST and PATCH, so the complexity rules cannot drift
+// apart between the two places a password can be chosen.
+export const passwordSchema = z.string()
+  .min(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
+  .max(32, { message: 'Le mot de passe ne doit pas dépasser 32 caractères.' })
+  .regex(/[A-Z]/, { message: 'Le mot de passe doit contenir au moins une lettre majuscule.' })
+  .regex(/[a-z]/, { message: 'Le mot de passe doit contenir au moins une lettre minuscule.' })
+  .regex(/[0-9]/, { message: 'Le mot de passe doit contenir au moins un chiffre.' })
+  .regex(/[^A-Za-z0-9]/, { message: 'Le mot de passe doit contenir au moins un caractère spécial.' });
 
 export function hashPassword(password: string): string
 {

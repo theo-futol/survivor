@@ -1,6 +1,7 @@
 import { GET, POST } from '@/app/api/v1/salaries/route';
 import { signToken } from '@/lib/services/auth_service';
 import { resetMockDb } from '../mocks/mock-db';
+import { resetMockEmail, sentEmails } from '../mocks/mock-email';
 import {
   ADMIN_ID,
   COMPANY_USER_ID,
@@ -40,7 +41,6 @@ const validBody = {
   surname: 'Durand',
   name: 'Marie',
   password: 'Secret123!',
-  documentId: FREE_DOCUMENT_ID,
   companyId: EMPLOYER_COMPANY_ID,
 };
 
@@ -67,7 +67,7 @@ describe('GET /api/v1/salaries', () =>
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json.data).toHaveLength(1);
+    expect(json.data).toHaveLength(2);
     expect(json.data[0]).toMatchObject({
       id: EMPLOYEE_ID,
       isBanned: false,
@@ -97,7 +97,11 @@ describe('GET /api/v1/salaries', () =>
 
 describe('POST /api/v1/salaries', () =>
 {
-  beforeEach(() => resetMockDb());
+  beforeEach(() =>
+  {
+    resetMockDb();
+    resetMockEmail();
+  });
 
   it('returns 403 when a COMPANY caller targets another company', async () =>
   {
@@ -113,10 +117,32 @@ describe('POST /api/v1/salaries', () =>
     expect((await post({ ...validBody, password: 'weak' }, token)).status).toBe(400);
   });
 
-  it('returns 400 when documentId is missing', async () =>
+  it('returns 400 when the password is missing', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const { documentId: _omitted, ...incomplete } = validBody;
+    const { password: _omitted, ...incomplete } = validBody;
+
+    expect((await post(incomplete, token)).status).toBe(400);
+  });
+
+  it('rejects documentId, whose column no longer exists', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post({ ...validBody, documentId: FREE_DOCUMENT_ID }, token)).status).toBe(400);
+  });
+
+  it('rejects accountStatus: a new salarié cannot be born ACCEPTED', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post({ ...validBody, accountStatus: 'ACCEPTED' }, token)).status).toBe(400);
+  });
+
+  it('returns 400 when a required field is missing', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const { email: _omitted, ...incomplete } = validBody;
 
     expect((await post(incomplete, token)).status).toBe(400);
   });
@@ -135,7 +161,7 @@ describe('POST /api/v1/salaries', () =>
     expect((await post({ ...validBody, email: 'employee@example.com' }, token)).status).toBe(409);
   });
 
-  it('creates the salarié with role EMPLOYEE, balance 0 and never returns the password', async () =>
+  it('creates the salarié PENDING, with role EMPLOYEE, balance 0 and no password returned', async () =>
   {
     const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
     const response = await post(validBody, token);
@@ -144,6 +170,15 @@ describe('POST /api/v1/salaries', () =>
     expect(response.status).toBe(201);
     expect(json.role).toBe('EMPLOYEE');
     expect(json.balance).toBe(0);
+    expect(json.accountStatus).toBe('PENDING');
     expect(json.password).toBeUndefined();
+  });
+
+  it('sends no email at creation: the notice goes out at verification', async () =>
+  {
+    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+
+    expect((await post(validBody, token)).status).toBe(201);
+    expect(sentEmails).toHaveLength(0);
   });
 });

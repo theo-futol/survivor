@@ -78,10 +78,10 @@
 - `POST /api/v1/salaries`
   - Roles: `admin`, `employeur`
   - Body example:
-  - Behavior: server creates the employee, generates a temporary password, hashes it, and sends an email to the employee with the temporary password using the Brevo service.
+  - Behavior: the employer supplies the employee's password in the body; the server hashes it and never returns it. The account is created `PENDING`, so login is refused until an agent verifies it.
 
 ```json
-{ "employeurId": "...", "nom": "Dupont", "prenom": "Jean", "email": "j.dupont@ex.com", "numeroSalarie": "S123" }
+{ "employeurId": "...", "nom": "Dupont", "prenom": "Jean", "email": "j.dupont@ex.com", "password": "Secret123!" }
 ```
 
   - Success: `201` creates the employee.
@@ -89,7 +89,7 @@
 - `PATCH /api/v1/salaries/{salarieId}`
   - Roles: `admin`, `employeur` (own), `salarie` (self, limited)
   - Success: `200` updated.
-  - Behavior: function check if the modification is the verification of the account, in case of the account is verified, send an email using the brevo service to notify the employee that his account is verified and provide the temporary password.
+  - Behavior: function check if the modification is the verification of the account (changed the field `accountStatus` to `ACCEPTED`, to be the verification the `accountStatus` field is initially `PENDING`), in case of the account is verified, send an email using the brevo service to notify the employee that his account is verified, with a link to the app; he logs in with the password his company gave him at creation. The password is never sent by email.
 
 - `DELETE /api/v1/salaries/{salarieId}`
   - Roles: `admin`, `employeur` (own)

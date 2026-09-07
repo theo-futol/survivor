@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db } from '@/lib/prisma/db';
-import { authorize, hashPassword } from '@/lib/services/auth_service';
+import { authorize, hashPassword, passwordSchema } from '@/lib/services/auth_service';
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
 import { assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
 import { buildMeta, parsePagination } from '@/lib/services/pagination';
@@ -8,22 +8,17 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 const safeText = (max: number) =>
   z.string().min(1).max(max).regex(/^[^<>'"&]*$/, { message: "Les caractères spéciaux (<, >, ', \", &) sont interdits." });
 
-// Every non-nullable Users column is required. `numeroSalarie` from docs/API.md
-// has no column and is therefore not accepted.
+// Strict: `documentId` no longer exists on Users, so supplying it is a 400
+// rather than a silent no-op. The same goes for `numeroSalarie` from
+// docs/API.md, which has never had a column, and for `accountStatus`, which the
+// server pins to PENDING.
 const salarieCreateSchema = z.object({
   email: z.email(),
   surname: safeText(80),
   name: safeText(80),
-  documentId: z.uuid(),
+  password: passwordSchema,
   companyId: z.uuid(),
-  password: z.string()
-    .min(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
-    .max(32, { message: 'Le mot de passe ne doit pas dépasser 32 caractères.' })
-    .regex(/[A-Z]/, { message: 'Le mot de passe doit contenir au moins une lettre majuscule.' })
-    .regex(/[a-z]/, { message: 'Le mot de passe doit contenir au moins une lettre minuscule.' })
-    .regex(/[0-9]/, { message: 'Le mot de passe doit contenir au moins un chiffre.' })
-    .regex(/[^A-Za-z0-9]/, { message: 'Le mot de passe doit contenir au moins un caractère spécial.' }),
-});
+}).strict();
 
 const employeurIdSchema = z.uuid().optional();
 
@@ -151,7 +146,7 @@ export async function GET(request: Request)
  * /api/v1/salaries:
  *   post:
  *     summary: Création d'un salarié
- *     description: "Crée un salarié rattaché à une entreprise. Le serveur impose `role = EMPLOYEE` et `balance = 0` ; le mot de passe est haché avant stockage. Tous les champs non nullables de la table `Users` sont requis : `documentId` doit référencer un document déjà existant. Le champ `numeroSalarie` de docs/API.md n'existe pas en base et n'est pas accepté. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
+ *     description: "Crée un salarié rattaché à une entreprise. Le mot de passe est choisi par l'employeur dans le corps de la requête ; il doit respecter les règles de complexité (8 à 32 caractères, une majuscule, une minuscule, un chiffre, un caractère spécial) et n'est stocké que haché. Le serveur impose `role = EMPLOYEE`, `balance = 0` et `accountStatus = PENDING` : la connexion est refusée tant qu'un agent n'a pas vérifié le compte (`PATCH /api/v1/salaries/{salarieId}` avec `accountStatus = ACCEPTED`), ce qui envoie au salarié un email l'invitant à se connecter avec ce mot de passe. Le corps est strict — un champ inconnu est un `400`, ce qui vaut pour `accountStatus`, pour `documentId` (la colonne `Users.documentId` n'existe plus) et pour `numeroSalarie` de docs/API.md. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -160,25 +155,25 @@ export async function GET(request: Request)
  *         application/json:
  *           schema:
  *             type: object
- *             required: [email, surname, name, password, documentId, companyId]
+ *             additionalProperties: false
+ *             required: [email, surname, name, password, companyId]
  *             properties:
  *               email: { type: string, format: email }
  *               surname: { type: string, description: "Nom de famille (`nom` dans docs/API.md)." }
  *               name: { type: string, description: "Prénom (`prenom` dans docs/API.md)." }
- *               password: { type: string }
- *               documentId: { type: string, format: uuid }
+ *               password: { type: string, description: "Mot de passe initial du salarié, à lui communiquer par l'employeur. 8 à 32 caractères, avec majuscule, minuscule, chiffre et caractère spécial." }
  *               companyId: { type: string, format: uuid, description: "Entreprise employeuse (`employeurId` dans docs/API.md)." }
  *     responses:
  *       '201':
- *         description: Salarié créé. Le mot de passe haché n'est jamais retourné.
+ *         description: Salarié créé, au statut `PENDING`. Le mot de passe haché n'est jamais retourné.
  *         content:
  *           application/json:
  *             schema: { type: object }
- *       '400': { description: Corps de requête invalide. }
+ *       '400': { description: Corps de requête invalide (mot de passe trop faible…), ou champ non accepté (`accountStatus`, `documentId`…). }
  *       '401': { description: Token manquant ou invalide. }
  *       '403': { description: Rôle insuffisant, ou tentative de créer un salarié dans une autre entreprise. }
  *       '404': { description: Entreprise introuvable. }
- *       '409': { description: Un utilisateur possède déjà cet email ou ce document. }
+ *       '409': { description: Un utilisateur possède déjà cet email. }
  *       '500': { description: Erreur serveur interne. }
  */
 export async function POST(request: Request)
@@ -209,22 +204,24 @@ export async function POST(request: Request)
     }
 
     const existingEmail = await db.orm.public.Users.where({ email: input.email }).first();
-    const existingDocument = await db.orm.public.Users.where({ documentId: input.documentId }).first();
 
-    if (existingEmail || existingDocument)
+    if (existingEmail)
     {
       throw new AppError('A user with these identifiers already exists', 409);
     }
 
+    // The password is chosen by the employer and communicated to the salarié
+    // out of band; only its hash is ever stored. The account is created PENDING
+    // and login is refused until an agent verifies it.
     const created = await db.orm.public.Users.create({
       email: input.email,
       surname: input.surname,
       name: input.name,
-      documentId: input.documentId,
       companyId: input.companyId,
       password: hashPassword(input.password),
       role: 'EMPLOYEE',
       balance: 0,
+      accountStatus: 'PENDING',
     });
 
     const { password: _password, ...salarie } = created;

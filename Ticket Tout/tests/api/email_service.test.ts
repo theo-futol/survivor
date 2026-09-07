@@ -8,7 +8,7 @@ import type { EmailMessage, EmailProvider } from '@/lib/services/email/types';
 const { sendEmail, setEmailProvider, resetEmailProvider, getEmailProviderName } =
   await import('../../lib/services/email_service');
 
-const FROM = 'Ticket Tout <noreply@tickettout.fr>';
+const FROM = 'Theo <futoltheo@gmail.com>';
 
 // The provider seam means these tests need no module mocking at all — a fake
 // implementation of the interface is enough.

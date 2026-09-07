@@ -54,6 +54,8 @@ const loginSchema = z.object({
  *         description: Corps de requête invalide.
  *       '401':
  *         description: Identifiants invalides.
+ *       '403':
+ *         description: Compte non validé — son `accountStatus` n'est pas `ACCEPTED`.
  *       '500':
  *         description: Erreur serveur interne.
  */
@@ -76,6 +78,14 @@ export async function POST(request: Request)
     if (!user || !verifyPassword(password, user.password))
     {
       return Response.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // A salarié is created with a password chosen by their employer, so the
+    // credentials alone are usable from the start: the account only becomes
+    // live once an agent has verified it.
+    if (user.accountStatus !== 'ACCEPTED')
+    {
+      return Response.json({ error: 'Compte non validé' }, { status: 403 });
     }
 
     const { token, expiresIn } = await signToken({ sub: user.id, role: user.role });

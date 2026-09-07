@@ -13,8 +13,9 @@ Explicitly **not** in this scope, owned by others:
 - everything under `## Transactions` in `API.md` (`GET`/`POST /salaries/{salarieId}/transactions`,
   `GET /partenaires/{partenaireId}/transactions`)
 - the SIRH endpoint `GET /employees/{id}/balance`
-- document upload — there is no endpoint anywhere in the repo, yet `Users.documentId` and
-  `Company.kbisId` are non-null (see *Known gaps*)
+- document upload — there is no endpoint anywhere in the repo, and `Company.kbisId` is still
+  non-null (see *Known gaps*). `Users.documentId` no longer exists, so creating a salarié no
+  longer needs one.
 
 ## Endpoints
 
@@ -61,8 +62,10 @@ database actually requires.
 | `POST /salaries` body has `numeroSalarie` | not accepted | no such column exists |
 | `POST /salaries` has `nom` / `prenom` | `surname` / `name` | the column names |
 | `POST /salaries` has `employeurId` | `companyId` | the column name |
-| `POST /salaries` has no password | `password` required, bcrypt-style hashed via `hashPassword` | `Users.password` is non-null |
-| `POST /salaries` has no document | `documentId` required (uuid) | `Users.documentId` is non-null and unique |
+| `POST /salaries` body is loosely matched | body is **strict**: any unknown field is a `400` | `accountStatus`, `documentId` and `numeroSalarie` are now refused explicitly rather than ignored |
+| `POST /salaries` "generates a temporary password" | the password comes from the request body, chosen by the employer | `hashPassword` is a one-way SHA-256, so a generated password could never be disclosed at verification time; the employer communicates it out of band instead |
+| `PATCH` verification "provides the temporary password unencrypted" | mails a validation notice with a link to the app, never a password | the salarié already holds the password their employer gave them |
+| `POST /login` checks only the credentials | also `403` unless `accountStatus` is `ACCEPTED` | valid credentials now exist from creation, so verification is what must gate the account |
 | Abondement body `{montant, date, type, comment}` | all validated; only `montant` is persisted | no columns exist for `type` / `comment` |
 | `DELETE` employer "may return 409 if referenced" | always soft-deletes, never 409 | transactions are immutable, so the row must survive |
 | `PATCH` and `DELETE /ministerfavorite/{partnerId}` | both remove, identical response | `API.md` documents both with the same behaviour |
@@ -98,15 +101,17 @@ by the server and are rejected if supplied. `PATCH` takes any non-empty subset o
   "email": "j.dupont@ex.com",
   "surname": "Dupont",
   "name": "Jean",
-  "password": "Secret123!",
-  "documentId": "uuid-of-an-existing-Document",
   "companyId": "uuid-of-the-employer"
 }
 ```
 
-`role` is forced to `EMPLOYEE` and `balance` to `0`. The hashed password is never returned.
-`PATCH` accepts `email`, `surname`, `name`, `documentId`, `password` — but a salarié editing
-themselves is restricted to `surname`, `name`, `password`, and anything else is a `400`.
+The body is strict: any other key — `accountStatus`, `documentId`, `numeroSalarie` — is a `400`.
+`password` is required and must satisfy the complexity rules (8–32 chars, upper, lower, digit,
+special); it is stored hashed and never returned. `role` is forced to `EMPLOYEE`, `balance` to `0`
+and `accountStatus` to `PENDING`.
+
+`PATCH` accepts `email`, `surname`, `name`, `password` and `accountStatus` — but a salarié
+editing themselves is restricted to `surname`, `name`, `password`, and anything else is a `400`.
 
 **`POST .../abondements`** — `{ "montant": 5000, "date": "2026-09-01", "type": "fixe", "comment": "…" }`
 (`montant` a positive integer, `type` one of `fixe` | `variable`).
@@ -157,6 +162,20 @@ salarié dates `Users.expiredAt`. Both then disappear from every read (list endp
 their balances are incremented in one batched `UPDATE`, and a `TOPUP` transaction
 (`status: VALIDER`, `companyId` = the employer) is recorded per employee. An employer with no
 active employee is a `404` and nothing is written.
+
+**Account activation.** A salarié is created `PENDING` with the password their employer chose and
+communicated to them out of band. Valid credentials therefore exist from the start, so `POST
+/api/v1/login` answers `403` while `accountStatus` is not `ACCEPTED` — the verification, not the
+password, is what opens the account.
+
+Verification is a `PATCH` moving `accountStatus` from `PENDING` to `ACCEPTED` — and only that
+transition; re-accepting an already-accepted account does nothing. It mails the salarié a notice
+that the administration validated the account, with a link to `${APP_BASE_URL}/login`
+(`APP_BASE_URL` defaults to `http://localhost:3000`). The password itself never travels by email.
+
+**The mail goes out before anything is written.** If the provider fails, the `502` propagates and
+the salarié stays `PENDING`, so the verification can simply be retried — rather than leaving an
+accepted account whose owner was never told.
 
 **Two ban stores, on purpose.** `POST /admin/ban` writes both:
 
@@ -218,18 +237,24 @@ Every handler funnels through `AppError` + `commonErrorHandler`
 
 | Code | When |
 |---|---|
-| `400` | zod validation failure, malformed JSON, bad pagination, non-uuid path param, empty PATCH body, a salarié patching a field they may not touch |
+| `400` | zod validation failure, malformed JSON, bad pagination, non-uuid path param, empty PATCH body, an unknown field in a strict body, a salarié patching a field they may not touch, an invalid/expired/spent activation token |
 | `401` | missing/invalid bearer token |
 | `403` | role not allowed for the route, or allowed but acting on another company/user |
 | `404` | resource absent, soft-deleted, or of the wrong kind (employer id used on a partner route); unknown category on `?categorie=`; no active employee to abond |
-| `409` | duplicate `email` / `siret` / `kbisId` / `documentId`, user already banned, partner already a favorite |
+| `409` | duplicate `email` / `siret` / `kbisId`, user already banned, partner already a favorite |
+| `502` | the activation email could not be sent; nothing was written |
 | `503` | Redis ban-check unavailable (from `authorize()`) |
 | `500` | anything unhandled |
 
 ## Tests
 
-`Ticket Tout/tests/api/` — one file per route file, 105 tests total, run with
-`JWT_SECRET=… npm run test`. No database, Redis or Docker needed: `mock-db.ts` (a small query
+`Ticket Tout/tests/api/` — one file per route file, plus a file per service that carries logic of
+its own (`email_service`). 175 tests passing across 17 suites, run with
+`JWT_SECRET=… npm run test`.
+
+Two tests in `email_brevo_provider` fail, and predate this work: `brevo_provider.ts` hardcodes
+`sender: { email: "futoltheo@gmail.com", name: "Theo" }` instead of splitting the `from` the email
+service passes it, which is exactly what those two assert. No database, Redis or Docker needed: `mock-db.ts` (a small query
 engine over arrays), `mock-redis.ts` and `mock-postgres.ts` are swapped in via
 `jest.config.ts`'s `moduleNameMapper`. See `tests/README.md` for what the mocks support and which
 fixture constants to use.
@@ -257,9 +282,10 @@ Still open, outside the scope of the work so far:
 2. `POST /api/v1/salaries/{salarieId}/transactions` does not implement the `qrcode` /
    `originalTransactionId` behaviour described in `API.md` — its body is `{ amount, status, type }`.
    `GET` on the same path is unpaginated and ignores `page` / `limit` / `from` / `to` / `type`.
-3. **No document-upload endpoint exists**, yet `Users.documentId` and `Company.kbisId` are both
-   non-null and unique. Creating a salarié or a company therefore requires a `Document` row to
-   already exist. `lib/services/s3_client.ts` is present but unused — someone needs to own this.
+3. **No document-upload endpoint exists.** `Users.documentId` has been dropped from the schema, so
+   creating a salarié no longer needs one, but `Company.kbisId` is still non-null and unique —
+   creating a company still requires a `Document` row to already exist.
+   `lib/services/s3_client.ts` is present but unused — someone needs to own this.
 4. Seed data does not set `Users.companyId`. Until `dev/generate-seed.ts` is updated, a freshly
    seeded database has every user unattached, so the ownership checks and
    `GET /salaries?employeurId=` return nothing for non-admin callers.

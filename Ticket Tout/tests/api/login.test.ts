@@ -47,6 +47,19 @@ describe('POST /api/v1/login', () =>
     expect(json.error).toBe('Invalid credentials');
   });
 
+  // A salarié is created with a password their employer chose, so valid
+  // credentials exist from the start: only the agent's verification opens the
+  // account.
+  it('returns 403 for valid credentials on an unverified account', async () =>
+  {
+    const response = await postLogin({ email: 'pending@example.com', password: SEED_PASSWORD });
+    const json = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(json.error).toBe('Compte non validé');
+    expect(json.token).toBeUndefined();
+  });
+
   it('returns 200 with a token and the user role for valid credentials', async () =>
   {
     const response = await postLogin({ email: 'test-login@example.com', password: SEED_PASSWORD });
