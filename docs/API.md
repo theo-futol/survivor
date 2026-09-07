@@ -183,36 +183,6 @@
 
   - Success: `200` returns `{ "status": "banned", "userId": "...", "reason": "Violation of terms" }`
 
-## MinisterFavorite
-
-- `POST /api/v1/ministerfavorite`
-  - Roles: `admin`
-  - Behavior: adds a partner to the minister's favorite list.
-  - Body example:
-
-```json
-{ "partnerId": "..." }
-```
-
-  - Success: `200` returns `{ "status": "added", "partnerId": "..." }`
-
-- `GET /api/v1/ministerfavorite`
-  - Roles: `admin`
-  - Behavior: retrieves the list of partners in the minister's favorite list.
-  - Success: `200` returns `{ "favorites": [ { "partnerId": "...", "name": "..." }, ... ] }`
-
-- `PATCH /api/v1/ministerfavorite/{partnerId}`
-  - Roles: `admin`
-  - Behavior: removes a partner from the minister's favorite list.
-  - Success: `200` returns `{ "status": "removed", "partnerId": "..." }`
-
-- `DELETE /api/v1/ministerfavorite/{partnerId}`
-  - Roles: `admin`
-  - Behavior: removes a partner from the minister's favorite list.
-  - Success: `200` returns `{ "status": "removed", "partnerId": "..." }`
-
----
-
 ## Roles and permissions (summary)
 
 | Role | Permissions |
