@@ -188,27 +188,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             throw new AppError('Invalid request body', 400);
         });
 
-        await withTransaction(async (client) => {
+        const {newBalance, status} : {newBalance: number, status: "REFUSER" | "VALIDER"} = await withTransaction(async (client) => {
             const rows = await client.query("SELECT balance FROM users WHERE id = $1 FOR UPDATE", [salarieId]);
 
             if (rows.rowCount === 0) {
                 throw new AppError('Salarie not found', 404);
             }
 
-            if (requestBody.status !== "REFUSER") {
-                const currentBalance = rows.rows[0].balance;
-                const newBalance = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
-    
-                if (newBalance < 0) {
-                    throw new AppError('Insufficient balance', 400);
-                }
-                await client.query("UPDATE users SET balance = $1 WHERE id = $2", [newBalance, salarieId]);
+            const currentBalance: number = rows.rows[0].balance;
+            const newBalance: number = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
+
+            if (newBalance < 0) {
+                return {newBalance: currentBalance, "status": "REFUSER"};
             }
+            await client.query("UPDATE users SET balance = $1 WHERE id = $2", [newBalance, salarieId]);
+            return {newBalance, "status": "VALIDER"};
         });
         const insertResult = await db.orm.public.Transaction.create({
             userId: salarieId,
             amount: requestBody.amount,
-            status: requestBody.status,
+            newBalance: newBalance,
+            status: status,
             type: requestBody.type,
         });
         if (!insertResult) {
