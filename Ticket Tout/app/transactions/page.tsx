@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { ArrowDownLeft, ArrowUpRight, Filter, LoaderCircle, RotateCcw } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
@@ -23,7 +23,7 @@ type UiTransaction = {
   operation: ApiTransaction["type"]
 }
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const searchParams = useSearchParams()
   const requestedFilter = searchParams.get("filter")
   const [filter, setFilter] = useState<FilterKind>(requestedFilter === "credited" || requestedFilter === "consumed" ? requestedFilter : "all")
@@ -164,5 +164,13 @@ export default function TransactionsPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Chargement…</div>}>
+      <TransactionsContent />
+    </Suspense>
   )
 }

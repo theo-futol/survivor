@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Building2, Handshake, ShieldCheck } from "lucide-react"
@@ -36,7 +37,9 @@ export default function LoginPage() {
           <h2 className="text-2xl font-black">Connexion</h2>
           <p className="mt-2 text-muted-foreground">Utilisez les identifiants associés à votre compte.</p>
           <div className="mt-7">
-            <LoginApiSalarieForm />
+            <Suspense fallback={<div className="text-sm text-muted-foreground">Chargement du formulaire...</div>}>
+              <LoginApiSalarieForm />
+            </Suspense>
           </div>
 
           <div className="mt-9 border-t pt-7">
