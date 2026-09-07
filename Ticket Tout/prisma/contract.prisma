@@ -15,6 +15,7 @@ enum AccountStatus {
   PENDING
   ACCEPTED
   REFUSED
+  INACTIF
 }
 
 model CompanyCategory {

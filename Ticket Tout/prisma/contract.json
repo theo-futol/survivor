@@ -67,6 +67,10 @@
               {
                 "name": "REFUSED",
                 "value": "REFUSED"
+              },
+              {
+                "name": "INACTIF",
+                "value": "INACTIF"
               }
             ]
           },
@@ -2274,8 +2278,8 @@
             "users": {
               "checks": [
                 {
-                  "expression": "\"accountStatus\" IN ('PENDING', 'ACCEPTED', 'REFUSED')",
-                  "name": "users_accountStatus_check_1773ea89",
+                  "expression": "\"accountStatus\" IN ('PENDING', 'ACCEPTED', 'REFUSED', 'INACTIF')",
+                  "name": "users_accountStatus_check_e20d3381",
                   "prefix": "users_accountStatus_check"
                 },
                 {
@@ -2446,7 +2450,8 @@
               "values": [
                 "PENDING",
                 "ACCEPTED",
-                "REFUSED"
+                "REFUSED",
+                "INACTIF"
               ]
             },
             "Role": {
@@ -2479,7 +2484,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "58ee6c51ed346c95314b55921487eb7a9979068a90cb8dca78f76f2eb3bfb82b",
+    "storageHash": "ff5ecc7689bd7343b15626058ece053115bb52dbeb6612d87c36042bf4f4638a",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",

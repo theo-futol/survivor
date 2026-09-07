@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dropCheckConstraint.users.users_accountStatus_check_1773ea89",
+    "label": "Drop check constraint \"users_accountStatus_check_1773ea89\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "users_accountStatus_check_1773ea89",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_accountStatus_check_1773ea89\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_1773ea89",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"users_accountStatus_check_1773ea89\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_accountStatus_check_1773ea89\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_accountStatus_check_1773ea89\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_1773ea89",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.users.users_accountStatus_check_e20d3381",
+    "label": "Add check constraint \"users_accountStatus_check_e20d3381\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "users_accountStatus_check_e20d3381",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_accountStatus_check_e20d3381\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_e20d3381",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"users_accountStatus_check_e20d3381\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_accountStatus_check_e20d3381\" CHECK (\"accountStatus\" IN ('PENDING', 'ACCEPTED', 'REFUSED', 'INACTIF'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_accountStatus_check_e20d3381\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_accountStatus_check_e20d3381",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  }
+]
