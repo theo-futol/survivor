@@ -170,10 +170,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             const newBalance: number = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
 
             if (newBalance < 0) {
-                return {newBalance: currentBalance, "status": "REFUSER"};
+                return {newBalance: currentBalance, "status": "REFUSER" as const};
             }
             await client.query("UPDATE users SET balance = $1 WHERE id = $2", [newBalance, salarieId]);
-            return {newBalance, "status": "VALIDER"};
+            return {newBalance, "status": "VALIDER" as const};
         });
         const insertResult = await db.orm.public.Transaction.create({
             userId: salarieId,
