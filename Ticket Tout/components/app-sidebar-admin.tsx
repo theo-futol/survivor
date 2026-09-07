@@ -43,7 +43,7 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
     },
     {
       id: "featured" as AdminTab,
-      title: "Mis en avant",
+      title: "Featured",
       icon: Sparkles,
     },
   ]
