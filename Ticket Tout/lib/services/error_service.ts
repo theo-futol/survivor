@@ -21,7 +21,9 @@ export function commonErrorHandler(error: unknown): { message: string; statusCod
     return { message: error.message, statusCode: error.statusCode };
   }
   if (error instanceof z.ZodError) {
-      return { message: 'Invalid request body', statusCode: 400 };
+      const issue = error.issues[0];
+      const message = issue?.message || 'Invalid request body';
+      return { message, statusCode: 400 };
   }
   if (error instanceof SyntaxError) {
       return { message: 'Invalid JSON in request body', statusCode: 400 };

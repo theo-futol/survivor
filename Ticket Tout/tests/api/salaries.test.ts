@@ -109,11 +109,14 @@ describe('POST /api/v1/salaries', () =>
     expect((await post({ ...validBody, companyId: OTHER_COMPANY_ID }, token)).status).toBe(403);
   });
 
-  it('returns 400 when the password does not meet the complexity rules', async () =>
+  it('returns 400 with the validation reason when the password does not meet the complexity rules', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post({ ...validBody, password: 'weak' }, token);
+    const json = await response.json();
 
-    expect((await post({ ...validBody, password: 'weak' }, token)).status).toBe(400);
+    expect(response.status).toBe(400);
+    expect(json.error).toBe('Le mot de passe doit contenir au moins 8 caractères.');
   });
 
 <<<<<<< HEAD

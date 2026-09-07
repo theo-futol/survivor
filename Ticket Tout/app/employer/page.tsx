@@ -430,8 +430,14 @@ function EmployeeForm({
             className="mt-2"
             required={!employee}
             minLength={8}
+            maxLength={32}
+            pattern={employee ? undefined : "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,32}"}
+            title="8 à 32 caractères avec au moins une majuscule, une minuscule, un chiffre et un caractère spécial."
             autoComplete="new-password"
           />
+          <p className="mt-2 text-xs text-muted-foreground">
+            8 à 32 caractères, avec au moins une majuscule, une minuscule, un chiffre et un caractère spécial.
+          </p>
         </div>
       </fieldset>
 
