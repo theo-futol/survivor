@@ -92,6 +92,17 @@ function sqlBool(v: boolean): string {
 function sqlTs(ms: number): string {
   return sqlStr(toIso(ms));
 }
+
+/** Accent-stripped, url-safe form of a company name — used to build its email. */
+function slug(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 /** PostGIS point literal (SRID 4326 / WGS84) for Company.location. */
 function sqlPoint(lon: number, lat: number): string {
   return `ST_SetSRID(ST_MakePoint(${lon.toFixed(4)}, ${lat.toFixed(4)}), 4326)`;
@@ -121,7 +132,17 @@ if (FIRST_NAMES.length !== 50 || LAST_NAMES.length !== 50) {
   throw new Error('expected exactly 50 first/last names');
 }
 
-const CATEGORIES = ['Restauration', 'Librairie & Papeterie', 'Sport & Bien-être', 'Culture & Loisirs'] as const;
+// Category ids are positional (id = index + 1), so new categories are only ever
+// appended — inserting one in the middle would renumber the existing ones.
+const CATEGORIES = [
+  'Restauration',
+  'Librairie & Papeterie',
+  'Sport & Bien-être',
+  'Culture & Loisirs',
+  'Alimentation',
+  'Santé',
+  'Mobilité',
+] as const;
 
 // Company.description is NOT NULL in the contract but carries no meaning for the
 // seed, so every partner gets the same placeholder rather than 12 invented ones.
@@ -129,6 +150,7 @@ const COMPANY_DESCRIPTION = 'Établissement partenaire du dispositif Ticket Tout
 
 type Company = {
   name: string;
+  description: string;
   category: (typeof CATEGORIES)[number];
   city: string;
   postalCode: string;
@@ -140,29 +162,53 @@ type Company = {
   lat: number;
 };
 
-const COMPANIES: Company[] = [
-  { name: 'Le Bistrot des Halles', category: 'Restauration', city: 'Paris', postalCode: '75001', region: 'Île-de-France', siret: '40312345600011', lon: 2.3372, lat: 48.8606 },
-  { name: 'Chez Antoine', category: 'Restauration', city: 'Levallois-Perret', postalCode: '92300', region: 'Île-de-France', siret: '40312345600028', lon: 2.2876, lat: 48.8933 },
-  { name: "La Table d'Amélie", category: 'Restauration', city: 'Lyon', postalCode: '69002', region: 'Auvergne-Rhône-Alpes', siret: '40312345600035', lon: 4.832, lat: 45.755 },
-  { name: 'Librairie du Marché', category: 'Librairie & Papeterie', city: 'Paris', postalCode: '75011', region: 'Île-de-France', siret: '40312345600042', lon: 2.38, lat: 48.858 },
-  { name: 'Papeterie Voltaire', category: 'Librairie & Papeterie', city: 'Bordeaux', postalCode: '33000', region: 'Nouvelle-Aquitaine', siret: '40312345600059', lon: -0.5792, lat: 44.8378 },
-  { name: 'Librairie des Arts', category: 'Librairie & Papeterie', city: 'Lille', postalCode: '59000', region: 'Hauts-de-France', siret: '40312345600066', lon: 3.0573, lat: 50.6292 },
-  { name: 'Studio Yoga Zen', category: 'Sport & Bien-être', city: 'Lyon', postalCode: '69003', region: 'Auvergne-Rhône-Alpes', siret: '40312345600073', lon: 4.85, lat: 45.76 },
-  { name: 'Salle Sport Forme', category: 'Sport & Bien-être', city: 'Bordeaux', postalCode: '33200', region: 'Nouvelle-Aquitaine', siret: '40312345600080', lon: -0.61, lat: 44.845 },
-  { name: 'Spa Sérénité', category: 'Sport & Bien-être', city: 'Lille', postalCode: '59800', region: 'Hauts-de-France', siret: '40312345600097', lon: 3.07, lat: 50.635 },
-  { name: 'Ciné Palace', category: 'Culture & Loisirs', city: 'Créteil', postalCode: '94000', region: 'Île-de-France', siret: '40312345600103', lon: 2.455, lat: 48.79 },
-  { name: 'Café du Musée', category: 'Culture & Loisirs', city: 'Bordeaux', postalCode: '33800', region: 'Nouvelle-Aquitaine', siret: '40312345600110', lon: -0.56, lat: 44.825 },
-  { name: 'Théâtre du Nord', category: 'Culture & Loisirs', city: 'Calais', postalCode: '62100', region: 'Hauts-de-France', siret: '40312345600127', lon: 1.855, lat: 50.95 },
+// Partners (isPartner = true): the merchants a salarié can pay at. Only these
+// ever appear on a PAYMENT/REFUND row.
+const PARTNER_COMPANIES: Company[] = [
+  { name: 'Le Comptoir du Midi', description: 'Restaurant de quartier proposant une cuisine provençale de marché, midi et soir.', category: 'Restauration', city: 'Marseille', postalCode: '13001', region: "Provence-Alpes-Côte d'Azur", siret: '40312345600134', lon: 5.3806, lat: 43.2965 },
+  { name: 'Épicerie Sainte-Claire', description: 'Épicerie de proximité proposant produits frais, conserves et paniers de saison.', category: 'Alimentation', city: 'Toulon', postalCode: '83000', region: "Provence-Alpes-Côte d'Azur", siret: '40312345600141', lon: 5.928, lat: 43.1242 },
+  { name: 'Librairie Vasseur', description: 'Librairie généraliste avec un fonds important en littérature, jeunesse et sciences humaines.', category: 'Culture & Loisirs', city: 'Aix-en-Provence', postalCode: '13100', region: "Provence-Alpes-Côte d'Azur", siret: '40312345600158', lon: 5.4474, lat: 43.5297 },
+  { name: 'Pharmacie du Parc', description: 'Pharmacie de quartier assurant délivrance sur ordonnance, parapharmacie et orthopédie.', category: 'Santé', city: 'Nîmes', postalCode: '30000', region: 'Occitanie', siret: '40312345600165', lon: 4.3601, lat: 43.8367 },
+  { name: 'Transports Régionaux Unifiés', description: "Réseau de transport régional proposant titres à l'unité et abonnements interurbains.", category: 'Mobilité', city: 'Montpellier', postalCode: '34000', region: 'Occitanie', siret: '40312345600172', lon: 3.8767, lat: 43.6108 },
+  { name: 'Sport Loisirs Aubagne', description: 'Complexe sportif proposant salle de remise en forme, courts de tennis et activités de plein air.', category: 'Sport & Bien-être', city: 'Aubagne', postalCode: '13400', region: "Provence-Alpes-Côte d'Azur", siret: '40312345600189', lon: 5.5706, lat: 43.2925 },
 ];
 
-if (COMPANIES.length !== 12) {
-  throw new Error('expected exactly 12 partner companies');
+// Employers (isPartner = false): the companies the 50 salariés work for. They
+// never receive a payment — they only show up through users.companyId.
+const EMPLOYER_COMPANIES: Company[] = [
+  { name: 'Le Bistrot des Halles', description: 'Bistrot traditionnel proposant une cuisine française de saison dans un cadre chaleureux.', category: 'Restauration', city: 'Paris', postalCode: '75001', region: 'Île-de-France', siret: '40312345600011', lon: 2.3372, lat: 48.8606 },
+  { name: 'Chez Antoine', description: 'Restaurant familial spécialisé dans les plats du terroir et les produits locaux.', category: 'Restauration', city: 'Levallois-Perret', postalCode: '92300', region: 'Île-de-France', siret: '40312345600028', lon: 2.2876, lat: 48.8933 },
+  { name: "La Table d'Amélie", description: 'Restaurant gastronomique proposant une cuisine raffinée et un service attentionné.', category: 'Restauration', city: 'Lyon', postalCode: '69002', region: 'Auvergne-Rhône-Alpes', siret: '40312345600035', lon: 4.832, lat: 45.755 },
+  { name: 'Librairie du Marché', description: 'Librairie indépendante offrant un large choix de romans, essais et bandes dessinées.', category: 'Librairie & Papeterie', city: 'Paris', postalCode: '75011', region: 'Île-de-France', siret: '40312345600042', lon: 2.38, lat: 48.858 },
+  { name: 'Papeterie Voltaire', description: 'Papeterie de quartier proposant fournitures scolaires, articles de bureau et cartes de vœux.', category: 'Librairie & Papeterie', city: 'Bordeaux', postalCode: '33000', region: 'Nouvelle-Aquitaine', siret: '40312345600059', lon: -0.5792, lat: 44.8378 },
+  { name: 'Librairie des Arts', description: 'Librairie spécialisée en beaux-arts, architecture et design, avec un espace dédié aux expositions.', category: 'Librairie & Papeterie', city: 'Lille', postalCode: '59000', region: 'Hauts-de-France', siret: '40312345600066', lon: 3.0573, lat: 50.6292 },
+  { name: 'Studio Yoga Zen', description: 'Studio proposant des cours de yoga et de méditation pour tous niveaux.', category: 'Sport & Bien-être', city: 'Lyon', postalCode: '69003', region: 'Auvergne-Rhône-Alpes', siret: '40312345600073', lon: 4.85, lat: 45.76 },
+  { name: 'Salle Sport Forme', description: 'Salle de sport équipée proposant musculation, cardio-training et cours collectifs.', category: 'Sport & Bien-être', city: 'Bordeaux', postalCode: '33200', region: 'Nouvelle-Aquitaine', siret: '40312345600080', lon: -0.61, lat: 44.845 },
+  { name: 'Spa Sérénité', description: 'Spa offrant massages, soins du corps et moments de détente dans un cadre apaisant.', category: 'Sport & Bien-être', city: 'Lille', postalCode: '59800', region: 'Hauts-de-France', siret: '40312345600097', lon: 3.07, lat: 50.635 },
+  { name: 'Ciné Palace', description: "Cinéma proposant les dernières sorties ainsi qu'une programmation de films d'auteur.", category: 'Culture & Loisirs', city: 'Créteil', postalCode: '94000', region: 'Île-de-France', siret: '40312345600103', lon: 2.455, lat: 48.79 },
+  { name: 'Café du Musée', description: 'Café convivial situé à proximité du musée, idéal pour une pause gourmande.', category: 'Culture & Loisirs', city: 'Bordeaux', postalCode: '33800', region: 'Nouvelle-Aquitaine', siret: '40312345600110', lon: -0.56, lat: 44.825 },
+  { name: 'Théâtre du Nord', description: 'Théâtre proposant une programmation variée entre pièces classiques et créations contemporaines.', category: 'Culture & Loisirs', city: 'Calais', postalCode: '62100', region: 'Hauts-de-France', siret: '40312345600127', lon: 1.855, lat: 50.95 },
+];
+
+// Partners first: company ids are seededId(`company:${index}`) over this
+// concatenated list, and mocks/seed-roles.sql hardcodes company:0 as the
+// company of the PARTNER test account.
+const COMPANIES: Company[] = [...PARTNER_COMPANIES, ...EMPLOYER_COMPANIES];
+
+if (PARTNER_COMPANIES.length !== 6) {
+  throw new Error('expected exactly 6 partner companies');
 }
-if (new Set(COMPANIES.map((c) => c.category)).size < 4) {
-  throw new Error('expected at least 4 distinct categories among partners');
+if (EMPLOYER_COMPANIES.length !== 12) {
+  throw new Error('expected exactly 12 employer companies');
+}
+if (new Set(PARTNER_COMPANIES.map((c) => c.category)).size !== PARTNER_COMPANIES.length) {
+  throw new Error('expected one distinct category per partner');
+}
+if (new Set(COMPANIES.map((c) => c.siret)).size !== COMPANIES.length) {
+  throw new Error('expected unique SIRETs across all companies');
 }
 if (new Set(COMPANIES.map((c) => c.region)).size < 3) {
-  throw new Error('expected at least 3 distinct régions among partners');
+  throw new Error('expected at least 3 distinct régions among companies');
 }
 
 const SEED_PASSWORD = 'Secret123!';
@@ -208,6 +254,7 @@ type Employee = {
   email: string;
   name: string;
   surname: string;
+  companyId: string; // filled in once the employer companies exist
   balance: number; // filled in after the replay
 };
 
@@ -226,6 +273,7 @@ for (let i = 0; i < 50; i++) {
     email: `${surname.toLowerCase()}.${name.toLowerCase()}${i}@example.fr`,
     name,
     surname,
+    companyId: '',
     balance: 0,
   });
 }
@@ -252,10 +300,24 @@ const AGENTS = [0, 1].map((i) => ({
   name: `Seed${i + 1}`,
 }));
 
-type Partner = { index: number; id: string; kbisId: string; company: Company };
-const partners: Partner[] = COMPANIES.map((company, i) => {
+type CompanyEntity = { index: number; id: string; kbisId: string; isPartner: boolean; company: Company };
+const companies: CompanyEntity[] = COMPANIES.map((company, i) => {
   const kbis = makeDocument(`companies/${String(i).padStart(2, '0')}/kbis`, EMPLOYEE_CREATED_AT);
-  return { index: i, id: seededId(`company:${i}`), kbisId: kbis.id, company };
+  return {
+    index: i,
+    id: seededId(`company:${i}`),
+    kbisId: kbis.id,
+    isPartner: i < PARTNER_COMPANIES.length,
+    company,
+  };
+});
+const partners = companies.filter((c) => c.isPartner);
+const employers = companies.filter((c) => !c.isPartner);
+
+// Round-robin rather than `pick()`: assigning employers must not consume the
+// shared RNG stream, or every amount and date below would shift.
+employees.forEach((e, i) => {
+  e.companyId = employers[i % employers.length]!.id;
 });
 
 // ---------------------------------------------------------------------------
@@ -507,14 +569,14 @@ lines.push('');
 lines.push('-- companyValidationReason');
 for (const r of validationReasons) {
   lines.push(
-    `INSERT INTO public."companyValidationReason" (id, reason) VALUES (${sqlInt(r.id)}, ${sqlStr(r.reason)});`,
+    `INSERT INTO public."companyValidationReason" (id, reason) VALUES (${sqlInt(r.id)}, ${sqlStr(r.reason)}) ON CONFLICT DO NOTHING;`,
   );
 }
 lines.push('');
 
 lines.push('-- companyCategory');
 for (const c of companyCategories) {
-  lines.push(`INSERT INTO public."companyCategory" (id, category) VALUES (${sqlInt(c.id)}, ${sqlStr(c.category)});`);
+  lines.push(`INSERT INTO public."companyCategory" (id, category) VALUES (${sqlInt(c.id)}, ${sqlStr(c.category)}) ON CONFLICT DO NOTHING;`);
 }
 lines.push('');
 
@@ -522,7 +584,7 @@ lines.push('-- document');
 for (const d of documents) {
   lines.push(
     `INSERT INTO public.document (id, "storageKey", "mimeType", size, "createdAt") VALUES ` +
-      `(${sqlStr(d.id)}, ${sqlStr(d.storageKey)}, ${sqlStr(d.mimeType)}, ${sqlInt(d.size)}, ${sqlTs(d.createdAt)});`,
+      `(${sqlStr(d.id)}, ${sqlStr(d.storageKey)}, ${sqlStr(d.mimeType)}, ${sqlInt(d.size)}, ${sqlTs(d.createdAt)}) ON CONFLICT DO NOTHING;`,
   );
 }
 lines.push('');
@@ -531,7 +593,11 @@ lines.push('-- users: 2 agents (ADMIN) — referenced by company."agentId" throu
 for (const a of AGENTS) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+<<<<<<< Updated upstream
       `"expiredAt", "accountStatus") VALUES (` +
+=======
+      `"expiredAt", "accountStatus", "companyId") VALUES (` +
+>>>>>>> Stashed changes
       [
         sqlStr(a.id),
         sqlStr(a.email),
@@ -544,8 +610,12 @@ for (const a of AGENTS) {
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
         sqlStr('ACCEPTED'),
+<<<<<<< Updated upstream
+=======
+        'NULL',
+>>>>>>> Stashed changes
       ].join(', ') +
-      ');',
+      ') ON CONFLICT DO NOTHING;',
   );
 }
 lines.push('');
@@ -553,39 +623,49 @@ lines.push('');
 lines.push('-- adminUser: shadow table holding only ADMIN users; nothing populates it');
 lines.push('-- automatically, so the agent rows are inserted explicitly here.');
 for (const a of AGENTS) {
-  lines.push(`INSERT INTO public."adminUser" ("userId") VALUES (${sqlStr(a.id)});`);
+  lines.push(`INSERT INTO public."adminUser" ("userId") VALUES (${sqlStr(a.id)}) ON CONFLICT DO NOTHING;`);
 }
 lines.push('');
 
-lines.push('-- company (12 partners: >=4 categories, >=3 régions)');
-partners.forEach((p, i) => {
+lines.push('-- company (6 partenaires isPartner = TRUE, then 12 employeurs isPartner = FALSE)');
+companies.forEach((p, i) => {
   const c = p.company;
   const reasonId = validationReasons[i % validationReasons.length]!.id;
   const categoryId = categoryIdByName.get(c.category)!;
   lines.push(
+<<<<<<< Updated upstream
     `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", ` +
       `"reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+=======
+    `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", ` +
+      `"agentId", "reasonId", ` +
+      `verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
+>>>>>>> Stashed changes
       [
         sqlStr(p.id),
         sqlStr(c.name),
-        sqlStr(`contact@${c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}.fr`),
+        sqlStr(`contact@${slug(c.name)}.fr`),
         sqlStr(c.siret),
         sqlStr(p.kbisId),
+<<<<<<< Updated upstream
         sqlStr(COMPANY_DESCRIPTION),
+=======
+        sqlStr(c.description),
+>>>>>>> Stashed changes
         sqlStr(`${randInt(1, 120)} rue de la République`),
         sqlStr(c.postalCode),
-        // Half the partners on agent 1, half on agent 2.
-        sqlStr(i < partners.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
+        // Half the companies on agent 1, half on agent 2.
+        sqlStr(i < companies.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
         sqlInt(reasonId),
         sqlBool(true),
-        sqlBool(i % 3 === 0),
+        sqlBool(p.isPartner && i % 3 === 0),
         sqlInt(categoryId),
         sqlPoint(c.lon, c.lat),
-        sqlBool(true),
+        sqlBool(p.isPartner),
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
       ].join(', ') +
-      ');',
+      ') ON CONFLICT DO NOTHING;',
   );
 });
 lines.push('');
@@ -594,7 +674,11 @@ lines.push('-- users: 50 employees');
 for (const e of employees) {
   lines.push(
     `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+<<<<<<< Updated upstream
       `"expiredAt", "accountStatus") VALUES (` +
+=======
+      `"expiredAt", "accountStatus", "companyId") VALUES (` +
+>>>>>>> Stashed changes
       [
         sqlStr(e.id),
         sqlStr(e.email),
@@ -606,9 +690,14 @@ for (const e of employees) {
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
         'NULL',
+<<<<<<< Updated upstream
         sqlStr(randomAccountStatus()),
+=======
+        sqlStr('ACCEPTED'),
+        sqlStr(e.companyId),
+>>>>>>> Stashed changes
       ].join(', ') +
-      ');',
+      ') ON CONFLICT DO NOTHING;',
   );
 }
 lines.push('');
@@ -616,7 +705,11 @@ lines.push('');
 lines.push('-- users: 1 admin (for exercising admin-only routes)');
 lines.push(
   `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+<<<<<<< Updated upstream
     `"expiredAt", "accountStatus") VALUES (` +
+=======
+    `"expiredAt", "accountStatus", "companyId") VALUES (` +
+>>>>>>> Stashed changes
     [
       sqlStr(admin.id),
       sqlStr(admin.email),
@@ -629,8 +722,12 @@ lines.push(
       sqlTs(EMPLOYEE_CREATED_AT),
       'NULL',
       sqlStr('ACCEPTED'),
+<<<<<<< Updated upstream
+=======
+      'NULL',
+>>>>>>> Stashed changes
     ].join(', ') +
-    ');',
+    ') ON CONFLICT DO NOTHING;',
 );
 lines.push('');
 
@@ -650,7 +747,7 @@ for (const t of transactions) {
         sqlStr(t.status),
         sqlTs(t.createdAt),
       ].join(', ') +
-      ');',
+      ') ON CONFLICT DO NOTHING;',
   );
 }
 lines.push('');
@@ -722,7 +819,9 @@ writeFileSync(path.join(MOCKS_DIR, 'justificatif.md'), justificatif, 'utf8');
 
 console.log('Seed generated:');
 console.log(`  employees: ${employees.length}`);
-console.log(`  partners: ${partners.length} (${new Set(COMPANIES.map((c) => c.category)).size} categories, ${new Set(COMPANIES.map((c) => c.region)).size} régions)`);
+console.log(`  partners (isPartner = TRUE): ${partners.length} (${new Set(PARTNER_COMPANIES.map((c) => c.category)).size} categories)`);
+console.log(`  employers (isPartner = FALSE): ${employers.length} — employees are spread over them round-robin`);
+console.log(`  régions: ${new Set(COMPANIES.map((c) => c.region)).size}`);
 console.log(`  transactions (PAYMENT/REFUND, exported): ${customerFacing.length}`);
 console.log(`  transactions (TOPUP, not exported): ${transactions.length - customerFacing.length}`);
 console.log(`  refused (insufficient balance): ${refusedCount}`);

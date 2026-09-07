@@ -155,10 +155,11 @@ It runs `docker compose --env-file <file> --profile '*' down --rmi all --volumes
 
 ## Seeding the database
 
-A deterministic seed (50 employees with varied balances, 12 partners across
-several categories and régions, and 200 payment/refund transactions spread
-over 90 days, plus the employer top-ups that fund them) can be loaded once
-the dev stack is up:
+A deterministic seed (50 employees with varied balances, 6 partners
+(`isPartner = true`) across 6 categories, 12 employer companies
+(`isPartner = false`) the employees are attached to through `users.companyId`,
+and 200 payment/refund transactions spread over 90 days, plus the employer
+top-ups that fund them) can be loaded once the dev stack is up:
 
 ```bash
 cd "Ticket Tout" && npm run db:seed:generate   # regenerates mocks/seed.sql, mocks/transactions.csv, mocks/justificatif.md
@@ -169,7 +170,12 @@ cd .. && ./dev/seed-db.sh                       # applies pending migrations, th
 a fresh database without regenerating it first. `npm run db:seed:generate` is
 fully deterministic (fixed random seed and reference date) — running it again
 on an empty database reproduces the exact same ids, amounts, and dates, so
-`mocks/seed.sql` and `mocks/transactions.csv` always match. The seed only
+`mocks/seed.sql` and `mocks/transactions.csv` always match. Every generated
+statement carries `ON CONFLICT DO NOTHING`, so re-applying `mocks/seed.sql` to an
+already seeded database is a no-op instead of a unique-violation. The seed only
 ever `INSERT`s rows in chronological order (never `UPDATE`s a transaction to
 fix a balance); `mocks/justificatif.md` shows the abondements/débits/total
 reconciliation for one of the three employees seeded at a zero balance.
+
+Seeded salariés are created with `accountStatus = 'ACCEPTED'`, so they can log in
+straight away (`<prenom>.<nom><n>@example.fr` / `Secret123!`).
