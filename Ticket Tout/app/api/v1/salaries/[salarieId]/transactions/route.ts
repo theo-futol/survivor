@@ -197,7 +197,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
 
             const currentBalance: number = rows.rows[0].balance;
             const newBalance: number = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
-            const authorizeOverdraft: number = 150;
+            const authorizeOverdraft: number = 0;
 
             if (newBalance < authorizeOverdraft && requestBody.status === "VALIDER") {
                 return {newBalance: currentBalance, "status": "REFUSER" as const};
