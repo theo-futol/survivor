@@ -10,7 +10,26 @@ import { Label } from "@/components/ui/label"
 import { QrCodeSvg } from "@/components/qr-code-svg"
 import { X, LogOut } from "lucide-react"
 
-function PartnerSidebar({ activeTab, onSelectTab }) {
+interface Product {
+  id: number
+  name: string
+  price: number
+}
+
+interface Transaction {
+  id: string
+  date: string
+  produit: string
+  client: string
+  montant: number
+}
+
+interface PartnerSidebarProps {
+  activeTab: string
+  onSelectTab: (tab: string) => void
+}
+
+function PartnerSidebar({ activeTab, onSelectTab }: PartnerSidebarProps) {
   const router = useRouter()
   const navItems = [
     { id: "products", title: "Produits" },
@@ -53,21 +72,21 @@ function PartnerSidebar({ activeTab, onSelectTab }) {
 }
 
 function ProductManager() {
-  const [products, setProducts] = useState([
+  const [products, setProducts] = useState<Product[]>([
     { id: 1, name: "Sandwich Jambon", price: 4.5 },
     { id: 2, name: "Café", price: 1.2 },
   ])
   const [newName, setNewName] = useState("")
   const [newPrice, setNewPrice] = useState("")
 
-  function addProduct(e) {
+  function addProduct(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!newName || !newPrice || isNaN(Number(newPrice))) return
     setProducts([...products, { id: Date.now(), name: newName, price: parseFloat(newPrice) }])
     setNewName("")
     setNewPrice("")
   }
-  function removeProduct(id) {
+  function removeProduct(id: number) {
     setProducts(products.filter((p) => p.id !== id))
   }
   return (
@@ -105,6 +124,14 @@ function ProductManager() {
   )
 }
 
+// TODO: remplacer par les vraies infos du partenaire connecté (session/auth),
+// au lieu de cette valeur figée. `id` doit être le partenaireId utilisé par
+// GET /api/v1/partenaires/{partenaireId}/transactions.
+const CURRENT_PARTNER = {
+  id: "00000000-0000-0000-0000-000000000000",
+  name: "Boulangerie Dupont",
+}
+
 function PartnerInfo() {
   return (
     <div className="space-y-6">
@@ -125,24 +152,21 @@ function PartnerInfo() {
   )
 }
 
-// TODO: remplacer par les vraies infos du partenaire connecté (session/auth),
-// au lieu de cette valeur figée. `id` doit être le partenaireId utilisé par
-// GET /api/v1/partenaires/{partenaireId}/transactions.
-const CURRENT_PARTNER = {
-  id: "00000000-0000-0000-0000-000000000000",
-  name: "Boulangerie Dupont",
-}
-
 // Utilisées uniquement tant que l'API de transactions n'est pas branchée.
-const MOCK_TRANSACTIONS = [
+const MOCK_TRANSACTIONS: Transaction[] = [
   { id: "1", date: "2026-09-01T10:12:00Z", produit: "Sandwich Jambon", client: "Marie L.", montant: 4.5 },
   { id: "2", date: "2026-09-02T08:03:00Z", produit: "Café", client: "Julien P.", montant: 1.2 },
   { id: "3", date: "2026-09-03T12:45:00Z", produit: "Sandwich Jambon", client: "Sofia R.", montant: 4.5 },
   { id: "4", date: "2026-09-04T09:20:00Z", produit: "Café", client: "Marie L.", montant: 1.2 },
 ]
 
-function TransactionHistory({ partenaireId, companyName }) {
-  const [transactions, setTransactions] = useState([])
+interface TransactionHistoryProps {
+  partenaireId: string
+  companyName: string
+}
+
+function TransactionHistory({ partenaireId, companyName }: TransactionHistoryProps) {
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [usingMockData, setUsingMockData] = useState(false)
 
@@ -158,7 +182,7 @@ function TransactionHistory({ partenaireId, companyName }) {
         // côté API pour que cet appel fonctionne réellement.
         const res = await fetch(`/api/v1/partenaires/${partenaireId}/transactions`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
+        const data: Transaction[] = await res.json()
         if (!cancelled) {
           setTransactions(data)
           setUsingMockData(false)
@@ -221,14 +245,28 @@ function TransactionHistory({ partenaireId, companyName }) {
   )
 }
 
+// Minimal ambient type so TS stops complaining about the experimental
+// BarcodeDetector API (not yet in lib.dom.d.ts).
+interface BarcodeDetectorResult {
+  rawValue: string
+}
+interface BarcodeDetectorLike {
+  detect(source: HTMLVideoElement): Promise<BarcodeDetectorResult[]>
+}
+declare global {
+  interface Window {
+    BarcodeDetector?: new (options: { formats: string[] }) => BarcodeDetectorLike
+  }
+}
+
 function QrCodeScanner() {
   const [open, setOpen] = useState(false)
-  const [qrResult, setQrResult] = useState(null)
-  const [error, setError] = useState(null)
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-  const streamRef = useRef(null)
-  const rafRef = useRef(null)
+  const [qrResult, setQrResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const rafRef = useRef<number | null>(null)
 
   function stopScanning() {
     if (rafRef.current) {
@@ -242,6 +280,7 @@ function QrCodeScanner() {
   }
 
   async function scanWithBarcodeDetector() {
+    if (!window.BarcodeDetector) return
     const detector = new window.BarcodeDetector({ formats: ["qr_code"] })
     const tick = async () => {
       const video = videoRef.current
@@ -267,10 +306,10 @@ function QrCodeScanner() {
   async function scanWithJsQr() {
     // Fallback for browsers without BarcodeDetector (Firefox, Safari).
     // Requires: npm install jsqr
-    let jsQR
+    let jsQR: any
     try {
-      const jsqrModule = await import("jsqr")
-      jsQR = (jsqrModule as any).default ?? jsqrModule
+      const jsqrModule: any = await import("jsqr")
+      jsQR = jsqrModule.default ?? jsqrModule
     } catch {
       setError("Le module 'jsqr' est requis pour scanner sur ce navigateur (npm install jsqr).")
       return
