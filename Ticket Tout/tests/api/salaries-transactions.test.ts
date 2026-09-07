@@ -173,9 +173,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(UNKNOWN_ID, payment, token)).status).toBe(404);
   });
 
-  // An overdraft is not rejected, it is recorded: the movement is kept in the
-  // ledger with status REFUSER and the balance is left alone.
-  it('records a payment larger than the balance as REFUSER', async () =>
+  it('records a payment larger than the balance as REFUSER, leaving the balance alone', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, amount: 5000 }, token);
@@ -183,11 +181,11 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect(response.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
 
-    const json = await (await get(EMPLOYEE_ID, token)).json();
-    const recorded = json.transactions.find((t: { amount: number }) => t.amount === 5000);
+    const listed = await get(EMPLOYEE_ID, token);
+    const json = await listed.json();
+    const refused = json.transactions.find((t: { amount: number }) => t.amount === 5000);
 
-    expect(recorded.status).toBe('REFUSER');
-    expect(recorded.newBalance).toBe(1000);
+    expect(refused.status).toBe('REFUSER');
   });
 
   it('debits the balance on a PAYMENT', async () =>

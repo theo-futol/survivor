@@ -43,6 +43,34 @@ npm run test
 
 This invokes `node --experimental-vm-modules node_modules/.bin/jest` (see `jest.config.ts` for the Jest configuration, including `testMatch: ['<rootDir>/tests/**/*.test.ts']`). Without `JWT_SECRET`, every test that goes through `authorize`/`signToken` fails with `DataError: Zero-length key is not supported`.
 
+### Live stack tests
+
+`double-encaissement.sh` is the one test that does **not** run under Jest: it needs a real Postgres and a real HTTP server, because the behaviour it checks — the `SELECT balance … FOR UPDATE` row lock in `POST /api/v1/salaries/:salarieId/transactions` — is exactly what `mocks/mock-postgres.ts` stands in for. It is not part of `npm run test`; run it explicitly, from the repo root:
+
+```sh
+./"Ticket Tout"/tests/double-encaissement.sh
+ROUNDS=20 AMOUNT=500 ./"Ticket Tout"/tests/double-encaissement.sh   # races are probabilistic
+```
+
+Env knobs: `BASE_URL` (default `http://localhost:3000`), `AMOUNT` (`1000`), `ROUNDS` (`1`), `KEEP_STACK=1` to skip the teardown, `CONFIRM=0` (or `--yes`) to skip the two interactive confirmations. A non-tty stdin implies `CONFIRM=0`, so the script never hangs unattended.
+
+What it does: brings up the `dev` profile (`docker compose --env-file .env.development --profile dev up -d --build`), waits for `pg_isready` and `GET /health`, seeds through `dev/seed-db.sh` with `mocks/seed.sql` then `mocks/seed-roles.sql`, logs in as the seeded `PARTNER` (`mocks/login.txt` — `PARTNER` is one of the roles allowed to POST this route, and POST runs no ownership check), forces the seeded employee's balance to exactly `AMOUNT` and clears their transaction rows, then releases **2 threads × 2 concurrent payments** of `AMOUNT` through a start gate. Only one of the four may win.
+
+It asserts, per round: 4 × `201`; a final balance of exactly `0` — a negative one is the double encaissement and means the lock was bypassed; exactly 1 `VALIDER` and 3 `REFUSER` `transaction` rows (4 in total); the accepted row recording `newBalance` `0`; and no row recording a negative `newBalance`. The stack is torn down (`compose down`, volumes kept) on exit.
+
+The assertions run against the database rather than the HTTP status on purpose: on insufficient balance the route **persists a `REFUSER` row and answers `201`**, not the `400` `docs/API.md` describes. Refused attempts do leave rows behind — that is current behaviour, not a bug the script tests for.
+
+#### Known blockers (the script currently FAILs)
+
+Running this script against `backend` as it stands reports `FAIL`, and both causes are in the application, not the test:
+
+1. **Every `PAYMENT` POST returns 500.** The database carries a check constraint `transaction_type_matches_company` — `CHECK ((type = 'TOPUP' AND "companyId" IS NULL) OR (type <> 'TOPUP' AND "companyId" IS NOT NULL))` — but `POST /api/v1/salaries/:salarieId/transactions` never sets `companyId` on the row it creates. `TOPUP` succeeds, every other type fails on insert. Until the route sets `companyId`, the overdraft path cannot be exercised at all.
+2. **The failed insert leaves the money gone.** The debit is committed by `withTransaction` *before* `db.orm.public.Transaction.create()` runs, so when the insert fails the balance has already dropped (1000 → 0 in the run above) with **no** transaction row to show for it. The debit and the audit row need to be in one transaction.
+
+A third, milder issue shapes the script: `lib/services/redis_service.ts` guards its connection with a plain `redisConnected` boolean, so a cold burst of concurrent requests all call `redisClient.connect()` at once and `authorize()` answers `503`. The script works around it with a single warm-up request, which must target *this* route — `next dev` compiles a bundle per route, so each handler holds its own `redis_service` instance.
+
+Two things to know: every statement in both seed files is `ON CONFLICT DO NOTHING`, so re-seeding the surviving `data_sql` volume is safe and the script always does it; and the test employee is left at balance `0` with 4 transaction rows, so re-seed a fresh volume (`compose down -v`) if you want the seeded `5000` back.
+
 ## Frontend
 
 No frontend tests exist yet.
