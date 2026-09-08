@@ -14,8 +14,8 @@
 # régularisation pose updatedAt = now(), ce qui sort les lignes traitées de la
 # fenêtre — un second passage ne modifie plus rien.
 #
-#   ./dev/regularisation-partenaires.sh ticket_tout_db
-#   ./dev/regularisation-partenaires.sh ticket_tout_db autre_base       # autre base que $POSTGRES_DB
+#   ./dev/regularisation-partenaires.sh cartepro_db
+#   ./dev/regularisation-partenaires.sh cartepro_db autre_base       # autre base que $POSTGRES_DB
 
 set -eu
 
@@ -29,7 +29,7 @@ REASON="régularisation du 07/09"
 CUTOFF="2026-09-07 00:00:00+00"
 
 if [ -z "$CONTAINER" ]; then
-  echo "Usage: $0 <db_container> [db_name]   (ex: $0 ticket_tout_db)"
+  echo "Usage: $0 <db_container> [db_name]   (ex: $0 cartepro_db)"
   exit 1
 fi
 
