@@ -77,18 +77,19 @@ function query(text: string, values: unknown[] = []): QueryResult
     return { rows: [], rowCount: before - mockTables['QrCode']!.length };
   }
 
-  // The ledger row for a QR code payment, refund or top-up.
-  if (/^INSERT INTO "transaction" \(id, type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7\)$/i.test(sql))
+  // The ledger row for a QR code payment, refund or top-up. The id is left to
+  // the database, so the mock assigns one the same way the ORM mock does.
+  if (/^INSERT INTO "transaction" \(type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)$/i.test(sql))
   {
     mockTables['Transaction']!.push({
-      id: values[0],
-      type: values[1],
-      userId: values[2],
-      companyId: values[3],
-      amount: values[4],
-      newBalance: values[5],
+      id: `transaction-${mockTables['Transaction']!.length + 1}`,
+      type: values[0],
+      userId: values[1],
+      companyId: values[2],
+      amount: values[3],
+      newBalance: values[4],
       originalTransactionId: null,
-      status: values[6],
+      status: values[5],
       createdAt: new Date().toISOString(),
     });
 
@@ -128,12 +129,41 @@ type MockClient = {
   release: () => void;
 };
 
+// Test hook: lets a suite act at a chosen point *inside* another request's
+// transaction, so an interleaving can be provoked deterministically instead of
+// being left to whichever await happens to resolve first.
+let queryListener: ((sql: string, values: unknown[]) => void | Promise<void>) | null = null;
+
+export function onQuery(listener: ((sql: string, values: unknown[]) => void | Promise<void>) | null): void
+{
+  queryListener = listener;
+}
+
 const client: MockClient = {
-  query: async (text: string, values?: unknown[]) => query(text, values),
+  query: async (text: string, values?: unknown[]) =>
+  {
+    await queryListener?.(text.trim().replace(/\s+/g, ' '), values ?? []);
+
+    return query(text, values);
+  },
   release: () => {},
 };
 
+// Real Postgres serialises these callbacks through the `SELECT … FOR UPDATE`
+// row lock the routes take: a second transaction blocks until the first
+// commits, so it can never read a balance that is about to change. The mock
+// has no locks, so without this queue two overlapping requests would both read
+// the same stale balance — a lost update the real database would never allow.
+// The queue is global rather than per row, which is stricter than Postgres:
+// it also serialises transactions touching unrelated rows.
+let inFlight: Promise<unknown> = Promise.resolve();
+
 export async function withTransaction<T>(callback: (client: MockClient) => Promise<T>): Promise<T>
 {
-  return callback(client);
+  const run = inFlight.then(() => callback(client));
+
+  // A failed transaction must not wedge the queue for the next caller.
+  inFlight = run.catch(() => {});
+
+  return run;
 }

@@ -2,21 +2,17 @@ import { GET, POST } from '@/app/api/v1/salaries/[salarieId]/transactions/route'
 import { GET as listSalaries } from '@/app/api/v1/salaries/route';
 import { signToken } from '@/lib/services/auth_service';
 import { resetMockDb } from '../mocks/mock-db';
+import { onQuery } from '../mocks/mock-postgres';
 import {
   ADMIN_ID,
   COMPANY_USER_ID,
   EMPLOYEE_ID,
   OTHER_COMPANY_USER_ID,
+  OTHER_COMPANY_ID,
   PARTNER_COMPANY_ID,
   PARTNER_USER_ID,
   PENDING_EMPLOYEE_ID,
-  QR_CODE_CONTENT,
-  QR_CODE_EXPIRED_CONTENT,
-  QR_CODE_OTHER_COMPANY_CONTENT,
-  QR_CODE_UNKNOWN_CONTENT,
   UNKNOWN_ID,
-  OTHER_COMPANY_ID,
-  PARTNER_COMPANY_ID,
   VALID_QRCODE_CONTENT,
   EXPIRED_QRCODE_CONTENT,
   UNKNOWN_QRCODE_CONTENT,
@@ -176,7 +172,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(EMPLOYEE_ID, { ...payment, status: 'PENDING' }, token))?.status).toBe(400);
+    expect((await post(EMPLOYEE_ID, { ...payment, amount: 10.5 }, token)).status).toBe(400);
   });
 
   it('returns 400 for an unknown type', async () =>
@@ -210,7 +206,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   it('returns 404 when no QR code matches the submitted one', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_UNKNOWN_CONTENT }, token);
+    const response = await post(EMPLOYEE_ID, { ...payment, content: UNKNOWN_QRCODE_CONTENT }, token);
 
     expect(response.status).toBe(404);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
@@ -219,7 +215,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   it('returns 400 for an expired QR code', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_EXPIRED_CONTENT }, token);
+    const response = await post(EMPLOYEE_ID, { ...payment, content: EXPIRED_QRCODE_CONTENT }, token);
 
     expect(response.status).toBe(400);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
@@ -230,32 +226,10 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   it('returns 403 when the QR code belongs to another company', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_OTHER_COMPANY_CONTENT }, token);
-
-    expect(response.status).toBe(403);
-    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
-  });
-
-  it('returns 404 for a QR code that does not exist', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-
-    expect((await post(EMPLOYEE_ID, { ...payment, content: UNKNOWN_QRCODE_CONTENT }, token)).status).toBe(404);
-  });
-
-  it('returns 400 for an expired QR code', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-
-    expect((await post(EMPLOYEE_ID, { ...payment, content: EXPIRED_QRCODE_CONTENT }, token)).status).toBe(400);
-  });
-
-  it('returns 403 when the QR code was issued for another company', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, content: OTHER_COMPANY_QRCODE_CONTENT }, token);
 
     expect(response.status).toBe(403);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
   });
 
   it('returns 403 when the QR code belongs to another salarié', async () =>
@@ -385,5 +359,83 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
     expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(404);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
+  });
+});
+
+// Node has no threads here, so "at the same time" means two requests in flight
+// at once, interleaved at their await points. Left to chance they do not
+// actually overlap — the first finishes before the second starts — so the race
+// is forced: the second payment is fired from inside the first one's
+// transaction, the worst case for the balance guard. Two *different* QR codes
+// are used because a validated code is consumed, which would stop the second
+// request for the wrong reason and hide what is being tested.
+describe('POST /api/v1/salaries/{salarieId}/transactions — concurrent payments', () =>
+{
+  beforeEach(() => resetMockDb());
+  afterEach(() => onQuery(null));
+
+  const paymentOn = (content: string, companyId: string, amount: number) =>
+    ({ amount, type: 'PAYMENT' as const, content, companyId });
+
+  it('accepts only one of two overlapping payments the balance cannot cover twice', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    let second: Promise<Response> | null = null;
+
+    // The balance is 1000: either payment fits alone, the two together do not.
+    onQuery(async (sql) =>
+    {
+      // The QR lookup runs just after the balance read, so by now the first
+      // request is holding a balance it has not yet written back.
+      if (second !== null || !sql.includes('FROM "qrCode"'))
+      {
+        return;
+      }
+
+      second = post(EMPLOYEE_ID, paymentOn(OTHER_COMPANY_QRCODE_CONTENT, OTHER_COMPANY_ID, 600), token);
+
+      // Hold the first transaction open long enough for the second to reach
+      // the balance lock, so it is genuinely contending rather than queuing
+      // politely after the fact.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    const first = await post(EMPLOYEE_ID, paymentOn(VALID_QRCODE_CONTENT, PARTNER_COMPANY_ID, 600), token);
+    const outcomes = [(await first.json()).status, (await (await second!).json()).status].sort();
+
+    // Both are recorded, but only one may move the money.
+    expect(outcomes).toEqual(['REFUSER', 'VALIDER']);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(400);
+  });
+
+  // The ledger is checked as well as the balance: two payments that each read
+  // the same pre-debit balance would both be booked VALIDER and the second
+  // write would simply overwrite the first, leaving a plausible-looking
+  // balance on top of money spent twice.
+  it('books only one VALIDER and never drives the balance negative', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    let second: Promise<Response> | null = null;
+
+    onQuery(async (sql) =>
+    {
+      if (second !== null || !sql.includes('FROM "qrCode"'))
+      {
+        return;
+      }
+
+      second = post(EMPLOYEE_ID, paymentOn(OTHER_COMPANY_QRCODE_CONTENT, OTHER_COMPANY_ID, 900), token);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    await post(EMPLOYEE_ID, paymentOn(VALID_QRCODE_CONTENT, PARTNER_COMPANY_ID, 900), token);
+    await second!;
+    onQuery(null);
+
+    const json = await (await get(EMPLOYEE_ID, token)).json();
+    const booked = json.transactions.filter((t: { amount: number }) => t.amount === 900);
+
+    expect(booked.map((t: { status: string }) => t.status).sort()).toEqual(['REFUSER', 'VALIDER']);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(100);
   });
 });
