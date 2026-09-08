@@ -12,7 +12,6 @@
       },
       "description": "Club équestre pour petits et grands. Balades, stages et cours de poney dans un cadre nature.",
       "officialBadge": true,
-      "ministerFavorite": true,
       "averageSpendingAmount": 45.0,
       "image": "https://picsum.photos/seed/poney-dream/400/300"
     },
@@ -28,7 +27,6 @@
       },
       "description": "Location et vente de déguisements et accessoires festifs pour toutes les occasions.",
       "officialBadge": true,
-      "ministerFavorite": false,
       "averageSpendingAmount": 32.5,
       "image": "https://picsum.photos/seed/kostumparty/400/300"
     },
@@ -44,7 +42,6 @@
       },
       "description": "Glaces et sorbets artisanaux fabriqués en Corrèze, à commander en ligne ou à retirer en boutique.",
       "officialBadge": true,
-      "ministerFavorite": true,
       "averageSpendingAmount": 12.9,
       "image": "https://picsum.photos/seed/glaces-correze/400/300"
     },
@@ -60,7 +57,6 @@
       },
       "description": "Chapelier traditionnel spécialisé dans les chapeaux en feutre fabriqués à la main.",
       "officialBadge": true,
-      "ministerFavorite": false,
       "averageSpendingAmount": 89.0,
       "image": "https://picsum.photos/seed/chapelier-fontaine/400/300"
     }

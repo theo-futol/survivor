@@ -31,11 +31,6 @@ export const ROUTE_ROLES = {
   'POST /api/v1/admin/ban': ['ADMIN'],
   'GET /api/v1/admin/employeurs/:id/kbis': ['ADMIN'],
 
-  'GET /api/v1/ministerfavorite': ['ADMIN'],
-  'POST /api/v1/ministerfavorite': ['ADMIN'],
-  'PATCH /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
-  'DELETE /api/v1/ministerfavorite/:partnerId': ['ADMIN'],
-
   'GET /api/v1/me': ['ADMIN', 'COMPANY', 'EMPLOYEE', 'PARTNER'],
   'PATCH /api/v1/me': ['ADMIN', 'COMPANY', 'EMPLOYEE', 'PARTNER'],
   'DELETE /api/v1/me': ['ADMIN', 'COMPANY', 'EMPLOYEE', 'PARTNER'],

@@ -3,7 +3,6 @@ import {
   bannedUserFixture,
   companyCategoryFixture,
   companyFixture,
-  ministerFavoriteFixture,
   qrCodeFixture,
   transactionFixture,
   usersFixture,
@@ -22,7 +21,6 @@ type Sort = { field: string; direction: 'asc' | 'desc' };
 // at which table's `id`.
 const RELATIONS: Record<string, Record<string, { table: string; localField: string }>> = {
   Company: { category: { table: 'CompanyCategory', localField: 'categoryId' } },
-  MinisterFavorite: { company: { table: 'Company', localField: 'companyId' } },
 };
 
 function compare(a: unknown, b: unknown): number
@@ -242,7 +240,6 @@ export function resetMockDb()
     CompanyCategory: companyCategoryFixture,
     Transaction: transactionFixture,
     BannedUser: bannedUserFixture,
-    MinisterFavorite: ministerFavoriteFixture,
     QrCode: qrCodeFixture,
   };
 

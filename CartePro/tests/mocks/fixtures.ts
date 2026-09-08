@@ -2,7 +2,7 @@ export const SEED_PASSWORD = 'Secret123!';
 export const SEED_PASSWORD_HASH = '94e0f9bc7f5a5225bd141bad5adf9befcc112aef09b88f47a14e20b75a7bbec2';
 
 // Route params and body ids are validated with `z.uuid()`, so the rows the
-// employeurs / salaries / partenaires / ministerfavorite suites act on need
+// employeurs / salaries / partenaires suites act on need
 // real UUIDs. The two legacy `*-test-*` rows are kept for the login and qrcode
 // suites, which predate that validation.
 export const ADMIN_ID = '11111111-1111-4111-8111-111111111111';
@@ -53,9 +53,5 @@ export const transactionFixture = [
 ];
 
 export const bannedUserFixture: Record<string, unknown>[] = [];
-
-export const ministerFavoriteFixture = [
-  { id: 1, companyId: PARTNER_COMPANY_ID, likeAmount: 4, createdAt: '2026-03-01T00:00:00Z' },
-];
 
 export const qrCodeFixture: Record<string, unknown>[] = [];
