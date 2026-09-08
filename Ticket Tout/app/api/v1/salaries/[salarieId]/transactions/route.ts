@@ -16,8 +16,8 @@ const salaryParamsSchema = z.object({
 
 const transactionBodySchema = z.object({
   amount: z.number().positive(),
-  status: z.enum(['REFUSER', 'VALIDER']),
   type: z.enum(['PAYMENT', 'REFUND', 'TOPUP']),
+  content: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Invalid content format not matching SHA-256 hash'),
 });
 
 /**
@@ -151,6 +151,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *             properties:
  *               amount: { type: number, minimum: 1 }
  *               status: { type: string, enum: [REFUSER, VALIDER] }
+ *               companyId: { type: string, format: uuid }
  *               type: { type: string, enum: [PAYMENT, REFUND, TOPUP] }
  *     responses:
  *       '201':
@@ -161,6 +162,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *               type: object
  *               properties:
  *                 message: { type: string }
+ *                 newBalance: { type: number }
+ *                 status: { type: string, enum: [REFUSER, VALIDER] }
+ *                 companyId: { type: string, format: uuid }
  *       '400': { description: Identifiant ou corps de requête invalide, ou solde insuffisant. }
  *       '401': { description: Token manquant ou invalide. }
  *       '403': { description: Rôle insuffisant. }
@@ -188,34 +192,57 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             throw new AppError('Invalid request body', 400);
         });
 
-        const {newBalance, status} : {newBalance: number, status: "REFUSER" | "VALIDER"} = await withTransaction(async (client) => {
+        const {newBalance, status, companyId} : {newBalance: number, status: "REFUSER" | "VALIDER", companyId: string} = await withTransaction(async (client) => {
             const rows = await client.query("SELECT balance FROM users WHERE id = $1 FOR UPDATE", [salarieId]);
 
             if (rows.rowCount === 0) {
                 throw new AppError('Salarie not found', 404);
             }
 
+            const qrcode = await db.orm.public.QrCode.where({ content: requestBody.content, userId: salarieId }).first();
+
+            if (!qrcode) {
+                throw new AppError('QrCode not found', 404);
+            }
+            if (qrcode.expiredAt.toString() < new Date().toString()) {
+                throw new AppError('QrCode expired', 400);
+            }
+            if (qrcode.userId !== salarieId) {
+                throw new AppError('QrCode does not belong to this salarie', 403);
+            }
+
             const currentBalance: number = rows.rows[0].balance;
             const newBalance: number = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
             const authorizeOverdraft: number = 0;
 
-            if (newBalance < authorizeOverdraft && requestBody.status === "VALIDER") {
-                return {newBalance: currentBalance, "status": "REFUSER" as const};
+            if (newBalance < authorizeOverdraft) {
+                return {newBalance: currentBalance, "status": "REFUSER" as const, "companyId": qrcode.companyId};
             }
-            await client.query("UPDATE users SET balance = $1 WHERE id = $2", [newBalance, salarieId]);
-            return {newBalance, "status": "VALIDER" as const};
+            return {newBalance, "status": "VALIDER" as const, "companyId": qrcode.companyId};
         });
-        const insertResult = await db.orm.public.Transaction.create({
-            userId: salarieId,
-            amount: requestBody.amount,
-            newBalance: newBalance,
-            status: status,
-            type: requestBody.type,
+        await db.transaction(async (tx) => {
+            if (status === "VALIDER") {
+                const updateResult = await tx.orm.public.Users.where({ id: salarieId }).update({ balance: newBalance });
+
+                if (!updateResult) {
+                    throw new AppError('Failed to update balance', 500);
+                }
+            }
+
+            const insertResult = await tx.orm.public.Transaction.create({
+                userId: salarieId,
+                amount: requestBody.amount,
+                newBalance: newBalance,
+                companyId: companyId,
+                status: status,
+                type: requestBody.type,
+            });
+            if (!insertResult) {
+                throw new AppError('Failed to create transaction', 500);
+            }
+            return Response.json({ message: 'Transaction created successfully' }, { status: 201 });
         });
-        if (!insertResult) {
-            throw new AppError('Failed to create transaction', 500);
-        }
-        return Response.json({ message: 'Transaction created successfully' }, { status: 201 });
+
     } catch (error) {
         console.error('Error creating salary transaction', JSON.stringify(error));
         const {message, statusCode} = commonErrorHandler(error);
