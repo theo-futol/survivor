@@ -176,7 +176,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
 {
     try {
         const auth = await authorize(request, 'POST /api/v1/salaries/:salarieId/transactions');
-
         if (!auth.ok) {
             return Response.json({ error: auth.error }, { status: auth.status });
         }
@@ -187,25 +186,36 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
         });
 
         const requestBody = await request.json();
-
         await transactionBodySchema.parseAsync(requestBody).catch((error) => {
             console.error('Invalid request body', JSON.stringify(error));
             throw new AppError('Invalid request body', 400);
         });
 
-        const {newBalance, status, companyId} : {newBalance: number, status: "REFUSER" | "VALIDER", companyId: string} = await withTransaction(async (client) => {
-            const rows = await client.query("SELECT balance FROM users WHERE id = $1 FOR UPDATE", [salarieId]);
-
-            if (rows.rowCount === 0) {
+        const result = await withTransaction(async (client) => {
+            const userRows = await client.query(
+                'SELECT balance FROM users WHERE id = $1 FOR UPDATE',
+                [salarieId]
+            );
+            if (userRows.rowCount === 0) {
                 throw new AppError('Salarie not found', 404);
             }
 
-            const qrcode = await db.orm.public.QrCode.where({ content: requestBody.content, userId: salarieId }).first();
-
-            if (!qrcode) {
+            const qrRows = await client.query(
+                `SELECT id, "userId", "companyId", "expiredAt", "usedAt"
+                 FROM qr_codes
+                 WHERE content = $1
+                 FOR UPDATE`,
+                [requestBody.content]
+            );
+            if (qrRows.rowCount === 0) {
                 throw new AppError('QrCode not found', 404);
             }
-            if (qrcode.expiredAt.toString() < new Date().toString()) {
+            const qrcode = qrRows.rows[0];
+
+            if (qrcode.usedAt) {
+                throw new AppError('QrCode already used', 400);
+            }
+            if (new Date(qrcode.expiredAt).getTime() < Date.now()) {
                 throw new AppError('QrCode expired', 400);
             }
             if (qrcode.userId !== salarieId) {
@@ -215,41 +225,46 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
                 throw new AppError('QrCode does not belong to this company', 403);
             }
 
-            const currentBalance: number = rows.rows[0].balance;
-            const newBalance: number = requestBody.type === "PAYMENT" ? currentBalance - requestBody.amount : currentBalance + requestBody.amount;
-            const authorizeOverdraft: number = 0;
+            const currentBalance: number = userRows.rows[0].balance;
+            const delta = requestBody.type === 'PAYMENT' ? -requestBody.amount : requestBody.amount;
+            const computedBalance = currentBalance + delta;
+            const authorizeOverdraft = 0;
 
-            if (newBalance < authorizeOverdraft) {
-                return {newBalance: currentBalance, "status": "REFUSER" as const, "companyId": qrcode.companyId};
-            }
-            return {newBalance, "status": "VALIDER" as const, "companyId": qrcode.companyId};
-        });
-        await db.transaction(async (tx) => {
-            if (status === "VALIDER") {
-                const updateResult = await tx.orm.public.Users.where({ id: salarieId }).update({ balance: newBalance });
+            const status: 'REFUSER' | 'VALIDER' =
+                computedBalance < authorizeOverdraft ? 'REFUSER' : 'VALIDER';
+            const newBalance = status === 'VALIDER' ? computedBalance : currentBalance;
 
-                if (!updateResult) {
-                    throw new AppError('Failed to update balance', 500);
-                }
+            if (status === 'VALIDER') {
+                await client.query('UPDATE users SET balance = $1 WHERE id = $2', [newBalance, salarieId]);
             }
 
-            const insertResult = await tx.orm.public.Transaction.create({
-                userId: salarieId,
-                amount: requestBody.amount,
-                newBalance: newBalance,
-                companyId: companyId,
-                status: status,
-                type: requestBody.type,
-            });
-            if (!insertResult) {
+            await client.query('UPDATE qr_codes SET "usedAt" = now() WHERE id = $1', [qrcode.id]);
+
+            const insertResult = await client.query(
+                `INSERT INTO transactions ("userId", amount, "newBalance", "companyId", status, type)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING id`,
+                [salarieId, requestBody.amount, newBalance, qrcode.companyId, status, requestBody.type]
+            );
+            if (insertResult.rowCount === 0) {
                 throw new AppError('Failed to create transaction', 500);
             }
-            return Response.json({ message: 'Transaction created successfully' }, { status: 201 });
+
+            return { newBalance, status, companyId: qrcode.companyId };
         });
 
+        return Response.json(
+            {
+                message: 'Transaction created successfully',
+                newBalance: result.newBalance,
+                status: result.status,
+                companyId: result.companyId,
+            },
+            { status: 201 }
+        );
     } catch (error) {
         console.error('Error creating salary transaction', JSON.stringify(error));
-        const {message, statusCode} = commonErrorHandler(error);
+        const { message, statusCode } = commonErrorHandler(error);
         return Response.json({ error: message }, { status: statusCode });
     }
 }
