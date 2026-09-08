@@ -38,9 +38,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ec0468b47dec1e221dce72fae2c03f3d794afcb96ce7b50bb423b99d4600aaee'>;
+  StorageHashBase<'d127b237327000f04ac0672b1ec28e8d1cef5fecb5a3ad2911466cf133bff0a3'>;
 export type ExecutionHash =
-  ExecutionHashBase<'34a3b7ca66f0753b9b422840278d24cc75ae9d423940d67e1280b26e7c159e73'>;
+  ExecutionHashBase<'cac6a1458d43795f8261ae0ef46f506e72e96622d90d1b19dbeb2fa5acad0038'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -266,7 +266,6 @@ export type FieldOutputTypes = {
       readonly agentId: CodecTypes['pg/text@1']['output'];
       readonly reasonId: CodecTypes['pg/int4@1']['output'];
       readonly verified: CodecTypes['pg/bool@1']['output'];
-      readonly isFeatured: CodecTypes['pg/bool@1']['output'];
       readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly location: Geometry<4326>;
       readonly isPartner: CodecTypes['pg/bool@1']['output'];
@@ -288,16 +287,6 @@ export type FieldOutputTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['output'];
       readonly size: CodecTypes['pg/int4@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-    };
-    readonly FeaturedPartner: {
-      readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly companyId: CodecTypes['pg/text@1']['output'];
-      readonly message: CodecTypes['pg/text@1']['output'];
-      readonly imageKey: CodecTypes['pg/text@1']['output'];
-      readonly clickAmount: CodecTypes['pg/int4@1']['output'];
-      readonly active: CodecTypes['pg/bool@1']['output'];
-      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly QrCode: {
       readonly id: CodecTypes['pg/int4@1']['output'];
@@ -361,7 +350,6 @@ export type FieldInputTypes = {
       readonly agentId: CodecTypes['pg/text@1']['input'];
       readonly reasonId: CodecTypes['pg/int4@1']['input'];
       readonly verified: CodecTypes['pg/bool@1']['input'];
-      readonly isFeatured: CodecTypes['pg/bool@1']['input'];
       readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly location: CodecTypes['pg/geometry@1']['input'];
       readonly isPartner: CodecTypes['pg/bool@1']['input'];
@@ -383,16 +371,6 @@ export type FieldInputTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly size: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-    };
-    readonly FeaturedPartner: {
-      readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly companyId: CodecTypes['pg/text@1']['input'];
-      readonly message: CodecTypes['pg/text@1']['input'];
-      readonly imageKey: CodecTypes['pg/text@1']['input'];
-      readonly clickAmount: CodecTypes['pg/int4@1']['input'];
-      readonly active: CodecTypes['pg/bool@1']['input'];
-      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly QrCode: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -453,7 +431,6 @@ export type StorageColumnTypes = {
       readonly description: CodecTypes['pg/text@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
-      readonly isFeatured: CodecTypes['pg/bool@1']['output'];
       readonly isPartner: CodecTypes['pg/bool@1']['output'];
       readonly kbisId: CodecTypes['pg/text@1']['output'];
       readonly location: Geometry<4326>;
@@ -478,16 +455,6 @@ export type StorageColumnTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['output'];
       readonly size: CodecTypes['pg/int4@1']['output'];
       readonly storageKey: CodecTypes['pg/text@1']['output'];
-    };
-    readonly featuredPartner: {
-      readonly active: CodecTypes['pg/bool@1']['output'];
-      readonly clickAmount: CodecTypes['pg/int4@1']['output'];
-      readonly companyId: CodecTypes['pg/text@1']['output'];
-      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-      readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly imageKey: CodecTypes['pg/text@1']['output'];
-      readonly message: CodecTypes['pg/text@1']['output'];
-      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly qrCode: {
       readonly companyId: CodecTypes['pg/text@1']['output'];
@@ -548,7 +515,6 @@ export type StorageColumnInputTypes = {
       readonly description: CodecTypes['pg/text@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
-      readonly isFeatured: CodecTypes['pg/bool@1']['input'];
       readonly isPartner: CodecTypes['pg/bool@1']['input'];
       readonly kbisId: CodecTypes['pg/text@1']['input'];
       readonly location: CodecTypes['pg/geometry@1']['input'];
@@ -573,16 +539,6 @@ export type StorageColumnInputTypes = {
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly size: CodecTypes['pg/int4@1']['input'];
       readonly storageKey: CodecTypes['pg/text@1']['input'];
-    };
-    readonly featuredPartner: {
-      readonly active: CodecTypes['pg/bool@1']['input'];
-      readonly clickAmount: CodecTypes['pg/int4@1']['input'];
-      readonly companyId: CodecTypes['pg/text@1']['input'];
-      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-      readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly imageKey: CodecTypes['pg/text@1']['input'];
-      readonly message: CodecTypes['pg/text@1']['input'];
-      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly qrCode: {
       readonly companyId: CodecTypes['pg/text@1']['input'];
@@ -775,11 +731,6 @@ type ContractBase = Omit<
                   readonly nullable: false;
                 };
                 readonly verified: {
-                  readonly nativeType: 'bool';
-                  readonly codecId: 'pg/bool@1';
-                  readonly nullable: false;
-                };
-                readonly isFeatured: {
                   readonly nativeType: 'bool';
                   readonly codecId: 'pg/bool@1';
                   readonly nullable: false;
@@ -1012,99 +963,6 @@ type ContractBase = Omit<
                 },
               ];
               foreignKeys: readonly [];
-            };
-            readonly featuredPartner: {
-              columns: {
-                readonly id: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'autoincrement()';
-                  };
-                };
-                readonly companyId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly message: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly imageKey: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly clickAmount: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
-                  };
-                };
-                readonly active: {
-                  readonly nativeType: 'bool';
-                  readonly codecId: 'pg/bool@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
-                  };
-                };
-                readonly createdAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz-temporal@1';
-                  readonly nullable: false;
-                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
-                };
-                readonly updatedAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz-temporal@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
-              indexes: readonly [
-                {
-                  readonly name: 'featuredPartner_companyId_idx_33acc5ed';
-                  readonly prefix: 'featuredPartner_companyId_idx';
-                  readonly columns: readonly ['companyId'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'featuredPartner_active_idx_8af4daed';
-                  readonly prefix: 'featuredPartner_active_idx';
-                  readonly columns: readonly ['active'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'featuredPartner_createdAt_idx_9575dbd7';
-                  readonly prefix: 'featuredPartner_createdAt_idx';
-                  readonly columns: readonly ['createdAt'];
-                  readonly unique: false;
-                },
-              ];
-              foreignKeys: readonly [
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'featuredPartner';
-                    readonly columns: readonly ['companyId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'company';
-                    readonly columns: readonly ['id'];
-                  };
-                },
-              ];
             };
             readonly qrCode: {
               columns: {
@@ -1562,10 +1420,6 @@ type ContractBase = Omit<
       readonly model: 'Transaction';
     };
     readonly qrCode: { readonly namespace: 'public' & NamespaceId; readonly model: 'QrCode' };
-    readonly featuredPartner: {
-      readonly namespace: 'public' & NamespaceId;
-      readonly model: 'FeaturedPartner';
-    };
     readonly bannedUser: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BannedUser';
@@ -1719,10 +1573,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
-              readonly isFeatured: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
-              };
               readonly categoryId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -1788,17 +1638,6 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['companyId'];
                 };
               };
-              readonly featuredPartners: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'FeaturedPartner';
-                };
-                readonly cardinality: '1:N';
-                readonly on: {
-                  readonly localFields: readonly ['id'];
-                  readonly targetFields: readonly ['companyId'];
-                };
-              };
               readonly kbis: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -1848,7 +1687,6 @@ type ContractBase = Omit<
                 readonly agentId: { readonly column: 'agentId' };
                 readonly reasonId: { readonly column: 'reasonId' };
                 readonly verified: { readonly column: 'verified' };
-                readonly isFeatured: { readonly column: 'isFeatured' };
                 readonly categoryId: { readonly column: 'categoryId' };
                 readonly location: { readonly column: 'location' };
                 readonly isPartner: { readonly column: 'isPartner' };
@@ -1972,75 +1810,6 @@ type ContractBase = Omit<
                 readonly mimeType: { readonly column: 'mimeType' };
                 readonly size: { readonly column: 'size' };
                 readonly createdAt: { readonly column: 'createdAt' };
-              };
-            };
-          };
-          readonly FeaturedPartner: {
-            readonly fields: {
-              readonly id: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly companyId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly message: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly imageKey: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly clickAmount: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly active: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
-              };
-              readonly createdAt: {
-                readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamptz-temporal@1';
-                };
-              };
-              readonly updatedAt: {
-                readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamptz-temporal@1';
-                };
-              };
-            };
-            readonly relations: {
-              readonly company: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Company';
-                };
-                readonly cardinality: 'N:1';
-                readonly on: {
-                  readonly localFields: readonly ['companyId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-            };
-            readonly storage: {
-              readonly table: 'featuredPartner';
-              readonly namespaceId: 'public';
-              readonly fields: {
-                readonly id: { readonly column: 'id' };
-                readonly companyId: { readonly column: 'companyId' };
-                readonly message: { readonly column: 'message' };
-                readonly imageKey: { readonly column: 'imageKey' };
-                readonly clickAmount: { readonly column: 'clickAmount' };
-                readonly active: { readonly column: 'active' };
-                readonly createdAt: { readonly column: 'createdAt' };
-                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -2524,15 +2293,6 @@ type ContractBase = Omit<
             readonly column: 'id';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
-        },
-        {
-          readonly ref: {
-            readonly namespace: 'public';
-            readonly table: 'featuredPartner';
-            readonly column: 'updatedAt';
-          };
-          readonly onCreate: { readonly kind: 'generator'; readonly id: 'instantNow' };
-          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'instantNow' };
         },
         {
           readonly ref: {

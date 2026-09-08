@@ -144,10 +144,6 @@ const CATEGORIES = [
   'Mobilité',
 ] as const;
 
-// Company.description is NOT NULL in the contract but carries no meaning for the
-// seed, so every partner gets the same placeholder rather than 12 invented ones.
-const COMPANY_DESCRIPTION = 'Établissement partenaire du dispositif CartePro.';
-
 type Company = {
   name: string;
   description: string;
@@ -256,6 +252,10 @@ type Employee = {
   surname: string;
   companyId: string; // filled in once the employer companies exist
   balance: number; // filled in after the replay
+  accountStatus: string; // drawn after the replay, see the draw block below
+  // Soft delete: `expiredAt` — not AccountStatus.INACTIF — is what marks a
+  // deactivated account (GET /api/v1/salaries reads `expiredAt.isNull()`).
+  expiredAt: number | null;
 };
 
 const employees: Employee[] = [];
@@ -275,6 +275,8 @@ for (let i = 0; i < 50; i++) {
     surname,
     companyId: '',
     balance: 0,
+    accountStatus: '',
+    expiredAt: null,
   });
 }
 
@@ -357,6 +359,11 @@ const REFUSED_INDICES = new Set([0, 1, 2, 3, 4]);
 const ZERO_BALANCE_INDICES = new Set([10, 11, 12]);
 const SUB_5EUR_INDICES = new Set([20, 21]);
 const REFUND_INDICES = new Set([30, 31, 32, 33, 34, 35, 36, 37, 38, 39]);
+// Soft-deleted salariés: only returned by GET /api/v1/salaries?includeInactive=true.
+const DEACTIVATED_INDICES = new Set([40, 41, 42]);
+// Banned salariés: give bannedUser rows, so `isBanned` in GET /api/v1/salaries
+// and the already-banned branch of POST /api/v1/admin/ban have real data.
+const BANNED_INDICES = new Set([45, 46]);
 
 let txCounter = 0;
 function nextTxId(employeeIndex: number): string {
@@ -519,6 +526,106 @@ for (const employee of employees) {
 }
 
 // ---------------------------------------------------------------------------
+// Post-replay deterministic draws
+//
+// Everything below is pure formatting, so the last random values are drawn
+// here — in the exact order the emit section used to draw them (18 company
+// addresses, then 50 account statuses). The order matters: `rng` is a single
+// shared stream, so moving a draw shifts every value after it.
+// ---------------------------------------------------------------------------
+
+const companyAddresses = companies.map(() => `${randInt(1, 120)} rue de la République`);
+
+for (const e of employees) {
+  e.accountStatus = randomAccountStatus();
+
+  // Deactivated and banned salariés only make sense as accounts that were
+  // valid at some point, so their status is forced to ACCEPTED. The draw above
+  // still happens either way — skipping it would shift the whole stream.
+  if (DEACTIVATED_INDICES.has(e.index) || BANNED_INDICES.has(e.index)) {
+    e.accountStatus = 'ACCEPTED';
+  }
+  if (DEACTIVATED_INDICES.has(e.index)) {
+    e.expiredAt = dayOffset(WINDOW_DAYS - 5, 12, 0);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rows derived from the replay — no RNG below this point.
+//
+// Ids come from seededId / index arithmetic (like the AGENTS block above), so
+// adding or removing any of these leaves every generated amount, date and
+// balance untouched.
+// ---------------------------------------------------------------------------
+
+// The two last employers are closed accounts (company.active = FALSE). Partners
+// stay active: the public partner list must keep returning all six.
+const INACTIVE_COMPANY_INDICES = new Set([COMPANIES.length - 2, COMPANIES.length - 1]);
+
+// One login per company: a PARTNER account for each of the 6 partners, a
+// COMPANY account for each of the 12 employers. Without these, no seeded
+// company can actually be logged into — only EMPLOYEE and ADMIN could.
+type RoleAccount = {
+  id: string;
+  email: string;
+  surname: string;
+  name: string;
+  role: 'COMPANY' | 'PARTNER';
+  companyId: string;
+};
+
+const roleAccounts: RoleAccount[] = companies.map((c, i) => ({
+  id: seededId(`company-user:${i}`),
+  email: `gerant@${slug(c.company.name)}.fr`,
+  surname: FIRST_NAMES[(i * 7) % FIRST_NAMES.length]!,
+  name: LAST_NAMES[(i * 11) % LAST_NAMES.length]!,
+  role: c.isPartner ? 'PARTNER' : 'COMPANY',
+  companyId: c.id,
+}));
+
+// userRefusalReason: the motive an agent recorded when refusing an account.
+// Only REFUSED salariés get one, and `agentId` must be an adminUser row.
+const REFUSAL_REASONS = [
+  'Justificatif d\'emploi illisible',
+  'Salarié déjà rattaché à un autre employeur',
+  'Informations personnelles incohérentes avec le dossier employeur',
+] as const;
+
+type RefusalRow = { id: number; reason: string; agentId: string; userId: string; createdAt: number };
+
+const refusals: RefusalRow[] = employees
+  .filter((e) => e.accountStatus === 'REFUSED')
+  .map((e, i) => ({
+    id: i + 1,
+    reason: REFUSAL_REASONS[i % REFUSAL_REASONS.length]!,
+    agentId: AGENTS[i % AGENTS.length]!.id,
+    userId: e.id,
+    createdAt: EMPLOYEE_CREATED_AT,
+  }));
+
+// bannedUser: the table GET /api/v1/salaries reads for `isBanned`.
+const BAN_REASONS = [
+  'Utilisation frauduleuse de la carte',
+  'Revente de titres à des tiers',
+] as const;
+
+type BanRow = { id: number; userId: string; reason: string; createdAt: number };
+
+const bans: BanRow[] = employees
+  .filter((e) => BANNED_INDICES.has(e.index))
+  .map((e, i) => ({
+    id: i + 1,
+    userId: e.id,
+    reason: BAN_REASONS[i % BAN_REASONS.length]!,
+    createdAt: dayOffset(WINDOW_DAYS - 2, 9, 0),
+  }));
+
+// qrCode is deliberately left unseeded: a QR code lives 300 s
+// (QRCODE_EXPIRES_IN_SECONDS in lib/services/qrcode_service.ts) and this seed's
+// dates are fixed in the past, so every row would be expired on arrival and
+// would only get in the way of POST /api/v1/qrcode.
+
+// ---------------------------------------------------------------------------
 // Sanity checks — fail loudly rather than emit a non-compliant seed.
 // ---------------------------------------------------------------------------
 
@@ -549,6 +656,29 @@ for (const e of employees) {
       `employee ${e.index}: last transaction newBalance ${last.newBalance} != balance ${e.balance}`,
     );
   }
+}
+
+for (const e of employees) {
+  if (!e.companyId) throw new Error(`employee ${e.index} has no companyId`);
+}
+const refusedStatusCount = employees.filter((e) => e.accountStatus === 'REFUSED').length;
+if (refusals.length !== refusedStatusCount) {
+  throw new Error(`expected one userRefusalReason per REFUSED employee, got ${refusals.length}/${refusedStatusCount}`);
+}
+if (bans.length !== BANNED_INDICES.size) {
+  throw new Error(`expected ${BANNED_INDICES.size} bannedUser rows, got ${bans.length}`);
+}
+if (employees.filter((e) => e.expiredAt !== null).length !== DEACTIVATED_INDICES.size) {
+  throw new Error(`expected ${DEACTIVATED_INDICES.size} deactivated employees`);
+}
+const allEmails = [
+  ...employees.map((e) => e.email),
+  ...roleAccounts.map((a) => a.email),
+  ...AGENTS.map((a) => a.email),
+  admin.email,
+];
+if (new Set(allEmails).size !== allEmails.length) {
+  throw new Error('duplicate email across seeded users — users.email is UNIQUE');
 }
 
 // createdAt, id ordering used identically for the CSV export.
@@ -589,25 +719,54 @@ for (const d of documents) {
 }
 lines.push('');
 
+// Every users row goes through this one builder, so the column list can never
+// drift between the agent, employee, company and admin blocks below.
+function usersInsert(u: {
+  id: string;
+  email: string;
+  surname: string;
+  name: string;
+  role: string;
+  balance: number;
+  password: string;
+  expiredAt: number | null;
+  companyId: string | null;
+  accountStatus: string;
+}): string {
+  return (
+    `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
+    `"expiredAt", "companyId", "accountStatus") VALUES (` +
+    [
+      sqlStr(u.id),
+      sqlStr(u.email),
+      sqlStr(u.surname),
+      sqlStr(u.name),
+      sqlStr(u.role),
+      sqlInt(u.balance),
+      sqlStr(hashPassword(u.password)),
+      sqlTs(EMPLOYEE_CREATED_AT),
+      sqlTs(EMPLOYEE_CREATED_AT),
+      u.expiredAt === null ? 'NULL' : sqlTs(u.expiredAt),
+      sqlNullableStr(u.companyId),
+      sqlStr(u.accountStatus),
+    ].join(', ') +
+    ') ON CONFLICT DO NOTHING;'
+  );
+}
+
 lines.push('-- users: 2 agents (ADMIN) — referenced by company."agentId" through adminUser');
 for (const a of AGENTS) {
   lines.push(
-    `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-      `"expiredAt", "accountStatus") VALUES (` +
-      [
-        sqlStr(a.id),
-        sqlStr(a.email),
-        sqlStr(a.surname),
-        sqlStr(a.name),
-        sqlStr('ADMIN'),
-        sqlInt(0),
-        sqlStr(hashPassword(ADMIN_PASSWORD)),
-        sqlTs(EMPLOYEE_CREATED_AT),
-        sqlTs(EMPLOYEE_CREATED_AT),
-        'NULL',
-        sqlStr('ACCEPTED'),
-      ].join(', ') +
-      ') ON CONFLICT DO NOTHING;',
+    usersInsert({
+      ...a,
+      role: 'ADMIN',
+      balance: 0,
+      password: ADMIN_PASSWORD,
+      expiredAt: null,
+      // An admin belongs to no company: it bypasses every ownership check.
+      companyId: null,
+      accountStatus: 'ACCEPTED',
+    }),
   );
 }
 lines.push('');
@@ -625,42 +784,25 @@ companies.forEach((p, i) => {
   const reasonId = validationReasons[i % validationReasons.length]!.id;
   const categoryId = categoryIdByName.get(c.category)!;
   lines.push(
-<<<<<<< Updated upstream
     `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", ` +
-<<<<<<< HEAD:CartePro/dev/generate-seed.ts
-      `"reasonId", verified, "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
-=======
-      `"reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
-=======
-    `INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", ` +
-      `"agentId", "reasonId", ` +
-      `verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES (` +
->>>>>>> Stashed changes
->>>>>>> ea33df3 (refactor: use new company partner):Ticket Tout/dev/generate-seed.ts
+      `"reasonId", verified, "categoryId", location, "isPartner", active, "createdAt", "updatedAt") VALUES (` +
       [
         sqlStr(p.id),
         sqlStr(c.name),
         sqlStr(`contact@${slug(c.name)}.fr`),
         sqlStr(c.siret),
         sqlStr(p.kbisId),
-<<<<<<< Updated upstream
-        sqlStr(COMPANY_DESCRIPTION),
-=======
         sqlStr(c.description),
->>>>>>> Stashed changes
-        sqlStr(`${randInt(1, 120)} rue de la République`),
+        sqlStr(companyAddresses[i]!),
         sqlStr(c.postalCode),
         // Half the companies on agent 1, half on agent 2.
         sqlStr(i < companies.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
         sqlInt(reasonId),
-<<<<<<< HEAD:CartePro/dev/generate-seed.ts
-=======
-        sqlBool(true),
->>>>>>> ea33df3 (refactor: use new company partner):Ticket Tout/dev/generate-seed.ts
         sqlBool(p.isPartner && i % 3 === 0),
         sqlInt(categoryId),
         sqlPoint(c.lon, c.lat),
         sqlBool(p.isPartner),
+        sqlBool(!INACTIVE_COMPANY_INDICES.has(i)),
         sqlTs(EMPLOYEE_CREATED_AT),
         sqlTs(EMPLOYEE_CREATED_AT),
       ].join(', ') +
@@ -669,64 +811,31 @@ companies.forEach((p, i) => {
 });
 lines.push('');
 
-lines.push('-- users: 50 employees');
+lines.push('-- users: 50 employees, each attached to its employer through "companyId"');
 for (const e of employees) {
+  lines.push(usersInsert({ ...e, role: 'EMPLOYEE', password: SEED_PASSWORD }));
+}
+lines.push('');
+
+lines.push('-- users: one login per company — PARTNER for the 6 partenaires, COMPANY for the 12 employeurs');
+for (const a of roleAccounts) {
   lines.push(
-    `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-<<<<<<< Updated upstream
-      `"expiredAt", "accountStatus") VALUES (` +
-=======
-      `"expiredAt", "accountStatus", "companyId") VALUES (` +
->>>>>>> Stashed changes
-      [
-        sqlStr(e.id),
-        sqlStr(e.email),
-        sqlStr(e.surname),
-        sqlStr(e.name),
-        sqlStr('EMPLOYEE'),
-        sqlInt(e.balance),
-        sqlStr(hashPassword(SEED_PASSWORD)),
-        sqlTs(EMPLOYEE_CREATED_AT),
-        sqlTs(EMPLOYEE_CREATED_AT),
-        'NULL',
-<<<<<<< Updated upstream
-        sqlStr(randomAccountStatus()),
-=======
-        sqlStr('ACCEPTED'),
-        sqlStr(e.companyId),
->>>>>>> Stashed changes
-      ].join(', ') +
-      ') ON CONFLICT DO NOTHING;',
+    usersInsert({ ...a, balance: 0, password: SEED_PASSWORD, expiredAt: null, accountStatus: 'ACCEPTED' }),
   );
 }
 lines.push('');
 
 lines.push('-- users: 1 admin (for exercising admin-only routes)');
 lines.push(
-  `INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", ` +
-<<<<<<< Updated upstream
-    `"expiredAt", "accountStatus") VALUES (` +
-=======
-    `"expiredAt", "accountStatus", "companyId") VALUES (` +
->>>>>>> Stashed changes
-    [
-      sqlStr(admin.id),
-      sqlStr(admin.email),
-      sqlStr(admin.surname),
-      sqlStr(admin.name),
-      sqlStr('ADMIN'),
-      sqlInt(0),
-      sqlStr(hashPassword(ADMIN_PASSWORD)),
-      sqlTs(EMPLOYEE_CREATED_AT),
-      sqlTs(EMPLOYEE_CREATED_AT),
-      'NULL',
-      sqlStr('ACCEPTED'),
-<<<<<<< Updated upstream
-=======
-      'NULL',
->>>>>>> Stashed changes
-    ].join(', ') +
-    ') ON CONFLICT DO NOTHING;',
+  usersInsert({
+    ...admin,
+    role: 'ADMIN',
+    balance: 0,
+    password: ADMIN_PASSWORD,
+    expiredAt: null,
+    companyId: null,
+    accountStatus: 'ACCEPTED',
+  }),
 );
 lines.push('');
 
@@ -751,12 +860,40 @@ for (const t of transactions) {
 }
 lines.push('');
 
+lines.push('-- userRefusalReason: why an agent refused an account (REFUSED salariés only)');
+for (const r of refusals) {
+  lines.push(
+    `INSERT INTO public."userRefusalReason" (id, reason, "agentId", "userId", "createdAt") VALUES (` +
+      [sqlInt(r.id), sqlStr(r.reason), sqlStr(r.agentId), sqlStr(r.userId), sqlTs(r.createdAt)].join(', ') +
+      ') ON CONFLICT DO NOTHING;',
+  );
+}
+lines.push('');
+
+lines.push('-- bannedUser: read by GET /api/v1/salaries for "isBanned", and by POST /api/v1/admin/ban');
+for (const b of bans) {
+  lines.push(
+    `INSERT INTO public."bannedUser" (id, "userId", reason, "createdAt") VALUES (` +
+      [sqlInt(b.id), sqlStr(b.userId), sqlStr(b.reason), sqlTs(b.createdAt)].join(', ') +
+      ') ON CONFLICT DO NOTHING;',
+  );
+}
+lines.push('');
+
 lines.push('-- keep autoincrement sequences ahead of the seeded ids');
 lines.push(
   `SELECT setval('public."companyValidationReason_id_seq"', (SELECT max(id) FROM public."companyValidationReason"), true);`,
 );
 lines.push(
   `SELECT setval('public."companyCategory_id_seq"', (SELECT max(id) FROM public."companyCategory"), true);`,
+);
+// coalesce: these two tables are only populated from the designated groups
+// above, so an empty run must not hand setval a NULL.
+lines.push(
+  `SELECT setval('public."userRefusalReason_id_seq"', (SELECT coalesce(max(id), 1) FROM public."userRefusalReason"), true);`,
+);
+lines.push(
+  `SELECT setval('public."bannedUser_id_seq"', (SELECT coalesce(max(id), 1) FROM public."bannedUser"), true);`,
 );
 lines.push('');
 
@@ -824,6 +961,11 @@ console.log(`  régions: ${new Set(COMPANIES.map((c) => c.region)).size}`);
 console.log(`  transactions (PAYMENT/REFUND, exported): ${customerFacing.length}`);
 console.log(`  transactions (TOPUP, not exported): ${transactions.length - customerFacing.length}`);
 console.log(`  refused (insufficient balance): ${refusedCount}`);
+console.log(`  company/partner logins: ${roleAccounts.length}`);
+console.log(`  refused accounts (with a userRefusalReason): ${refusals.length}`);
+console.log(`  banned salariés: ${bans.length}`);
+console.log(`  deactivated salariés (expiredAt set): ${DEACTIVATED_INDICES.size}`);
+console.log(`  closed companies (active = FALSE): ${INACTIVE_COMPANY_INDICES.size}`);
 console.log(`  employees at balance 0: ${zeroBalanceCount}`);
 console.log(`  employees with 0 < balance < 5€: ${subFiveCount}`);
 console.log(`  admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);

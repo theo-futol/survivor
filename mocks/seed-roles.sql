@@ -47,8 +47,8 @@ ON CONFLICT ("userId") DO NOTHING;
 -- company
 -- Every company in seed.sql is a partner (isPartner = TRUE), so the COMPANY and
 -- EMPLOYEE accounts below need an employer company to belong to.
-INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", "reasonId", verified, "isFeatured", "categoryId", location, "isPartner", active, "createdAt", "updatedAt") VALUES
-  ('c0000000-0000-4000-8000-000000000001', 'Employeur Test SA', 'contact@employeur-test.fr', '90000000000017', 'd0000000-0000-4000-8000-000000000005', 'Établissement partenaire du dispositif CartePro.', '1 place de la Mairie', '75011', 'a0000000-0000-4000-8000-000000000001', 1, TRUE, FALSE, 1, ST_SetSRID(ST_MakePoint(2.3765, 48.8580), 4326), FALSE, TRUE, '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z')
+INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", "reasonId", verified, "categoryId", location, "isPartner", active, "createdAt", "updatedAt") VALUES
+  ('c0000000-0000-4000-8000-000000000001', 'Employeur Test SA', 'contact@employeur-test.fr', '90000000000017', 'd0000000-0000-4000-8000-000000000005', 'Établissement partenaire du dispositif CartePro.', '1 place de la Mairie', '75011', 'a0000000-0000-4000-8000-000000000001', 1, TRUE, 1, ST_SetSRID(ST_MakePoint(2.3765, 48.8580), 4326), FALSE, TRUE, '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z')
 ON CONFLICT (id) DO NOTHING;
 
 -- users: the other three roles

@@ -34,8 +34,31 @@ empty list. seed.sql has its own 12 employer companies (isPartner = false), but
 they are shared out among the 50 seeded salariés, so seed-roles.sql adds
 "Employeur Test SA" as a dedicated one.
 
-The 50 salariés from seed.sql can log in too: <prenom>.<nom><n>@example.fr
-(e.g. lucas.martin0@example.fr) with the password Secret123!.
+
+What seed.sql brings on its own
+-------------------------------
+
+  50 salariés    <prenom>.<nom><n>@example.fr (e.g. lucas.martin0@example.fr),
+                 password Secret123!, each attached to one of the 12 employer
+                 companies through "companyId" (round-robin).
+  18 gérants     one login per company — PARTNER for the 6 partenaires, COMPANY
+                 for the 12 employeurs — gerant@<nom-de-la-societe>.fr, same
+                 password Secret123!, all ACCEPTED. Logging in as one of these
+                 is the quickest way to see the employer-scoped endpoints return
+                 real data.
+  3 agents       2 agents + 1 admin (ADMIN): agent1.seed@cartepro.fr,
+                 agent2.seed@cartepro.fr, admin.seed@cartepro.fr / Admin1234!
+
+Fixtures worth knowing about, all generated:
+
+  - the salariés refused at signup carry a userRefusalReason row written by one
+    of the two agents;
+  - 2 salariés are in bannedUser, so GET /api/v1/salaries reports isBanned;
+  - 3 salariés are deactivated ("expiredAt" set) and only show up with
+    ?includeInactive=true;
+  - the last 2 employer companies are closed (company.active = FALSE);
+  - qrCode is deliberately left empty: a code lives 300 s, so any seeded row
+    would already be expired. Call POST /api/v1/qrcode to get a live one.
 
 
 Loading them
@@ -45,9 +68,9 @@ Loading them
   docker exec -i cartepro_db psql -U postgres -d cartepro < mocks/seed.sql
   docker exec -i cartepro_db psql -U postgres -d cartepro < mocks/seed-roles.sql
 
-seed-roles.sql must run after seed.sql (it reuses administration id 1,
-companyValidationReason id 1, companyCategory id 1 and the seeded partner
-company). Re-running it is safe — every insert is ON CONFLICT DO NOTHING.
+seed-roles.sql must run after seed.sql (it reuses companyValidationReason id 1,
+companyCategory id 1 and the seeded partner company). Re-running it is safe —
+every insert is ON CONFLICT DO NOTHING.
 
 
 Getting a token
