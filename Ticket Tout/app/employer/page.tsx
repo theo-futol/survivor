@@ -145,7 +145,7 @@ export default function EmployerPage() {
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary-foreground/80">Espace employeur</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{company.name}</h1>
               <p className="mt-3 max-w-2xl text-primary-foreground/85">
-                Consultez les salariés rattachés à votre entreprise, leurs soldes et leurs transactions depuis la base de données Ticket Tout.
+                Consultez les salariés rattachés à votre entreprise, leurs soldes et leurs transactions depuis la base de données Carte Pro.
               </p>
               <p className="mt-3 text-sm font-semibold text-primary-foreground/80">
                 SIRET {company.siret} · {company.address}, {company.postalCode}

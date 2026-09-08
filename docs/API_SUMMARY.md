@@ -5,8 +5,7 @@ Where the two disagree, **this document describes the shipped behaviour** and sa
 
 ## Scope
 
-Implemented here: Employers, Abondements, Employees (salariés), Partners, Admin ban,
-MinisterFavorite.
+Implemented here: Employers, Abondements, Employees (salariés), Partners, Admin ban.
 
 Explicitly **not** in this scope, owned by others:
 
@@ -38,10 +37,6 @@ All routes require `Authorization: Bearer <token>`. The role column is the coars
 | `PATCH /api/v1/partenaires/{partenaireId}` | ADMIN, PARTNER | PARTNER: own only | 200 | `app/api/v1/partenaires/[partenaireId]/route.ts` |
 | `DELETE /api/v1/partenaires/{partenaireId}` | ADMIN | — | 204 | `app/api/v1/partenaires/[partenaireId]/route.ts` |
 | `POST /api/v1/admin/ban` | ADMIN | — | 200 | `app/api/v1/admin/ban/route.ts` |
-| `GET /api/v1/ministerfavorite` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/route.ts` |
-| `POST /api/v1/ministerfavorite` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/route.ts` |
-| `PATCH /api/v1/ministerfavorite/{partnerId}` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/[partnerId]/route.ts` |
-| `DELETE /api/v1/ministerfavorite/{partnerId}` | ADMIN | — | 200 | `app/api/v1/ministerfavorite/[partnerId]/route.ts` |
 | `GET /api/v1/employees/{id}/balance` | ADMIN, COMPANY, EMPLOYEE | COMPANY: own employees; EMPLOYEE: self | 200 | `app/api/v1/employees/[id]/balance/route.ts` |
 | `GET /api/v1/admin/transactions.csv` | ADMIN | — | 200 | `app/api/v1/admin/transactions.csv/route.ts` |
 | `GET /api/v1/salaries/{salarieId}/transactions` | ADMIN, COMPANY, EMPLOYEE | COMPANY: own employees; EMPLOYEE: self | 200 | `app/api/v1/salaries/[salarieId]/transactions/route.ts` |
@@ -68,7 +63,6 @@ database actually requires.
 | `POST /login` checks only the credentials | also `403` unless `accountStatus` is `ACCEPTED` | valid credentials now exist from creation, so verification is what must gate the account |
 | Abondement body `{montant, date, type, comment}` | all validated; only `montant` is persisted | no columns exist for `type` / `comment` |
 | `DELETE` employer "may return 409 if referenced" | always soft-deletes, never 409 | transactions are immutable, so the row must survive |
-| `PATCH` and `DELETE /ministerfavorite/{partnerId}` | both remove, identical response | `API.md` documents both with the same behaviour |
 
 ### Request bodies as shipped
 
@@ -118,7 +112,6 @@ editing themselves is restricted to `surname`, `name`, `password`, and anything 
 
 **`POST /api/v1/admin/ban`** — `{ "userId": "<uuid>", "reason": "Violation of terms" }`.
 
-**`POST /api/v1/ministerfavorite`** — `{ "partnerId": "<uuid>" }`.
 
 ### Response shapes
 
@@ -143,7 +136,6 @@ List endpoints return the documented envelope:
 `GET /api/v1/partenaires` includes the company category as a nested
 `"category": { "id": 1, "category": "Restauration" }`.
 
-`GET /api/v1/ministerfavorite` returns `{ "favorites": [ { "partnerId", "name", "likeAmount" } ] }`.
 
 Ban returns `{ "status": "banned", "userId", "reason" }`; favorites return
 `{ "status": "added" | "removed", "partnerId" }`; abondement returns

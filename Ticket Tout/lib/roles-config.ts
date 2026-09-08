@@ -22,7 +22,7 @@ export const ROUTE_ROLES = {
   'GET /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'EMPLOYEE'],
   'POST /api/v1/salaries/:salarieId/transactions': ['ADMIN', 'COMPANY', 'PARTNER'],
 
-  'GET /api/v1/partenaires': ['ADMIN', 'PARTNER'],
+  'GET /api/v1/partenaires': ['ADMIN', 'PARTNER', 'COMPANY', 'EMPLOYEE'],
   'POST /api/v1/partenaires': ['ADMIN'],
   'PATCH /api/v1/partenaires/:partenaireId': ['ADMIN', 'PARTNER'],
   'DELETE /api/v1/partenaires/:partenaireId': ['ADMIN'],

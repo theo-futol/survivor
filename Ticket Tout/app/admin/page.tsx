@@ -13,8 +13,6 @@ import {
   WalletCards,
 } from "lucide-react"
 
-import { AdminFeaturedPartner } from "@/components/admin-featured-partner"
-import { AdminMinisterFavorite } from "@/components/admin-minister-favorite"
 import { AppSidebar } from "@/components/app-sidebar-admin"
 import { SiteHeader } from "@/components/site-header"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -179,8 +177,6 @@ export default function Page() {
               {activeTab === "employee" && <EmployeeView />}
               {activeTab === "account" && <AccountView />}
               {activeTab === "business" && <BusinessView />}
-              {activeTab === "favorite" && <AdminMinisterFavorite />}
-              {activeTab === "featured" && <AdminFeaturedPartner />}
             </div>
           </SidebarInset>
         </div>
@@ -222,7 +218,7 @@ function EmployeeView() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Employés</h2>
         <p className="text-sm text-muted-foreground">
-          Liste des comptes salariés enregistrés dans la base de données Ticket Tout.
+          Liste des comptes salariés enregistrés dans la base de données Carte Pro.
         </p>
       </div>
 
@@ -429,7 +425,7 @@ function BusinessView() {
                 <Building2 className="h-5 w-5" />
                 {selectedBusiness.name}
               </DialogTitle>
-              <DialogDescription>Informations enregistrées dans la base Ticket Tout.</DialogDescription>
+              <DialogDescription>Informations enregistrées dans la base Carte Pro.</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-2">

@@ -1,88 +1,29 @@
 import type { Metadata } from "next"
-import localFont from "next/font/local"
-import { Spectral } from "next/font/google"
-
+import { Caveat, Inter, Manrope } from "next/font/google"
 import "./globals.css"
 import { PrivacyNotice } from "@/components/privacy-notice"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const marianne = localFont({
-  src: [
-    {
-      path: "../fonts/Marianne-Thin.woff2",
-      weight: "100",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-Thin_Italic.woff2",
-      weight: "100",
-      style: "italic",
-    },
-    {
-      path: "../fonts/Marianne-Light.woff2",
-      weight: "300",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-Light_Italic.woff2",
-      weight: "300",
-      style: "italic",
-    },
-    {
-      path: "../fonts/Marianne-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-Regular_Italic.woff2",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../fonts/Marianne-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-Medium_Italic.woff2",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../fonts/Marianne-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-Bold_Italic.woff2",
-      weight: "700",
-      style: "italic",
-    },
-    {
-      path: "../fonts/Marianne-ExtraBold.woff2",
-      weight: "800",
-      style: "normal",
-    },
-    {
-      path: "../fonts/Marianne-ExtraBold_Italic.woff2",
-      weight: "800",
-      style: "italic",
-    },
-  ],
-  variable: "--font-marianne",
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
   display: "swap",
 })
 
-const spectral = Spectral({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-spectral",
+  variable: "--font-inter",
+  display: "swap",
+})
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
   display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "Ticket Tout",
+  title: "Carte Pro",
 }
 
 export default function RootLayout({
@@ -93,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${marianne.variable} ${spectral.variable} antialiased`}
+        className={`${manrope.variable} ${inter.variable} ${caveat.variable} antialiased`}
       >
         <ThemeProvider>
           <a

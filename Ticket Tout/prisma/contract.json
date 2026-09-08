@@ -32,10 +32,6 @@
       "model": "FeaturedPartner",
       "namespace": "public"
     },
-    "ministerFavorite": {
-      "model": "MinisterFavorite",
-      "namespace": "public"
-    },
     "qrCode": {
       "model": "QrCode",
       "namespace": "public"
@@ -838,83 +834,6 @@
               },
               "namespaceId": "public",
               "table": "featuredPartner"
-            }
-          },
-          "MinisterFavorite": {
-            "fields": {
-              "companyId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "createdAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
-              "likeAmount": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
-              "updatedAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {
-              "company": {
-                "cardinality": "N:1",
-                "on": {
-                  "localFields": [
-                    "companyId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Company",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "companyId": {
-                  "column": "companyId"
-                },
-                "createdAt": {
-                  "column": "createdAt"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "likeAmount": {
-                  "column": "likeAmount"
-                },
-                "updatedAt": {
-                  "column": "updatedAt"
-                }
-              },
-              "namespaceId": "public",
-              "table": "ministerFavorite"
             }
           },
           "QrCode": {
@@ -2075,74 +1994,6 @@
               },
               "uniques": []
             },
-            "ministerFavorite": {
-              "columns": {
-                "companyId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "createdAt": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "id": {
-                  "codecId": "pg/int4@1",
-                  "default": {
-                    "expression": "autoincrement()",
-                    "kind": "function"
-                  },
-                  "nativeType": "int4",
-                  "nullable": false
-                },
-                "likeAmount": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
-                },
-                "updatedAt": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [
-                {
-                  "source": {
-                    "columns": [
-                      "companyId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "ministerFavorite"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "company"
-                  }
-                }
-              ],
-              "indexes": [],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": [
-                {
-                  "columns": [
-                    "companyId"
-                  ]
-                }
-              ]
-            },
             "qrCode": {
               "columns": {
                 "companyId": {
@@ -2735,7 +2586,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c65231faac1f674dc4f5664970871d5a9a2f35427c46207786fc0f58ef78d55c",
+    "storageHash": "ec0468b47dec1e221dce72fae2c03f3d794afcb96ce7b50bb423b99d4600aaee",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",
@@ -2748,7 +2599,7 @@
     }
   },
   "execution": {
-    "executionHash": "3993a6b6a796ad86d346d4d629dafee95240fe832d3b1b87000f02730b6cf4a6",
+    "executionHash": "34a3b7ca66f0753b9b422840278d24cc75ae9d423940d67e1280b26e7c159e73",
     "mutations": {
       "defaults": [
         {
@@ -2801,21 +2652,6 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "featuredPartner"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "instantNow",
-            "kind": "generator"
-          },
-          "onUpdate": {
-            "id": "instantNow",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "updatedAt",
-            "namespace": "public",
-            "table": "ministerFavorite"
           }
         },
         {

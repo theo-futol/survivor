@@ -9,8 +9,8 @@ export async function getApiDocs() {
       openapi: "3.0.0",
 
       info: {
-        title: "Ticket Tout API",
-        description: "Documentation de l'API Ticket Tout",
+        title: "Carte Pro API",
+        description: "Documentation de l'API Carte Pro",
         version,
       },
 
