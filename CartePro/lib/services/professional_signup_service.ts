@@ -243,11 +243,11 @@ export async function registerProfessionalAccount(
       await client.query(
         `INSERT INTO public.company (
            id, name, email, siret, "kbisId", address, "postalCode",
-           "agentId", "reasonId", verified, "isFeatured", "categoryId",
+           "agentId", "reasonId", verified, "categoryId",
            location, "isPartner", active, "createdAt", "updatedAt"
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7,
-           $8, $9, FALSE, FALSE, $10,
+           $8, $9, FALSE, $10,
            ST_SetSRID(ST_MakePoint(0, 0), 4326), $11, TRUE, NOW(), NOW()
          )`,
         [
