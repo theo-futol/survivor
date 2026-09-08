@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Users, User, Building2, Heart, Sparkles, TerminalIcon } from "lucide-react"
+import { Building2, CircleDollarSign, LayoutDashboard, Store, TerminalIcon, User, Users } from "lucide-react"
 
 import {
   Sidebar,
@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export type AdminTab = "employee" | "account" | "business"
+export type AdminTab = "dashboard" | "partners" | "employee" | "business" | "topups" | "account"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activeTab: AdminTab
@@ -21,28 +21,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps) {
   const adminNavItems = [
-    {
-      id: "employee" as AdminTab,
-      title: "Employés",
-      icon: Users,
-    },
-    {
-      id: "account" as AdminTab,
-      title: "Compte",
-      icon: User,
-    },
-    {
-      id: "business" as AdminTab,
-      title: "Entreprise",
-      icon: Building2,
-    },
+    { id: "dashboard" as AdminTab, title: "Tableau national", icon: LayoutDashboard },
+    { id: "partners" as AdminTab, title: "Partenaires", icon: Store },
+    { id: "employee" as AdminTab, title: "Salariés", icon: Users },
+    { id: "business" as AdminTab, title: "Employeurs", icon: Building2 },
+    { id: "topups" as AdminTab, title: "Abondements", icon: CircleDollarSign },
+    { id: "account" as AdminTab, title: "Compte", icon: User },
   ]
 
   return (
-    <Sidebar
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-      {...props}
-    >
+    <Sidebar className="top-(--header-height) h-[calc(100svh-var(--header-height))]!" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -52,7 +40,7 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">Carte Pro</span>
-                <span className="truncate text-xs">Administration</span>
+                <span className="truncate text-xs">Administration Ministère</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -67,12 +55,8 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
 
             return (
               <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton
-                  isActive={isActive}
-                  onClick={() => onSelectTab(item.id)}
-                  className="cursor-pointer"
-                >
-                  <Icon className="size-4 mr-2" />
+                <SidebarMenuButton isActive={isActive} onClick={() => onSelectTab(item.id)} className="cursor-pointer">
+                  <Icon className="mr-2 size-4" />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

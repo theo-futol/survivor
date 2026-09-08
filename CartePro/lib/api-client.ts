@@ -32,6 +32,13 @@ export type ApiCompany = {
   categoryId: number
   category?: ApiCompanyCategory | null
   location?: unknown
+  description?: string
+  kbisId?: string
+  agentId?: string | number | null
+  reasonId?: number | null
+  active?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type MeResponse = {
@@ -48,6 +55,8 @@ export type ApiTransaction = {
   originalTransactionId: string | null
   status: "REFUSER" | "VALIDER"
   createdAt: string
+  updatedAt?: string
+  newBalance?: number
 }
 
 export type ApiPartner = ApiCompany & {
@@ -63,6 +72,7 @@ export type ApiSalary = {
   balance: number
   companyId: string | null
   createdAt: string
+  accountStatus: "PENDING" | "ACCEPTED" | "REFUSED"
   active: boolean
   isBanned: boolean
   transactionCount: number

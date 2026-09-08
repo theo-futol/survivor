@@ -109,7 +109,7 @@ export async function GET(request: Request)
 
     const { total } = await scoped().aggregate((aggregate) => ({ total: aggregate.count() }));
     const salaries = await scoped()
-      .select('id', 'email', 'surname', 'name', 'balance', 'companyId', 'createdAt', 'expiredAt')
+      .select('id', 'email', 'surname', 'name', 'balance', 'companyId', 'createdAt', 'expiredAt', 'accountStatus')
       .orderBy((u) => u.createdAt.desc())
       .limit(pagination.limit)
       .offset(pagination.offset)
@@ -133,6 +133,7 @@ export async function GET(request: Request)
         balance: salarie.balance,
         companyId: salarie.companyId,
         createdAt: salarie.createdAt,
+        accountStatus: salarie.accountStatus,
         active: salarie.expiredAt === null,
         isBanned: banned !== null,
         transactionCount: totals.transactionCount,

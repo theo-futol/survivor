@@ -13,7 +13,7 @@ export const ROUTE_ROLES = {
   'POST /api/v1/employeurs': ['ADMIN'],
   'PATCH /api/v1/employeurs/:employeurId': ['ADMIN', 'COMPANY'],
   'DELETE /api/v1/employeurs/:employeurId': ['ADMIN'],
-  'POST /api/v1/employeurs/:employeurId/abondements': ['ADMIN', 'COMPANY'],
+  'POST /api/v1/employeurs/:employeurId/abondements': ['ADMIN'],
 
   'GET /api/v1/salaries': ['ADMIN', 'COMPANY'],
   'POST /api/v1/salaries': ['ADMIN', 'COMPANY'],

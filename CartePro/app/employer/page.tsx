@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   BadgeCheck,
-  CircleDollarSign,
   LoaderCircle,
   PencilLine,
   Plus,
@@ -27,12 +26,6 @@ type SalariesResponse = {
   meta: PaginationMeta
 }
 
-type TopupResponse = {
-  montant: number
-  salariesCredites: number
-  montantTotal: number
-}
-
 type EditingEmployee = ApiSalary | null
 
 export default function EmployerPage() {
@@ -45,7 +38,6 @@ export default function EmployerPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [showEmployeeForm, setShowEmployeeForm] = useState(false)
   const [editing, setEditing] = useState<EditingEmployee>(null)
-  const [showTopupForm, setShowTopupForm] = useState(false)
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
 
@@ -159,23 +151,10 @@ export default function EmployerPage() {
                 onClick={() => {
                   setEditing(null)
                   setShowEmployeeForm(true)
-                  setShowTopupForm(false)
                   window.requestAnimationFrame(() => document.getElementById("employee-form-title")?.focus())
                 }}
               >
                 <UserPlus aria-hidden="true" /> Demander un compte salarié
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowTopupForm(true)
-                  setShowEmployeeForm(false)
-                  setEditing(null)
-                  window.requestAnimationFrame(() => document.getElementById("topup-form-title")?.focus())
-                }}
-              >
-                <CircleDollarSign aria-hidden="true" /> Abonder les salariés
               </Button>
             </div>
           </div>
@@ -221,29 +200,6 @@ export default function EmployerPage() {
               onSaved={() => {
                 setEditing(null)
                 setShowEmployeeForm(false)
-                void loadSalaries()
-              }}
-            />
-          </section>
-        )}
-
-        {showTopupForm && (
-          <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7" aria-labelledby="topup-form-title">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Abondement</p>
-                <h2 id="topup-form-title" tabIndex={-1} className="mt-1 text-2xl font-black">Créditer les salariés actifs</h2>
-                <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                  Le montant saisi est envoyé à la route d’abondement existante pour votre entreprise.
-                </p>
-              </div>
-              <Button variant="outline" type="button" onClick={() => setShowTopupForm(false)}>Fermer</Button>
-            </div>
-            <TopupForm
-              companyId={company.id}
-              employeeCount={stats.employees}
-              onCompleted={() => {
-                setShowTopupForm(false)
                 void loadSalaries()
               }}
             />
@@ -325,7 +281,6 @@ export default function EmployerPage() {
                       onClick={() => {
                         setEditing(salary)
                         setShowEmployeeForm(false)
-                        setShowTopupForm(false)
                         window.requestAnimationFrame(() => document.getElementById("employee-form-title")?.focus())
                       }}
                     >
@@ -446,103 +401,6 @@ function EmployeeForm({
       <Button type="submit" disabled={submitting}>
         {submitting ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : employee ? <RefreshCw aria-hidden="true" /> : <UserPlus aria-hidden="true" />}
         {employee ? "Enregistrer les modifications" : "Envoyer la demande de création"}
-      </Button>
-    </form>
-  )
-}
-
-function TopupForm({
-  companyId,
-  employeeCount,
-  onCompleted,
-}: {
-  companyId: string
-  employeeCount: number
-  onCompleted: () => void
-}) {
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    setSuccess(null)
-
-    const form = new FormData(event.currentTarget)
-    const euros = Number(form.get("amount") ?? 0)
-    const amount = Math.round(euros * 100)
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setError("Le montant doit être supérieur à 0 €.")
-      setSubmitting(false)
-      return
-    }
-
-    try {
-      const payload = await apiFetch<TopupResponse>(
-        `/api/v1/employeurs/${encodeURIComponent(companyId)}/abondements`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            montant: amount,
-            type: String(form.get("type") ?? "fixe"),
-            date: String(form.get("date") ?? "") || undefined,
-            comment: String(form.get("comment") ?? "").trim() || undefined,
-          }),
-        },
-      )
-
-      setSuccess(`${payload.salariesCredites} salarié${payload.salariesCredites > 1 ? "s" : ""} crédité${payload.salariesCredites > 1 ? "s" : ""} de ${formatMoney(payload.montant)}.`)
-      onCompleted()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible d’effectuer l’abondement.")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <form className="mt-7 space-y-5" onSubmit={onSubmit}>
-      <div className="grid gap-5 rounded-2xl border p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <Label htmlFor="topup-amount">Montant par salarié (€)</Label>
-          <Input id="topup-amount" name="amount" type="number" min="0.01" step="0.01" className="mt-2" required />
-        </div>
-        <div>
-          <Label htmlFor="topup-type">Type</Label>
-          <select
-            id="topup-type"
-            name="type"
-            defaultValue="fixe"
-            className="mt-2 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="fixe">Fixe</option>
-            <option value="variable">Variable</option>
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="topup-date">Date (facultatif)</Label>
-          <Input id="topup-date" name="date" type="date" className="mt-2" />
-        </div>
-        <div className="rounded-xl bg-secondary p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">Salariés concernés</p>
-          <p className="mt-1 text-2xl font-black">{employeeCount}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Tous les salariés actifs de l’entreprise.</p>
-        </div>
-        <div className="sm:col-span-2 lg:col-span-4">
-          <Label htmlFor="topup-comment">Commentaire (facultatif)</Label>
-          <Input id="topup-comment" name="comment" className="mt-2" maxLength={500} />
-        </div>
-      </div>
-
-      {error && <p role="alert" className="rounded-xl bg-brand-red-soft px-4 py-3 text-sm font-semibold text-brand-red-dark">{error}</p>}
-      {success && <p role="status" className="rounded-xl bg-brand-success-soft px-4 py-3 text-sm font-semibold text-brand-success">{success}</p>}
-
-      <Button type="submit" disabled={submitting || employeeCount === 0}>
-        {submitting ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <CircleDollarSign aria-hidden="true" />}
-        Confirmer l’abondement
       </Button>
     </form>
   )
