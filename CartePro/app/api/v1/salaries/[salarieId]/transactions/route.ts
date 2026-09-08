@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withTransaction } from '@/lib/services/postgres_client';
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
 import { authorize } from '@/lib/services/auth_service';
-import { assertCanAccessSalarie, resolveActor } from '@/lib/services/ownership_service';
+import { assertCanAccessSalarie, assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
 import {
   parsePaginationParams,
   computeOffset,
@@ -15,7 +15,7 @@ const salaryParamsSchema = z.object({
 });
 
 const transactionBodySchema = z.object({
-  amount: z.number().positive(),
+  amount: z.number().int().positive(),
   type: z.enum(['PAYMENT', 'REFUND', 'TOPUP']),
   content: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Invalid content format not matching SHA-256 hash'),
   companyId: z.uuid(),
@@ -133,8 +133,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * @openapi
  * /api/v1/salaries/{salarieId}/transactions:
  *   post:
- *     summary: Création d'une transaction pour un salarié
- *     description: "Crée une transaction et recalcule le solde du salarié dans une transaction PostgreSQL, la ligne du salarié étant verrouillée (`SELECT … FOR UPDATE`) le temps du calcul. Un type `PAYMENT` débite le solde, tout autre type le crédite ; un statut `REFUSER` enregistre la transaction sans toucher au solde. Un solde final négatif est refusé. Le corps attendu est `{ amount, status, type }` — la gestion du `qrcode` et de `originalTransactionId` décrite dans docs/API.md n'est pas implémentée."
+ *     summary: Création d'une transaction pour un salarié à partir de son QR code
+ *     description: "Encaisse un QR code de paiement présenté par le salarié. Le corps porte le hash SHA-256 du code scanné (`content`) et l'entreprise partenaire (`companyId`) ; le QR code doit appartenir au salarié visé, à cette entreprise, et ne pas être expiré. Le solde est lu sous verrou (`SELECT … FOR UPDATE`) puis recalculé dans une seule transaction PostgreSQL : un `PAYMENT` débite, `REFUND` et `TOPUP` créditent. Un solde final négatif enregistre la transaction avec le statut `REFUSER` sans toucher au solde. Un QR code encaissé (statut `VALIDER`) est consommé (ligne supprimée), il ne peut donc pas être rejoué avant son expiration. La contrainte `transaction_type_matches_company` impose un `companyId` nul pour un `TOPUP`."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -148,12 +148,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *         application/json:
  *           schema:
  *             type: object
- *             required: [amount, status, type]
+ *             required: [amount, type, content, companyId]
  *             properties:
- *               amount: { type: number, minimum: 1 }
- *               status: { type: string, enum: [REFUSER, VALIDER] }
- *               companyId: { type: string, format: uuid }
+ *               amount: { type: number, minimum: 1, description: Montant en centimes. }
  *               type: { type: string, enum: [PAYMENT, REFUND, TOPUP] }
+ *               content: { type: string, description: Hash SHA-256 (64 caractères hexadécimaux) du code scanné. }
+ *               companyId: { type: string, format: uuid }
  *     responses:
  *       '201':
  *         description: Transaction créée et solde mis à jour.
@@ -166,16 +166,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *                 newBalance: { type: number }
  *                 status: { type: string, enum: [REFUSER, VALIDER] }
  *                 companyId: { type: string, format: uuid }
- *       '400': { description: Identifiant ou corps de requête invalide, ou solde insuffisant. }
+ *       '400': { description: Identifiant ou corps de requête invalide, ou QR code expiré. }
  *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant. }
- *       '404': { description: Salarié introuvable. }
+ *       '403': { description: Rôle insuffisant, ou QR code émis pour un autre salarié / une autre entreprise. }
+ *       '404': { description: Salarié ou QR code introuvable. }
  *       '500': { description: Erreur serveur interne. }
  */
 export async function POST(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {
     try {
         const auth = await authorize(request, 'POST /api/v1/salaries/:salarieId/transactions');
+
         if (!auth.ok) {
             return Response.json({ error: auth.error }, { status: auth.status });
         }
@@ -185,86 +186,84 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             throw new AppError('Invalid parameters', 400);
         });
 
-        const requestBody = await request.json();
-        await transactionBodySchema.parseAsync(requestBody).catch((error) => {
+        const requestBody = await request.json().catch(() => {
+            throw new AppError('Invalid JSON in request body', 400);
+        });
+
+        const { amount, type, content, companyId } = await transactionBodySchema.parseAsync(requestBody).catch((error) => {
             console.error('Invalid request body', JSON.stringify(error));
             throw new AppError('Invalid request body', 400);
         });
 
-        const result = await withTransaction(async (client) => {
-            const userRows = await client.query(
+        if (auth.role === 'PARTNER') {
+            assertOwnsCompany(await resolveActor(auth), companyId);
+        }
+
+        const ledgerCompanyId = type === 'TOPUP' ? null : companyId;
+
+        const { newBalance, status } = await withTransaction(async (client) => {
+            const locked = await client.query<{ balance: number }>(
                 'SELECT balance FROM users WHERE id = $1 FOR UPDATE',
-                [salarieId]
+                [salarieId],
             );
-            if (userRows.rowCount === 0) {
+
+            if (locked.rowCount === 0) {
                 throw new AppError('Salarie not found', 404);
             }
 
-            const qrRows = await client.query(
-                `SELECT id, "userId", "companyId", "expiredAt", "usedAt"
-                 FROM qr_codes
-                 WHERE content = $1
-                 FOR UPDATE`,
-                [requestBody.content]
+            const qrcodes = await client.query<{ id: number; userId: string; companyId: string; expiredAt: string }>(
+                'SELECT id, "userId", "companyId", "expiredAt" FROM "qrCode" WHERE content = $1 FOR UPDATE',
+                [content],
             );
-            if (qrRows.rowCount === 0) {
-                throw new AppError('QrCode not found', 404);
-            }
-            const qrcode = qrRows.rows[0];
+            const qrcode = qrcodes.rows[0];
 
-            if (qrcode.usedAt) {
-                throw new AppError('QrCode already used', 400);
-            }
-            if (new Date(qrcode.expiredAt).getTime() < Date.now()) {
-                throw new AppError('QrCode expired', 400);
+            if (!qrcode) {
+                throw new AppError('QrCode not found', 404);
             }
             if (qrcode.userId !== salarieId) {
                 throw new AppError('QrCode does not belong to this salarie', 403);
             }
-            if (qrcode.companyId !== requestBody.companyId) {
+            if (qrcode.companyId !== companyId) {
                 throw new AppError('QrCode does not belong to this company', 403);
             }
+            if (new Date(qrcode.expiredAt).getTime() <= Date.now()) {
+                throw new AppError('QrCode expired', 400);
+            }
 
-            const currentBalance: number = userRows.rows[0].balance;
-            const delta = requestBody.type === 'PAYMENT' ? -requestBody.amount : requestBody.amount;
-            const computedBalance = currentBalance + delta;
-            const authorizeOverdraft = 0;
+            const currentBalance: number = Number(locked.rows[0]!.balance);
+            const projectedBalance: number = type === 'PAYMENT' ? currentBalance - amount : currentBalance + amount;
+            const authorizeOverdraft: number = 0;
 
-            const status: 'REFUSER' | 'VALIDER' =
-                computedBalance < authorizeOverdraft ? 'REFUSER' : 'VALIDER';
-            const newBalance = status === 'VALIDER' ? computedBalance : currentBalance;
+            const status = projectedBalance < authorizeOverdraft ? 'REFUSER' as const : 'VALIDER' as const;
+            const newBalance = status === 'VALIDER' ? projectedBalance : currentBalance;
 
             if (status === 'VALIDER') {
                 await client.query('UPDATE users SET balance = $1 WHERE id = $2', [newBalance, salarieId]);
             }
 
-            await client.query('UPDATE qr_codes SET "usedAt" = now() WHERE id = $1', [qrcode.id]);
-
-            const insertResult = await client.query(
-                `INSERT INTO transactions ("userId", amount, "newBalance", "companyId", status, type)
-                 VALUES ($1, $2, $3, $4, $5, $6)
-                 RETURNING id`,
-                [salarieId, requestBody.amount, newBalance, qrcode.companyId, status, requestBody.type]
+            const inserted = await client.query(
+                `INSERT INTO "transaction" (type, "userId", "companyId", amount, "newBalance", status)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [type, salarieId, ledgerCompanyId, amount, newBalance, status],
             );
-            if (insertResult.rowCount === 0) {
+            if (inserted.rowCount === 0) {
                 throw new AppError('Failed to create transaction', 500);
             }
 
-            return { newBalance, status, companyId: qrcode.companyId };
+            if (status === 'VALIDER') {
+                await client.query('DELETE FROM "qrCode" WHERE id = $1', [qrcode.id]);
+            }
+
+            return { newBalance, status };
         });
 
         return Response.json(
-            {
-                message: 'Transaction created successfully',
-                newBalance: result.newBalance,
-                status: result.status,
-                companyId: result.companyId,
-            },
-            { status: 201 }
+            { message: 'Transaction created successfully', newBalance, status, companyId: ledgerCompanyId },
+            { status: 201 },
         );
     } catch (error) {
         console.error('Error creating salary transaction', JSON.stringify(error));
-        const { message, statusCode } = commonErrorHandler(error);
+        const {message, statusCode} = commonErrorHandler(error);
         return Response.json({ error: message }, { status: statusCode });
     }
 }

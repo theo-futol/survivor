@@ -54,4 +54,16 @@ export const transactionFixture = [
 
 export const bannedUserFixture: Record<string, unknown>[] = [];
 
-export const qrCodeFixture: Record<string, unknown>[] = [];
+// Payment QR codes are stored hashed, so the fixtures only ever need to look
+// like SHA-256 digests — no suite has to know their plaintext. Expiries are
+// relative to the run so the "still valid" row never rots into an expired one.
+export const VALID_QRCODE_CONTENT = 'a'.repeat(64);
+export const EXPIRED_QRCODE_CONTENT = 'b'.repeat(64);
+export const UNKNOWN_QRCODE_CONTENT = 'c'.repeat(64);
+export const OTHER_COMPANY_QRCODE_CONTENT = 'd'.repeat(64);
+
+export const qrCodeFixture: Record<string, unknown>[] = [
+  { id: 1, content: VALID_QRCODE_CONTENT, expiredAt: new Date(Date.now() + 3_600_000).toISOString(), userId: EMPLOYEE_ID, companyId: PARTNER_COMPANY_ID },
+  { id: 2, content: EXPIRED_QRCODE_CONTENT, expiredAt: new Date(Date.now() - 3_600_000).toISOString(), userId: EMPLOYEE_ID, companyId: PARTNER_COMPANY_ID },
+  { id: 3, content: OTHER_COMPANY_QRCODE_CONTENT, expiredAt: new Date(Date.now() + 3_600_000).toISOString(), userId: EMPLOYEE_ID, companyId: OTHER_COMPANY_ID },
+];

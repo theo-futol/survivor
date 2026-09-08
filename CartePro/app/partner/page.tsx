@@ -3,26 +3,13 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { QrCodeSvg } from "@/components/qr-code-svg"
-import { X, LogOut } from "lucide-react"
-
-interface Product {
-  id: number
-  name: string
-  price: number
-}
-
-interface Transaction {
-  id: string
-  date: string
-  produit: string
-  client: string
-  montant: number
-}
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { apiFetch, formatMoney, type ApiCompany } from "@/lib/api-client"
+import { LogOut } from "lucide-react"
 
 interface PartnerSidebarProps {
   activeTab: string
@@ -32,10 +19,9 @@ interface PartnerSidebarProps {
 function PartnerSidebar({ activeTab, onSelectTab }: PartnerSidebarProps) {
   const router = useRouter()
   const navItems = [
-    { id: "products", title: "Produits" },
+    { id: "scan", title: "Scanner QR Code" },
     { id: "info", title: "Infos Partenaire" },
     { id: "history", title: "Historique des transactions" },
-    { id: "scan", title: "Scanner QR Code" },
   ]
 
   // TODO: brancher sur la vraie logique de déconnexion (session/auth) une
@@ -71,126 +57,79 @@ function PartnerSidebar({ activeTab, onSelectTab }: PartnerSidebarProps) {
   )
 }
 
-function ProductManager() {
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: "Sandwich Jambon", price: 4.5 },
-    { id: 2, name: "Café", price: 1.2 },
-  ])
-  const [newName, setNewName] = useState("")
-  const [newPrice, setNewPrice] = useState("")
-
-  function addProduct(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!newName || !newPrice || isNaN(Number(newPrice))) return
-    setProducts([...products, { id: Date.now(), name: newName, price: parseFloat(newPrice) }])
-    setNewName("")
-    setNewPrice("")
-  }
-  function removeProduct(id: number) {
-    setProducts(products.filter((p) => p.id !== id))
-  }
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-2">Vos produits</h2>
-      <div className="grid gap-4 md:grid-cols-2">
-        {products.map((p) => (
-          <Card key={p.id}>
-            <CardHeader>
-              <CardTitle>{p.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-semibold">{p.price.toFixed(2)} €</div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="destructive" size="sm" onClick={() => removeProduct(p.id)}>
-                Supprimer
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+function PartnerInfo({ company }: { company: ApiCompany | null }) {
+  if (!company) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold mb-2">Informations du partenaire</h2>
+        <p className="text-muted-foreground">
+          Votre compte n&apos;est rattaché à aucune entreprise partenaire.
+        </p>
       </div>
-      <form className="flex gap-2 items-end" onSubmit={addProduct}>
-        <div>
-          <Label htmlFor="product-name">Nom</Label>
-          <Input id="product-name" value={newName} onChange={e => setNewName(e.target.value)} required />
-        </div>
-        <div>
-          <Label htmlFor="product-price">Prix (€)</Label>
-          <Input id="product-price" value={newPrice} onChange={e => setNewPrice(e.target.value)} required type="number" min="0" step="0.01" />
-        </div>
-        <Button type="submit">Ajouter</Button>
-      </form>
-    </div>
-  )
-}
+    )
+  }
 
-// TODO: remplacer par les vraies infos du partenaire connecté (session/auth),
-// au lieu de cette valeur figée. `id` doit être le partenaireId utilisé par
-// GET /api/v1/partenaires/{partenaireId}/transactions.
-const CURRENT_PARTNER = {
-  id: "00000000-0000-0000-0000-000000000000",
-  name: "Boulangerie Dupont",
-}
-
-function PartnerInfo() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold mb-2">Informations du partenaire</h2>
       <Card>
         <CardHeader>
-          <CardTitle>{CURRENT_PARTNER.name}</CardTitle>
+          <CardTitle>{company.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-2">Catégorie : Commerce alimentaire</div>
-          <div className="mb-2">Adresse : 12 rue de Paris, 93200 Saint-Denis</div>
-          <div className="mb-2">Téléphone : 01 23 45 67 89</div>
-          <div className="mb-2">SIRET : 123 456 789 00012</div>
-          <div className="mb-2">Contact : dupont@boulangerie.fr</div>
+          <div className="mb-2">Catégorie : {company.category?.category ?? "—"}</div>
+          <div className="mb-2">Adresse : {company.address}, {company.postalCode}</div>
+          <div className="mb-2">SIRET : {company.siret}</div>
+          <div className="mb-2">Contact : {company.email}</div>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-// Utilisées uniquement tant que l'API de transactions n'est pas branchée.
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: "1", date: "2026-09-01T10:12:00Z", produit: "Sandwich Jambon", client: "Marie L.", montant: 4.5 },
-  { id: "2", date: "2026-09-02T08:03:00Z", produit: "Café", client: "Julien P.", montant: 1.2 },
-  { id: "3", date: "2026-09-03T12:45:00Z", produit: "Sandwich Jambon", client: "Sofia R.", montant: 4.5 },
-  { id: "4", date: "2026-09-04T09:20:00Z", produit: "Café", client: "Marie L.", montant: 1.2 },
-]
+// A row of the partner's till, as returned by
+// GET /api/v1/partenaires/{partenaireId}/transactions.
+type PartnerTransaction = {
+  id: string
+  type: "PAYMENT" | "REFUND" | "TOPUP"
+  amount: number
+  newBalance: number
+  status: "REFUSER" | "VALIDER"
+  createdAt: string
+  user: { id: string; name: string; surname: string } | null
+}
 
 interface TransactionHistoryProps {
-  partenaireId: string
+  partenaireId: string | null
   companyName: string
 }
 
 function TransactionHistory({ partenaireId, companyName }: TransactionHistoryProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<PartnerTransaction[]>([])
   const [loading, setLoading] = useState(true)
-  const [usingMockData, setUsingMockData] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
 
     async function loadTransactions() {
       setLoading(true)
+      setError(null)
+
+      if (!partenaireId) {
+        setTransactions([])
+        setLoading(false)
+        return
+      }
+
       try {
-        // NOTE: cet endpoint n'existe pas encore dans route.ts (qui ne gère
-        // que PATCH/DELETE sur /api/v1/partenaires/{partenaireId}). Il faudra
-        // ajouter un GET /api/v1/partenaires/{partenaireId}/transactions
-        // côté API pour que cet appel fonctionne réellement.
-        const res = await fetch(`/api/v1/partenaires/${partenaireId}/transactions`)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: Transaction[] = await res.json()
+        const data = await apiFetch<{ transactions: PartnerTransaction[] }>(
+          `/api/v1/partenaires/${partenaireId}/transactions?limit=50`,
+        )
+        if (!cancelled) setTransactions(data.transactions ?? [])
+      } catch (caught) {
         if (!cancelled) {
-          setTransactions(data)
-          setUsingMockData(false)
-        }
-      } catch {
-        if (!cancelled) {
-          setTransactions(MOCK_TRANSACTIONS)
-          setUsingMockData(true)
+          setError(caught instanceof Error ? caught.message : "Impossible de charger les transactions.")
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -203,43 +142,69 @@ function TransactionHistory({ partenaireId, companyName }: TransactionHistoryPro
     }
   }, [partenaireId])
 
+  // Only validated payments are money actually taken; a refund gives some back.
+  const total = transactions
+    .filter((t) => t.status === "VALIDER")
+    .reduce((sum, t) => sum + (t.type === "REFUND" ? -t.amount : t.amount), 0)
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold mb-2">Historique des transactions — {companyName}</h2>
 
-      {usingMockData && (
-        <div className="text-sm text-muted-foreground bg-muted rounded p-3">
-          L'API de transactions n'est pas encore disponible : ces données sont des exemples.
-        </div>
-      )}
+      {error && <div className="rounded bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
       {loading ? (
         <div className="text-muted-foreground">Chargement des transactions...</div>
-      ) : transactions.length === 0 ? (
+      ) : transactions.length === 0 && !error ? (
         <div className="text-muted-foreground">Aucune transaction pour le moment.</div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left px-4 py-2 font-semibold">Date</th>
-                <th className="text-left px-4 py-2 font-semibold">Produit</th>
-                <th className="text-left px-4 py-2 font-semibold">Client</th>
-                <th className="text-right px-4 py-2 font-semibold">Montant</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t) => (
-                <tr key={t.id} className="border-t">
-                  <td className="px-4 py-2">{new Date(t.date).toLocaleDateString("fr-FR")}</td>
-                  <td className="px-4 py-2">{t.produit}</td>
-                  <td className="px-4 py-2">{t.client}</td>
-                  <td className="px-4 py-2 text-right">{t.montant.toFixed(2)} €</td>
+        <>
+          <div className="text-sm text-muted-foreground">
+            {transactions.length} transaction{transactions.length > 1 ? "s" : ""} · encaissé :{" "}
+            <span className="font-semibold text-foreground">{formatMoney(total)}</span>
+          </div>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-2 font-semibold">Date</th>
+                  <th className="text-left px-4 py-2 font-semibold">Client</th>
+                  <th className="text-left px-4 py-2 font-semibold">Type</th>
+                  <th className="text-left px-4 py-2 font-semibold">Statut</th>
+                  <th className="text-right px-4 py-2 font-semibold">Montant</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {transactions.map((t) => (
+                  <tr key={t.id} className="border-t">
+                    <td className="px-4 py-2">
+                      {new Date(t.createdAt).toLocaleString("fr-FR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </td>
+                    <td className="px-4 py-2">
+                      {t.user ? `${t.user.name} ${t.user.surname}` : "—"}
+                    </td>
+                    <td className="px-4 py-2">{t.type}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={
+                          t.status === "VALIDER"
+                            ? "text-brand-green-deep font-semibold"
+                            : "text-destructive font-semibold"
+                        }
+                      >
+                        {t.status === "VALIDER" ? "Validée" : "Refusée"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-right">{formatMoney(t.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )
@@ -259,10 +224,39 @@ declare global {
   }
 }
 
-function QrCodeScanner() {
+// The QR code an employee shows carries the plaintext code only; the API stores
+// and expects its SHA-256 hash, so the hash is computed here, right after the
+// scan. `crypto.subtle` needs a secure context, which the dev server provides
+// through its --experimental-https flag.
+async function sha256Hex(value: string) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("Le calcul d'empreinte nécessite une connexion sécurisée (HTTPS).")
+  }
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+}
+
+type ScannedQrCode = {
+  content: string
+  salarieId: string
+  name: string
+  surname: string
+}
+
+interface QrCodeScannerProps {
+  companyId: string | null
+}
+
+function QrCodeScanner({ companyId }: QrCodeScannerProps) {
   const [open, setOpen] = useState(false)
-  const [qrResult, setQrResult] = useState<string | null>(null)
+  const [scanned, setScanned] = useState<ScannedQrCode | null>(null)
+  const [resolving, setResolving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Bumped to restart the camera after a failed scan: re-running the effect is
+  // what reopens the stream, and `open` is already true at that point.
+  const [attempt, setAttempt] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -279,6 +273,27 @@ function QrCodeScanner() {
     }
   }
 
+  // Turns a raw scan into the salarié to bill. The code alone does not say whose
+  // card it is, so the hash is resolved server-side — which also rejects a code
+  // issued for another partner before the cashier ever types an amount.
+  async function handleDetected(rawValue: string) {
+    stopScanning()
+    setResolving(true)
+    setError(null)
+    try {
+      const content = await sha256Hex(rawValue.trim())
+      const resolved = await apiFetch<{ salarieId: string; name: string; surname: string }>(
+        "/api/v1/qrcode/resolve",
+        { method: "POST", body: JSON.stringify({ content }) },
+      )
+      setScanned({ content, ...resolved })
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "QR code illisible.")
+    } finally {
+      setResolving(false)
+    }
+  }
+
   async function scanWithBarcodeDetector() {
     if (!window.BarcodeDetector) return
     const detector = new window.BarcodeDetector({ formats: ["qr_code"] })
@@ -291,8 +306,7 @@ function QrCodeScanner() {
       try {
         const codes = await detector.detect(video)
         if (codes.length > 0) {
-          setQrResult(codes[0].rawValue)
-          stopScanning()
+          void handleDetected(codes[0].rawValue)
           return
         }
       } catch {
@@ -305,7 +319,6 @@ function QrCodeScanner() {
 
   async function scanWithJsQr() {
     // Fallback for browsers without BarcodeDetector (Firefox, Safari).
-    // Requires: npm install jsqr
     let jsQR: any
     try {
       const jsqrModule: any = await import("jsqr")
@@ -331,8 +344,7 @@ function QrCodeScanner() {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const code = jsQR(imageData.data, imageData.width, imageData.height)
       if (code) {
-        setQrResult(code.data)
-        stopScanning()
+        void handleDetected(code.data)
         return
       }
       rafRef.current = requestAnimationFrame(tick)
@@ -347,7 +359,7 @@ function QrCodeScanner() {
     }
 
     let cancelled = false
-    setQrResult(null)
+    setScanned(null)
     setError(null)
 
     async function start() {
@@ -380,27 +392,52 @@ function QrCodeScanner() {
       cancelled = true
       stopScanning()
     }
-  }, [open])
+  }, [open, attempt])
 
   function handleClose() {
-    setQrResult(null)
+    setScanned(null)
     setError(null)
+    setResolving(false)
     setOpen(false)
   }
+
+  const showCamera = !scanned && !resolving && !error
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold mb-2">Scanner un QR Code</h2>
-      <Button onClick={() => setOpen(true)}>Ouvrir le lecteur QR Code</Button>
+      <p className="text-muted-foreground">
+        Scannez le QR code du salarié, saisissez le montant à facturer, puis validez l&apos;encaissement.
+      </p>
+      <Button onClick={() => setOpen(true)} disabled={!companyId}>
+        Ouvrir le lecteur QR Code
+      </Button>
+      {!companyId && (
+        <p className="text-sm text-muted-foreground">
+          Votre compte n&apos;est rattaché à aucune entreprise partenaire : l&apos;encaissement est indisponible.
+        </p>
+      )}
       <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : handleClose())}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Scanner un QR Code</DialogTitle>
-            <DialogDescription>Scannez le QR code d'un employé pour voir son contenu.</DialogDescription>
+            <DialogTitle>Encaisser un paiement</DialogTitle>
+            <DialogDescription>
+              {scanned
+                ? "Saisissez le montant à facturer, puis validez la transaction."
+                : "Présentez le QR code du salarié devant la caméra."}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4">
-            {error && <div className="text-sm text-destructive text-center">{error}</div>}
-            {!qrResult && !error && (
+            {error && (
+              <div className="w-full space-y-3 text-center">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" onClick={() => setAttempt((current) => current + 1)}>
+                  Rescanner
+                </Button>
+              </div>
+            )}
+            {resolving && <div className="text-sm text-muted-foreground">Lecture du QR code…</div>}
+            {showCamera && (
               <video
                 ref={videoRef}
                 className="w-full aspect-square rounded-lg bg-black object-cover"
@@ -409,11 +446,8 @@ function QrCodeScanner() {
               />
             )}
             <canvas ref={canvasRef} className="hidden" />
-            {qrResult && (
-              <div className="p-3 bg-muted rounded text-center w-full">
-                <div className="font-semibold mb-1">QR Code détecté :</div>
-                <div className="break-all text-sm">{qrResult}</div>
-              </div>
+            {scanned && companyId && (
+              <QrPaymentForm scanned={scanned} companyId={companyId} onDone={handleClose} />
             )}
           </div>
           <DialogFooter showCloseButton>
@@ -424,18 +458,125 @@ function QrCodeScanner() {
   )
 }
 
+interface QrPaymentFormProps {
+  scanned: ScannedQrCode
+  companyId: string
+  onDone: () => void
+}
+
+function QrPaymentForm({ scanned, companyId, onDone }: QrPaymentFormProps) {
+  const [amount, setAmount] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<{ status: "REFUSER" | "VALIDER"; newBalance: number } | null>(null)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    // Amounts are entered in euros but stored in cents everywhere else.
+    const cents = Math.round(Number(amount.replace(",", ".")) * 100)
+    if (!Number.isFinite(cents) || cents <= 0) {
+      setError("Saisissez un montant supérieur à 0 €.")
+      return
+    }
+
+    setSubmitting(true)
+    setError(null)
+    try {
+      const response = await apiFetch<{ status: "REFUSER" | "VALIDER"; newBalance: number }>(
+        `/api/v1/salaries/${scanned.salarieId}/transactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            amount: cents,
+            type: "PAYMENT",
+            content: scanned.content,
+            companyId,
+          }),
+        },
+      )
+      setResult(response)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Impossible d'enregistrer la transaction.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (result) {
+    return (
+      <div className="w-full space-y-3 text-center">
+        {result.status === "VALIDER" ? (
+          <>
+            <p className="font-semibold text-brand-green-deep">Paiement validé</p>
+            <p className="text-sm text-muted-foreground">
+              Nouveau solde de {scanned.name} : {formatMoney(result.newBalance)}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-destructive">Paiement refusé — solde insuffisant</p>
+            <p className="text-sm text-muted-foreground">
+              Solde de {scanned.name} : {formatMoney(result.newBalance)}
+            </p>
+          </>
+        )}
+        <Button className="w-full" onClick={onDone}>Terminer</Button>
+      </div>
+    )
+  }
+
+  return (
+    <form className="w-full space-y-3" onSubmit={handleSubmit}>
+      <div className="rounded bg-muted p-3 text-center">
+        <div className="text-sm text-muted-foreground">Salarié</div>
+        <div className="font-semibold">{scanned.name} {scanned.surname}</div>
+      </div>
+      <div>
+        <Label htmlFor="payment-amount">Montant à facturer (€)</Label>
+        <Input
+          id="payment-amount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          inputMode="decimal"
+          autoFocus
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+        />
+      </div>
+      <Button type="submit" className="w-full" disabled={submitting}>
+        {submitting ? "Validation…" : "Valider la transaction"}
+      </Button>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </form>
+  )
+}
+
 export default function PartenairePage() {
-  const [tab, setTab] = useState("products")
+  const [tab, setTab] = useState("scan")
+  const { data: session, loading } = useCurrentUser()
+  const company = session?.company ?? null
+
   return (
     <div className="flex min-h-screen">
       <PartnerSidebar activeTab={tab} onSelectTab={setTab} />
       <main className="flex-1 p-6">
-        {tab === "products" && <ProductManager />}
-        {tab === "info" && <PartnerInfo />}
-        {tab === "history" && (
-          <TransactionHistory partenaireId={CURRENT_PARTNER.id} companyName={CURRENT_PARTNER.name} />
+        {loading ? (
+          <div className="text-muted-foreground">Chargement de votre espace…</div>
+        ) : (
+          <>
+            {tab === "info" && <PartnerInfo company={company} />}
+            {tab === "history" && (
+              <TransactionHistory
+                partenaireId={company?.id ?? null}
+                companyName={company?.name ?? "votre établissement"}
+              />
+            )}
+            {tab === "scan" && <QrCodeScanner companyId={company?.id ?? null} />}
+          </>
         )}
-        {tab === "scan" && <QrCodeScanner />}
       </main>
     </div>
   )

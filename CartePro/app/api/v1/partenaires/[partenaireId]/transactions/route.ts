@@ -6,7 +6,7 @@ import {
   buildPaginationMeta,
 } from "@/lib/pagination";
 import { authorize } from "@/lib/services/auth_service";
-import { resolveActor, assertIsAdmin } from "@/lib/services/ownership_service";
+import { resolveActor, assertOwnsCompany } from "@/lib/services/ownership_service";
 import { commonErrorHandler } from "@/lib/services/error_service";
 
 const partnerParamsSchema = z.object({
@@ -18,7 +18,7 @@ const partnerParamsSchema = z.object({
  * /api/v1/partenaires/{partenaireId}/transactions:
  *   get:
  *     summary: Retrieve transactions for a specific partner
- *     description: Return the paginated list of transactions for the specified partner.
+ *     description: "Return the paginated list of transactions billed to the given partner, newest first, each with the salarié who paid. A `PARTNER` may only read its own company; an `ADMIN` may read any. A partner with no sales yet gets an empty list, not a 404."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -69,8 +69,10 @@ const partnerParamsSchema = z.object({
  *                     hasPrevPage: { type: boolean }
  *       '400':
  *         description: Invalid parameters.
- *       '404':
- *         description: No transactions found for this partner.
+ *       '401':
+ *         description: Missing or invalid token.
+ *       '403':
+ *         description: Insufficient role, or an attempt to read another partner's transactions.
  *       '500':
  *         description: Server error.
  */
@@ -83,9 +85,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ part
             return Response.json({ error: auth.error }, { status: auth.status });
         }
 
-        const actor = await resolveActor(auth);
-        assertIsAdmin(actor);
-
         const { partenaireId } = await params;
 
         const partnerParseResult = await partnerParamsSchema.safeParseAsync({ partenaireId });
@@ -93,6 +92,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ part
             console.error("Invalid parameters", JSON.stringify(partnerParseResult.error));
             return Response.json({ error: "Invalid parameters" }, { status: 400 });
         }
+
+        // A partner reads its own till, an admin reads anyone's.
+        assertOwnsCompany(await resolveActor(auth), partenaireId);
 
         const { searchParams } = new URL(request.url);
 
@@ -108,6 +110,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ part
         const [transactions, totalCount] = await Promise.all([
         db.orm.public.Transaction
             .where({ companyId: partenaireId })
+            .include("user", (user) => user.select("id", "name", "surname"))
             .orderBy((u) => u.createdAt.desc())
             .limit(limit)
             .offset(offset)
@@ -116,13 +119,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ part
             .where({ companyId: partenaireId })
             .aggregate((a) => ({ total: a.count() }))
         ]);
-
-        if (!transactions || transactions.length === 0) {
-        return Response.json(
-            { error: "No transactions found for this partner" },
-            { status: 404 }
-        );
-        }
 
         return Response.json(
         {

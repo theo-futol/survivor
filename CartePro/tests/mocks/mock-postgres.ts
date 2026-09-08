@@ -53,6 +53,48 @@ function query(text: string, values: unknown[] = []): QueryResult
     return { rows, rowCount: rows.length };
   }
 
+  // app/api/v1/salaries/[salarieId]/transactions — the scanned QR code, read
+  // under the same lock as the balance so it can be consumed on success.
+  if (/^SELECT id, "userId", "companyId", "expiredAt" FROM "qrCode" WHERE content = \$1 FOR UPDATE$/i.test(sql))
+  {
+    const rows = mockTables['QrCode']!
+      .filter((row) => row['content'] === values[0])
+      .map((row) => ({
+        id: row['id'],
+        userId: row['userId'],
+        companyId: row['companyId'],
+        expiredAt: row['expiredAt'],
+      }));
+
+    return { rows, rowCount: rows.length };
+  }
+
+  if (/^DELETE FROM "qrCode" WHERE id = \$1$/i.test(sql))
+  {
+    const before = mockTables['QrCode']!.length;
+    mockTables['QrCode'] = mockTables['QrCode']!.filter((row) => row['id'] !== values[0]);
+
+    return { rows: [], rowCount: before - mockTables['QrCode']!.length };
+  }
+
+  // The ledger row for a QR code payment, refund or top-up.
+  if (/^INSERT INTO "transaction" \(id, type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7\)$/i.test(sql))
+  {
+    mockTables['Transaction']!.push({
+      id: values[0],
+      type: values[1],
+      userId: values[2],
+      companyId: values[3],
+      amount: values[4],
+      newBalance: values[5],
+      originalTransactionId: null,
+      status: values[6],
+      createdAt: new Date().toISOString(),
+    });
+
+    return { rows: [], rowCount: 1 };
+  }
+
   if (/^UPDATE users SET balance = \$1 WHERE id = \$2$/i.test(sql))
   {
     const targets = mockTables['Users']!.filter((row) => row['id'] === values[1]);

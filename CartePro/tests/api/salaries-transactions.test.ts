@@ -10,6 +10,12 @@ import {
   PARTNER_USER_ID,
   PENDING_EMPLOYEE_ID,
   UNKNOWN_ID,
+  OTHER_COMPANY_ID,
+  PARTNER_COMPANY_ID,
+  VALID_QRCODE_CONTENT,
+  EXPIRED_QRCODE_CONTENT,
+  UNKNOWN_QRCODE_CONTENT,
+  OTHER_COMPANY_QRCODE_CONTENT,
 } from '../mocks/fixtures';
 
 function headersFor(token?: string)
@@ -124,7 +130,14 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
 {
   beforeEach(() => resetMockDb());
 
-  const payment = { amount: 400, status: 'VALIDER', type: 'PAYMENT' };
+  // The QR code the employee showed: its SHA-256 hash plus the partner shop it
+  // was issued for. Both have to line up with the scanned code server-side.
+  const payment = {
+    amount: 400,
+    type: 'PAYMENT',
+    content: VALID_QRCODE_CONTENT,
+    companyId: PARTNER_COMPANY_ID,
+  };
 
   it('returns 401 without a token', async () =>
   {
@@ -152,7 +165,9 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(EMPLOYEE_ID, { ...payment, amount: -5 }, token))?.status).toBe(400);
   });
 
-  it('returns 400 for an unknown status', async () =>
+  // Balances are integer cents, so a fractional amount would be silently coerced
+  // by the int4 column if it ever reached it.
+  it('returns 400 for a fractional amount', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
@@ -166,11 +181,47 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(EMPLOYEE_ID, { ...payment, type: 'GIFT' }, token))?.status).toBe(400);
   });
 
+  it('returns 400 when the content is not a SHA-256 hash', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, { ...payment, content: 'not-a-hash' }, token)).status).toBe(400);
+  });
+
   it('returns 404 for an unknown salarié', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
     expect((await post(UNKNOWN_ID, payment, token))?.status).toBe(404);
+  });
+
+  it('returns 404 for a QR code that does not exist', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, { ...payment, content: UNKNOWN_QRCODE_CONTENT }, token)).status).toBe(404);
+  });
+
+  it('returns 400 for an expired QR code', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, { ...payment, content: EXPIRED_QRCODE_CONTENT }, token)).status).toBe(400);
+  });
+
+  it('returns 403 when the QR code was issued for another company', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, content: OTHER_COMPANY_QRCODE_CONTENT }, token);
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 403 when the QR code belongs to another salarié', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(PENDING_EMPLOYEE_ID, payment, token)).status).toBe(403);
   });
 
   // An overdraft is not rejected, it is recorded: the movement is kept in the
@@ -190,26 +241,56 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect(recorded.newBalance).toBe(1000);
   });
 
+  // A refused payment never happened, so the code stays spendable and the
+  // cashier can retry with a smaller amount.
+  it('leaves the QR code usable after a REFUSER', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, { ...payment, amount: 5000 }, token)).status).toBe(201);
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
+  });
+
   it('debits the balance on a PAYMENT', async () =>
   {
     const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
     const response = await post(EMPLOYEE_ID, payment, token);
+    const json = await response.json();
 
-    expect(response?.status).toBe(201);
+    expect(response.status).toBe(201);
+    expect(json.status).toBe('VALIDER');
+    expect(json.newBalance).toBe(600);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
   });
 
   it('credits the balance on a TOPUP', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const response = await post(EMPLOYEE_ID, { amount: 250, status: 'VALIDER', type: 'TOPUP' }, token);
+    const response = await post(EMPLOYEE_ID, { ...payment, amount: 250, type: 'TOPUP' }, token);
 
     expect(response?.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1250);
   });
 
-  // `status` is still accepted in the body but the server decides it from the
-  // balance, so a client cannot mark an affordable payment as refused.
+  // transaction_type_matches_company: a TOPUP row must not carry a company, and
+  // the response has to say what was stored rather than what was asked for.
+  it('stores a TOPUP without a company', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, amount: 250, type: 'TOPUP' }, token);
+
+    expect(response.status).toBe(201);
+    expect((await response.json()).companyId).toBeNull();
+
+    const json = await (await get(EMPLOYEE_ID, token)).json();
+    const recorded = json.transactions.find((t: { amount: number }) => t.amount === 250);
+
+    expect(recorded.companyId).toBeNull();
+  });
+
+  // The status is the server's call, derived from the balance, so a client
+  // cannot mark an affordable payment as refused.
   it('ignores a client-supplied status and derives it from the balance', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
@@ -229,5 +310,25 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
 
     expect((await post(EMPLOYEE_ID, payment, token))?.status).toBe(201);
+  });
+
+  // A partner may only cash in for its own shop, even holding a valid code.
+  it('returns 403 when a partner bills another partner', async () =>
+  {
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+    const response = await post(EMPLOYEE_ID, { ...payment, content: OTHER_COMPANY_QRCODE_CONTENT, companyId: OTHER_COMPANY_ID }, token);
+
+    expect(response.status).toBe(403);
+  });
+
+  // One scan, one charge: a validated code is consumed so it cannot be replayed
+  // during the five minutes it stays otherwise valid.
+  it('consumes the QR code once the payment is validated', async () =>
+  {
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(404);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
   });
 });

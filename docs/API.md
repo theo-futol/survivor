@@ -105,24 +105,39 @@
   - Success: `200` paginated list.
 
 - `POST /api/v1/salaries/{salarieId}/transactions`
-  - Roles: `admin`, `employeur` (own), `partenaire` (when applicable)
-  - Behavior: In case of the amount > 0, it's a payment : the body must contain a qr-code (string), check in the database if the qr-code is valid and not expired. If the amount < 0, it's a refund : the body must contain the originalTransactionId to reference the transaction to refund.
-  - SELECT_FOR_UPDATE is used to lock the employee's balance row during the transaction to prevent race conditions.
+  - Roles: `admin`, `employeur` (own), `partenaire` (own shop only)
+  - Behavior: cashes in a QR code the employee is showing. `content` is the **SHA-256 hash** of the
+    scanned code, not the code itself — the database only ever stores the hash. The QR code must
+    belong to `salarieId`, have been issued for `companyId`, and not be expired. A `PAYMENT` debits
+    the balance; `REFUND` and `TOPUP` credit it. `amount` is in **cents** and must be a positive
+    integer.
+  - SELECT_FOR_UPDATE is used to lock the employee's balance row during the transaction to prevent
+    race conditions. The lock, the ledger insert and the QR code consumption all run in the same
+    PostgreSQL transaction.
+  - A validated payment **consumes** the QR code, so the same scan cannot be replayed during the
+    five minutes the code would otherwise stay valid. A `REFUSER` leaves it spendable.
+  - The `transaction_type_matches_company` constraint means a `TOPUP` row is stored with a null
+    `companyId`; every other type keeps the partner company.
   - Body example:
 
 ```json
-{ "amount": 1500, "type": "PAYMENT", "qrcode": "T20260902-01" }
+{ "amount": 1500, "type": "PAYMENT", "content": "<sha256 du code scanné>", "companyId": "..." }
 ```
 
   - Rules: server recomputes the employee's `soldeActuel` and keeps an immutable transaction history.
-  - Success: `201` returns the created transaction and the new balance.
+    The `status` is the server's call — a final balance below zero is recorded as `REFUSER` with the
+    balance untouched, it is not an error.
+  - Success: `201` returns `{ "message": "...", "newBalance": 1234, "status": "VALIDER", "companyId": "..." }`.
+  - Not implemented: refunds referencing `originalTransactionId`.
 
 - PATCH / DELETE: not exposed; to cancel, create a `REFUND` transaction referencing `originalTransactionId`.
 
 - `GET /api/v1/partenaires/{partenaireId}/transactions`
-  - Roles: `admin`
-  - Supports: `?page=&limit=&from=&to=&type=`
-  - List of transactions associated with the partner.
+  - Roles: `admin`, `partenaire` (own)
+  - Supports: `?page=&limit=` (`from` / `to` / `type` are not implemented)
+  - List of transactions billed to the partner, newest first, each including the salarié who paid
+    (`user: { id, name, surname }`). This is what the partner dashboard's history tab reads.
+  - A partner with no sales yet gets `200` with an empty list — not a `404`.
 
 ---
 
@@ -167,6 +182,22 @@
 
   - Success: `201` returns `{ "qrcode": "xkekE24,...", "expiresAt": "2026-09-02T12:34:56Z" }`
   - Generate a random id using crypto which be used by the frontend to generate the QR code.
+
+- `POST /api/v1/qrcode/resolve`
+  - Roles: `admin`, `partenaire`
+  - Behavior: the scanned QR code carries the plaintext code only, which says nothing about whose
+    card it is. This turns its SHA-256 hash into the salarié to bill, so the partner can then call
+    `POST /api/v1/salaries/{salarieId}/transactions`. The hash travels in the body rather than the
+    URL because it is what authorises the charge — it has no business in access logs. A partner may
+    only resolve codes issued for its own company. Resolving does not consume the code.
+  - Body example:
+
+```json
+{ "content": "<sha256 du code scanné>" }
+```
+
+  - Success: `200` returns `{ "salarieId": "...", "name": "...", "surname": "...", "companyId": "...", "expiresAt": "..." }`
+  - Errors: `400` malformed or expired, `403` issued for another company, `404` unknown code.
 
 ---
 

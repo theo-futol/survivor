@@ -271,9 +271,10 @@ Still open, outside the scope of the work so far:
 
 1. `lib/swagger.ts` defines no `components.securitySchemes.bearerAuth`, so every
    `security: - bearerAuth: []` block points at an undefined scheme in Swagger UI.
-2. `POST /api/v1/salaries/{salarieId}/transactions` does not implement the `qrcode` /
-   `originalTransactionId` behaviour described in `API.md` — its body is `{ amount, status, type }`.
-   `GET` on the same path is unpaginated and ignores `page` / `limit` / `from` / `to` / `type`.
+2. `POST /api/v1/salaries/{salarieId}/transactions` now implements the QR code half — the body is
+   `{ amount, type, content, companyId }`, where `content` is the SHA-256 hash of the scanned code —
+   but refunds referencing `originalTransactionId` are still unimplemented. `GET` on the same path
+   is paginated but still ignores the `from` / `to` / `type` filters.
 3. **No document-upload endpoint exists.** `Users.documentId` has been dropped from the schema, so
    creating a salarié no longer needs one, but `Company.kbisId` is still non-null and unique —
    creating a company still requires a `Document` row to already exist.

@@ -21,6 +21,7 @@ type Sort = { field: string; direction: 'asc' | 'desc' };
 // at which table's `id`.
 const RELATIONS: Record<string, Record<string, { table: string; localField: string }>> = {
   Company: { category: { table: 'CompanyCategory', localField: 'categoryId' } },
+  Transaction: { user: { table: 'Users', localField: 'userId' } },
 };
 
 function compare(a: unknown, b: unknown): number
