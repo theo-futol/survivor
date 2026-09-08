@@ -7,7 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CERT_DIR="$REPO_ROOT/Ticket Tout/certificates"
+CERT_DIR="$REPO_ROOT/CartePro/certificates"
 
 if ! command -v mkcert >/dev/null 2>&1; then
   echo "Error: mkcert is not installed on this machine." >&2

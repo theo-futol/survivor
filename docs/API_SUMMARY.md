@@ -19,7 +19,7 @@ Explicitly **not** in this scope, owned by others:
 ## Endpoints
 
 All routes require `Authorization: Bearer <token>`. The role column is the coarse gate from
-`Ticket Tout/lib/roles-config.ts`; the *Extra rule* column is enforced inside the handler.
+`CartePro/lib/roles-config.ts`; the *Extra rule* column is enforced inside the handler.
 
 | Method & path | Roles | Extra rule | OK | File |
 |---|---|---|---|---|
@@ -186,7 +186,7 @@ rather than leaking data.
 
 ## Schema changes
 
-Three additions to `Ticket Tout/prisma/contract.prisma` were required:
+Three additions to `CartePro/prisma/contract.prisma` were required:
 
 | Change | Why |
 |---|---|
@@ -211,7 +211,7 @@ To bring another environment up:
 ```sh
 cp .env.example .env.development   # if you don't have it yet
 docker compose --env-file .env.development up -d db
-cd "Ticket Tout" && npm run db:migrate && npm run db:verify
+cd "CartePro" && npm run db:migrate && npm run db:verify
 ```
 
 The `db` service is pinned to `platform: linux/amd64` in `docker-compose.yml`, since
@@ -240,7 +240,7 @@ Every handler funnels through `AppError` + `commonErrorHandler`
 
 ## Tests
 
-`Ticket Tout/tests/api/` — one file per route file, plus a file per service that carries logic of
+`CartePro/tests/api/` — one file per route file, plus a file per service that carries logic of
 its own (`email_service`). 175 tests passing across 17 suites, run with
 `JWT_SECRET=… npm run test`.
 

@@ -7,8 +7,8 @@ note.md
 .venv/
 garage/
 .DS_Store
-Ticket Tout/certificate/
-Ticket Tout/certificates/
+CartePro/certificate/
+CartePro/certificates/
 package-lock.json
 package.json
 node_modules/

@@ -12,7 +12,7 @@ if [ -z "$ENV_FILE" ]; then
     exit 1
 fi
 
-echo "ATTENTION : Cette action va supprimer les conteneurs, images et volumes du projet Ticket Tout (définis dans docker-compose.yml)."
+echo "ATTENTION : Cette action va supprimer les conteneurs, images et volumes du projet CartePro (définis dans docker-compose.yml)."
 read -p "Voulez-vous vraiment continuer ? (y/N) : " confirm
 
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
@@ -23,4 +23,4 @@ fi
 echo "Arrêt et suppression des conteneurs, images, volumes et réseaux du projet..."
 docker compose --env-file $1 --profile '*' down --rmi all --volumes --remove-orphans
 
-echo "Purge du projet Ticket Tout terminée avec succès."
+echo "Purge du projet CartePro terminée avec succès."

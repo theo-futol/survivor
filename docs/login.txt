@@ -1,6 +1,6 @@
 | Rôle       | Email                      | Mot de passe     |
 | ---------- | -------------------------- | ---------------- |
-| Admin      | `admin@tickettout.test`    | `AdminPass1!`    |
-| Entreprise | `company@tickettout.test`  | `CompanyPass1!`  |
-| Partenaire | `partner@tickettout.test`  | `PartnerPass1!`  |
-| Salarié    | `employee@tickettout.test` | `EmployeePass1!` |
+| Admin      | `admin@cartepro.test`    | `AdminPass1!`    |
+| Entreprise | `company@cartepro.test`  | `CompanyPass1!`  |
+| Partenaire | `partner@cartepro.test`  | `PartnerPass1!`  |
+| Salarié    | `employee@cartepro.test` | `EmployeePass1!` |

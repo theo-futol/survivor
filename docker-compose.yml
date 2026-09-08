@@ -2,7 +2,7 @@ services:
   db:
     image: postgis/postgis:18-3.6
     platform: linux/amd64
-    container_name: ticket_tout_db
+    container_name: cartepro_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -14,7 +14,7 @@ services:
       - data_sql:/var/lib/postgresql
 
   app-dev:
-    container_name: ticket_tout_app_dev
+    container_name: cartepro_app_dev
     depends_on:
       - db
     profiles: [dev]
@@ -23,17 +23,17 @@ services:
     environment:
       NODE_ENV: development
     build:
-      context: ./Ticket Tout
+      context: ./CartePro
       target: dev-stage
     volumes:
-      - ./Ticket Tout:/Ticket Tout
-      - /Ticket Tout/node_modules
+      - ./CartePro:/CartePro
+      - /CartePro/node_modules
     ports:
       - "3000:3000"
     restart: unless-stopped
 
   app-prod:
-    container_name: ticket_tout_app_prod
+    container_name: cartepro_app_prod
     image: ghcr.io/theo-futol/survivor:${RELEASE_TAG:-latest}
     platform: linux/amd64
     depends_on:
@@ -44,7 +44,7 @@ services:
     environment:
       NODE_ENV: production
     build:
-      context: ./Ticket Tout
+      context: ./CartePro
       target: prod-stage
     ports:
       - "3000:3000"
@@ -52,15 +52,15 @@ services:
 
   # nginx:
   #   image: nginx:alpine
-  #   container_name: ticket_tout_nginx
+  #   container_name: cartepro_nginx
   #   ports:
   #     - 80:80
   #     - 443:443
   #   restart: unless-stopped
   #   volumes:
   #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./Ticket Tout/certificates/localhost.pem:/etc/ssl/certs/localhost.pem:ro
-  #     - ./Ticket Tout/certificates/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
+  #     - ./CartePro/certificates/localhost.pem:/etc/ssl/certs/localhost.pem:ro
+  #     - ./CartePro/certificates/localhost-key.pem:/etc/ssl/private/localhost-key.pem:ro
   #   profiles: [prod]
   #   depends_on:
   #     - app-prod

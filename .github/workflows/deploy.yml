@@ -40,17 +40,17 @@ jobs:
               id: cache-node-modules
               uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # Version: 6.1.0
               with:
-                path: Ticket Tout/node_modules
-                key: node-modules-${{ runner.os }}-24-${{ hashFiles('Ticket Tout/package-lock.json') }}
+                path: CartePro/node_modules
+                key: node-modules-${{ runner.os }}-24-${{ hashFiles('CartePro/package-lock.json') }}
 
             - name: Install Dependencies
               if: steps.cache-node-modules.outputs.cache-hit != 'true'
-              run: cd Ticket\ Tout && npm ci --prefer-offline --no-audit --no-fund
+              run: cd CartePro && npm ci --prefer-offline --no-audit --no-fund
 
             - name: Run semantic-release
               id: release
               run: |
-                cd Ticket\ Tout
+                cd CartePro
                 PRE_VERSION=$(node -p "require('./package.json').version")
                 npm rebuild && npx semantic-release
                 POST_VERSION=$(node -p "require('./package.json').version")
@@ -90,7 +90,7 @@ jobs:
             - name: Build and push image
               uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # Version: 7.3.0
               with:
-                context: ./Ticket Tout
+                context: ./CartePro
                 target: prod-stage
                 push: true
                 tags: |

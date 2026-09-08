@@ -1,4 +1,4 @@
-# Ticket Tout
+# CartePro
 
 ## Prerequisites
 
@@ -66,8 +66,8 @@ The stack is defined in `docker-compose.yml`:
 - `db` — `postgres:18`, always started, exposed on `POSTGRES_PORT`.
 - `redis` — `redis:7`, always started, password-protected, AOF persistence in the `redis_data` volume.
 - `garage-config` / `garage` — S3-compatible object storage for uploaded documents; `garage-config` is a one-shot container that writes `garage/garage.toml` before `garage` starts.
-- `app-dev` — the app built from `./Ticket Tout` with the `dev-stage` target. Profile `dev` only.
-- `app-prod` — the app built from `./Ticket Tout` with the `prod-stage` target. Profile `prod` only.
+- `app-dev` — the app built from `./CartePro` with the `dev-stage` target. Profile `dev` only.
+- `app-prod` — the app built from `./CartePro` with the `prod-stage` target. Profile `prod` only.
 - `nginx` — TLS termination and reverse proxy in front of `app-prod`. Profile `prod` only.
 
 Only one of `app-dev` / `app-prod` runs at a time, depending on the selected profile.
@@ -78,7 +78,7 @@ Only one of `app-dev` / `app-prod` runs at a time, depending on the selected pro
 docker compose --env-file .env.development --profile dev up --build
 ```
 
-Starts `db`, `redis`, `garage` and `app-dev`. The `./Ticket Tout` directory is bind-mounted into the container (with `node_modules` kept container-side), so local source changes hot-reload without rebuilding the image.
+Starts `db`, `redis`, `garage` and `app-dev`. The `./CartePro` directory is bind-mounted into the container (with `node_modules` kept container-side), so local source changes hot-reload without rebuilding the image.
 
 The app is served directly by Next.js on `http://localhost:3000` — no nginx, no TLS in this profile.
 
@@ -115,18 +115,18 @@ The `prod` profile puts nginx in front of `app-prod`, so it needs a certificate 
 
 | File | Mounted into nginx as |
 | --- | --- |
-| `Ticket Tout/certificates/localhost.pem` | `/etc/ssl/certs/localhost.pem` |
-| `Ticket Tout/certificates/localhost-key.pem` | `/etc/ssl/private/localhost-key.pem` |
+| `CartePro/certificates/localhost.pem` | `/etc/ssl/certs/localhost.pem` |
+| `CartePro/certificates/localhost-key.pem` | `/etc/ssl/private/localhost-key.pem` |
 
 `dev/start-prod.sh` issues them with [mkcert](https://github.com/FiloSottile/mkcert), which also installs a local CA into the system trust store (`mkcert -install`) so browsers on this machine trust the certificate without a warning. The certificate covers **`localhost`, `127.0.0.1`, `::1` and the detected LAN IP**, which is why both `https://localhost` and `https://<lan-ip>` work.
 
 The script regenerates the pair when it is missing, expired, or does not cover the current LAN IP — so a certificate issued at a previous IP is replaced automatically rather than silently reused. To force a fresh one:
 
 ```bash
-rm -rf "Ticket Tout/certificates" && ./dev/start-prod.sh
+rm -rf "CartePro/certificates" && ./dev/start-prod.sh
 ```
 
-`Ticket Tout/certificates/` is gitignored — the private key must never be committed. Other devices on the LAN will still see an untrusted-certificate warning unless the mkcert root CA (`mkcert -CAROOT`) is installed on them too.
+`CartePro/certificates/` is gitignored — the private key must never be committed. Other devices on the LAN will still see an untrusted-certificate warning unless the mkcert root CA (`mkcert -CAROOT`) is installed on them too.
 
 nginx's configuration lives in `nginx/nginx.conf` (mounted read-only); it redirects `:80` to `:443` and proxies HTTPS traffic to `app-prod:3000`, forwarding WebSocket upgrade headers.
 
@@ -162,7 +162,7 @@ and 200 payment/refund transactions spread over 90 days, plus the employer
 top-ups that fund them) can be loaded once the dev stack is up:
 
 ```bash
-cd "Ticket Tout" && npm run db:seed:generate   # regenerates mocks/seed.sql, mocks/transactions.csv, mocks/justificatif.md
+cd "CartePro" && npm run db:seed:generate   # regenerates mocks/seed.sql, mocks/transactions.csv, mocks/justificatif.md
 cd .. && ./dev/seed-db.sh                       # applies pending migrations, then loads mocks/seed.sql
 ```
 

@@ -1,4 +1,4 @@
-Ticket Tout — test accounts, one per role
+CartePro — test accounts, one per role
 =========================================
 
 Created by seed-roles.sql (this folder). Local development only — these
@@ -6,13 +6,13 @@ credentials are public, never reuse them anywhere real.
 
   Role      Email                       Password
   --------  --------------------------  ---------------
-  ADMIN     admin@tickettout.test       AdminPass1!
-  COMPANY   company@tickettout.test     CompanyPass1!
-  PARTNER   partner@tickettout.test     PartnerPass1!
-  EMPLOYEE  employee@tickettout.test    EmployeePass1!
+  ADMIN     admin@cartepro.test       AdminPass1!
+  COMPANY   company@cartepro.test     CompanyPass1!
+  PARTNER   partner@cartepro.test     PartnerPass1!
+  EMPLOYEE  employee@cartepro.test    EmployeePass1!
 
 Passwords are stored SHA-256 hashed, matching hashPassword() in
-Ticket Tout/lib/services/auth_service.ts.
+CartePro/lib/services/auth_service.ts.
 
 
 What each account is attached to
@@ -42,8 +42,8 @@ Loading them
 ------------
 
   docker compose --env-file .env.development up -d db
-  docker exec -i ticket_tout_db psql -U postgres -d tickettout < mocks/seed.sql
-  docker exec -i ticket_tout_db psql -U postgres -d tickettout < mocks/seed-roles.sql
+  docker exec -i cartepro_db psql -U postgres -d cartepro < mocks/seed.sql
+  docker exec -i cartepro_db psql -U postgres -d cartepro < mocks/seed-roles.sql
 
 seed-roles.sql must run after seed.sql (it reuses administration id 1,
 companyValidationReason id 1, companyCategory id 1 and the seeded partner
@@ -55,7 +55,7 @@ Getting a token
 
   curl -sk -X POST https://localhost:3000/api/v1/login \
     -H 'Content-Type: application/json' \
-    -d '{"email":"admin@tickettout.test","password":"AdminPass1!"}'
+    -d '{"email":"admin@cartepro.test","password":"AdminPass1!"}'
 
 The response carries { token, expiresIn, user }. Pass it on every other call:
 

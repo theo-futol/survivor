@@ -11,7 +11,7 @@ push to main
 
 Each hop in this chain is a separate workflow file triggered by `workflow_run`, which fires on `types: [completed]` regardless of outcome — every triggered job therefore also checks `github.event.workflow_run.conclusion == 'success'` in its `if:`, so a failed CI run (or a failed mirror) stops the chain instead of letting MIRROR/DEPLOY run against a broken build.
 
-All app-level commands across these workflows operate on `Ticket Tout/` (the whole app, including `package-lock.json`, lives in that subdirectory — the repo root only holds Docker/CI config and docs), so every npm cache in these workflows is keyed and pathed off `Ticket Tout/package-lock.json` / `Ticket Tout/node_modules`, not the repo root.
+All app-level commands across these workflows operate on `CartePro/` (the whole app, including `package-lock.json`, lives in that subdirectory — the repo root only holds Docker/CI config and docs), so every npm cache in these workflows is keyed and pathed off `CartePro/package-lock.json` / `CartePro/node_modules`, not the repo root.
 
 ## CI (`ci.yml`)
 
@@ -21,8 +21,8 @@ The workflow runs three jobs in sequence, each on `ubuntu-24.04` with a 5 minute
 
 1. **`install_dependencies`**
    - Checks out the repository (`actions/checkout`, `persist-credentials: false`).
-   - Sets up Node 24 (`actions/setup-node`) with npm caching keyed on `Ticket Tout/package-lock.json`.
-   - Caches `Ticket Tout/node_modules` (`actions/cache`) under the key `node-modules-${{ runner.os }}-24-${{ hashFiles('Ticket Tout/package-lock.json') }}`.
+   - Sets up Node 24 (`actions/setup-node`) with npm caching keyed on `CartePro/package-lock.json`.
+   - Caches `CartePro/node_modules` (`actions/cache`) under the key `node-modules-${{ runner.os }}-24-${{ hashFiles('CartePro/package-lock.json') }}`.
    - Runs `npm ci --prefer-offline --no-audit --no-fund`, but only if the `node_modules` cache was not hit.
 
 2. **`build`** (needs `install_dependencies`)
@@ -53,14 +53,14 @@ Two jobs:
 1. **`create_release`**, on `ubuntu-24.04` with a 10 minute timeout, granted `contents: write`, `issues: write`, `pull-requests: write`, and `id-token: write` permissions:
    - Checks out the repository.
    - Sets up Node 24.
-   - Restores/rebuilds the `Ticket Tout/node_modules` cache (same key/strategy as CI).
+   - Restores/rebuilds the `CartePro/node_modules` cache (same key/strategy as CI).
    - Runs `npm rebuild && npx semantic-release`, with `GITHUB_TOKEN` supplied from `secrets.GITHUB_TOKEN`. Since the app's `package.json` is `private: true`, the `@semantic-release/npm` plugin only bumps the local version (no `npm publish`); `@semantic-release/github` creates the GitHub release and changelog.
    - Compares `package.json`'s version before/after running `semantic-release` to detect whether a release actually happened, and exposes `released` (`'true'`/`'false'`) and `version` as job outputs.
 
 2. **`build_and_push_image`** (needs `create_release`, only runs if `released == 'true'`), on `ubuntu-24.04` with a 15 minute timeout, granted `contents: read` and `packages: write` permissions:
    - Checks out the repository.
    - Sets up Docker Buildx and logs into `ghcr.io` using `github.actor` / `secrets.GITHUB_TOKEN`.
-   - Builds the `prod-stage` target of `Ticket Tout/Dockerfile` and pushes it to `ghcr.io/theo-futol/survivor`, tagged with the released version and `latest`.
+   - Builds the `prod-stage` target of `CartePro/Dockerfile` and pushes it to `ghcr.io/theo-futol/survivor`, tagged with the released version and `latest`.
    - Builds and pushes the `garage-config` image from `garage-init/`, tagged the same way.
 
-The `prod-stage` image runs Prisma migrations at **container startup** (via `Ticket Tout/docker-entrypoint.sh`), not at build time — this is what makes it possible to build and publish the image without a database available in CI, and it's the same image consumers pull to run standalone: `docker run -e DATABASE_URL=... -e JWT_SECRET=... -p 3000:3000 ghcr.io/theo-futol/survivor:<version>`.
+The `prod-stage` image runs Prisma migrations at **container startup** (via `CartePro/docker-entrypoint.sh`), not at build time — this is what makes it possible to build and publish the image without a database available in CI, and it's the same image consumers pull to run standalone: `docker run -e DATABASE_URL=... -e JWT_SECRET=... -p 3000:3000 ghcr.io/theo-futol/survivor:<version>`.
