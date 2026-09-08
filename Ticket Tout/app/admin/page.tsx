@@ -36,7 +36,7 @@ import {
   type PaginationMeta,
 } from "@/lib/api-client"
 
-export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
+export type AdminTab = "employee" | "account" | "business" 
 
 export const iframeHeight = "800px"
 export const description = "An administration page with dynamic tab navigation."

@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export type AdminTab = "employee" | "account" | "business" | "favorite" | "featured"
+export type AdminTab = "employee" | "account" | "business"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activeTab: AdminTab
@@ -35,11 +35,6 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
       id: "business" as AdminTab,
       title: "Entreprise",
       icon: Building2,
-    },
-    {
-      id: "featured" as AdminTab,
-      title: "Featured",
-      icon: Sparkles,
     },
   ]
 

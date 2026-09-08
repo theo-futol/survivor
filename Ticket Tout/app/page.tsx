@@ -5,7 +5,6 @@ import Link from "next/link"
 import { ArrowRight, History, LoaderCircle, MapPin, QrCode, X } from "lucide-react"
 import { AccountHeader } from "@/components/account-header"
 import { PublicHeader } from "@/components/public-header"
-import { FeaturedPartnerBanner } from "@/components/featured-partner-banner"
 import CreditCard from "@/components/credit-card"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useCurrentUser } from "@/hooks/use-current-user"
@@ -140,7 +139,6 @@ export default function Page() {
       {session ? <AccountHeader /> : <PublicHeader />}
 
       <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <FeaturedPartnerBanner />
 
         {loadError && session?.user.role === "EMPLOYEE" && (
           <p role="alert" className="mb-5 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark">
@@ -269,16 +267,25 @@ export default function Page() {
           </section>
         ) : (
           <section className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Carte Pro</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight">Découvrez le partenaire mis en avant cette semaine.</h2>
-            <p className="mt-2 max-w-2xl text-muted-foreground">
-              Le partenaire mis en avant ci-dessus est public. L&apos;espace salarié, le solde et les transactions restent privés.
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">
+              Carte Pro
             </p>
+
+            <h2 className="mt-2 text-2xl font-black tracking-tight">
+              Votre carte professionnelle, simple et pratique.
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Connectez-vous pour consulter votre solde, vos transactions et accéder
+              au réseau de partenaires Carte Pro.
+            </p>
+
             <Link
               href={session ? roleHome(session.user.role) : "/login"}
               className={buttonVariants({ className: "mt-5" })}
             >
-              {session ? "Accéder à mon espace" : "Se connecter"} <ArrowRight aria-hidden="true" />
+              {session ? "Accéder à mon espace" : "Se connecter"}
+              <ArrowRight aria-hidden="true" />
             </Link>
           </section>
         )}
