@@ -107,7 +107,7 @@ export default function CreditCard({
               </p>
             </div>
 
-            <BrandLogo inverse compact />
+            {/* <BrandLogo inverse compact /> */}
           </div>
 
           {/* MODE PAIEMENT */}

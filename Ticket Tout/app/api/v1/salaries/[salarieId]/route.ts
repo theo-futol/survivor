@@ -199,11 +199,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
       // verification can simply be retried.
       await sendEmail({
         to: salarie.email,
-        subject: 'Votre compte Ticket Tout est validé',
+        subject: 'Votre compte Carte Pro est validé',
         text: [
           `Bonjour ${salarie.name} ${salarie.surname},`,
           '',
-          "Votre compte Ticket Tout vient d'être validé par l'administration.",
+          "Votre compte Carte Pro vient d'être validé par l'administration.",
           'Vous pouvez désormais vous connecter avec cette adresse email et le mot de passe',
           'qui vous a été communiqué par votre entreprise :',
           buildLoginLink(),

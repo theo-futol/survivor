@@ -222,7 +222,7 @@ function EmployeeView() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Employés</h2>
         <p className="text-sm text-muted-foreground">
-          Liste des comptes salariés enregistrés dans la base de données Ticket Tout.
+          Liste des comptes salariés enregistrés dans la base de données Carte Pro.
         </p>
       </div>
 
@@ -429,7 +429,7 @@ function BusinessView() {
                 <Building2 className="h-5 w-5" />
                 {selectedBusiness.name}
               </DialogTitle>
-              <DialogDescription>Informations enregistrées dans la base Ticket Tout.</DialogDescription>
+              <DialogDescription>Informations enregistrées dans la base Carte Pro.</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-2">

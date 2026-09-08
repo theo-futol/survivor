@@ -166,7 +166,7 @@ export default function Page() {
                   <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Espace salarié</p>
                   <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Bonjour {employee.name} 👋</h1>
                   <p className="mt-2 max-w-2xl text-muted-foreground">
-                    Votre solde et vos opérations sont chargés directement depuis la base Ticket Tout.
+                    Votre solde et vos opérations sont chargés directement depuis la base Carte Pro.
                   </p>
                 </div>
                 {payment && (
@@ -283,7 +283,7 @@ export default function Page() {
           </section>
         ) : (
           <section className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Ticket Tout</p>
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Carte Pro</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight">Découvrez le partenaire mis en avant cette semaine.</h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
               Le partenaire mis en avant ci-dessus est public. L&apos;espace salarié, le solde et les transactions restent privés.

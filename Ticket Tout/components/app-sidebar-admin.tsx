@@ -61,7 +61,7 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
                 <TerminalIcon className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Ticket Tout</span>
+                <span className="truncate font-semibold">Carte Pro</span>
                 <span className="truncate text-xs">Administration</span>
               </div>
             </SidebarMenuButton>

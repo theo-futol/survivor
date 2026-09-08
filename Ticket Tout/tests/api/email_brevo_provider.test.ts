@@ -87,11 +87,11 @@ describe('brevo provider', () =>
 
   it('builds an html body from the text when none was supplied', async () =>
   {
-    await createBrevoProvider().send({ ...MESSAGE, text: 'Bonjour\nÀ bientôt\n\nTicket Tout' });
+    await createBrevoProvider().send({ ...MESSAGE, text: 'Bonjour\nÀ bientôt\n\nCarte Pro' });
 
     expect(sentRequest().htmlContent)
-      .toBe('<html><body><p>Bonjour<br />À bientôt</p><p>Ticket Tout</p></body></html>');
-    expect(sentRequest().textContent).toBe('Bonjour\nÀ bientôt\n\nTicket Tout');
+      .toBe('<html><body><p>Bonjour<br />À bientôt</p><p>Carte Pro</p></body></html>');
+    expect(sentRequest().textContent).toBe('Bonjour\nÀ bientôt\n\nCarte Pro');
   });
 
   it('escapes the text it turns into html', async () =>

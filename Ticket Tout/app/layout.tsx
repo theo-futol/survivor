@@ -23,7 +23,7 @@ const caveat = Caveat({
 })
 
 export const metadata: Metadata = {
-  title: "Ticket Tout",
+  title: "Carte Pro",
 }
 
 export default function RootLayout({
