@@ -9,6 +9,4 @@ garage/
 .DS_Store
 CartePro/certificate/
 CartePro/certificates/
-package-lock.json
-package.json
 node_modules/

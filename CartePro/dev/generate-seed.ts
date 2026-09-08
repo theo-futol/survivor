@@ -798,7 +798,10 @@ companies.forEach((p, i) => {
         // Half the companies on agent 1, half on agent 2.
         sqlStr(i < companies.length / 2 ? AGENTS[0]!.id : AGENTS[1]!.id),
         sqlInt(reasonId),
-        sqlBool(p.isPartner && i % 3 === 0),
+        // The 6 partenaires are all verified: the public partner list only ever
+        // returns verified + active + isPartner companies, so an unverified
+        // partner would silently disappear from it.
+        sqlBool(p.isPartner),
         sqlInt(categoryId),
         sqlPoint(c.lon, c.lat),
         sqlBool(p.isPartner),
