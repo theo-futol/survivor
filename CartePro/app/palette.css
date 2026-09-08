@@ -37,6 +37,23 @@
 
 
   /* ─────────────────────────────
+   * BRAND — ROUGE / SUCCÈS / OR / NAVY
+   * ───────────────────────────── */
+
+  --brand-red: #D74A3E;
+  --brand-red-dark: #7B1E1E;
+  --brand-red-soft: #FDE7E7;
+
+  --brand-success: #1B7A4B;
+  --brand-success-soft: #E5F7EC;
+
+  --brand-gold: #C9952D;
+  --brand-gold-soft: #FFF3D9;
+
+  --brand-navy-deep: #111827;
+
+
+  /* ─────────────────────────────
    * BRAND — LAVANDE
    * ───────────────────────────── */
 
@@ -140,6 +157,23 @@
   --brand-green: #71B990;
   --brand-green-light: #A9D8BF;
   --brand-green-soft: #1D3327;
+
+
+  /* ─────────────────────────────
+   * BRAND — ROUGE / SUCCÈS / OR / NAVY
+   * ───────────────────────────── */
+
+  --brand-red: #F59B8B;
+  --brand-red-dark: #FFD8D0;
+  --brand-red-soft: #4A2624;
+
+  --brand-success: #8DD9A8;
+  --brand-success-soft: #1E3A2F;
+
+  --brand-gold: #E5C36A;
+  --brand-gold-soft: #3B2E1B;
+
+  --brand-navy-deep: #0B1220;
 
 
   /* ─────────────────────────────

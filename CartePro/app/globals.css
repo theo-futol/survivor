@@ -74,6 +74,23 @@
 
 
   /* ─────────────────────────────
+   * BRAND — ROUGE / SUCCÈS / OR / NAVY
+   * ───────────────────────────── */
+
+  --color-brand-red: var(--brand-red);
+  --color-brand-red-dark: var(--brand-red-dark);
+  --color-brand-red-soft: var(--brand-red-soft);
+
+  --color-brand-success: var(--brand-success);
+  --color-brand-success-soft: var(--brand-success-soft);
+
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-soft: var(--brand-gold-soft);
+
+  --color-brand-navy-deep: var(--brand-navy-deep);
+
+
+  /* ─────────────────────────────
    * BRAND — LAVANDE
    * ───────────────────────────── */
 

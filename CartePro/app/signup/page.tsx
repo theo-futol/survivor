@@ -15,7 +15,6 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
       <PublicHeader />
       <main id="contenu-principal" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-brand-red">Créer un compte professionnel</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Choisissez votre profil</h1>
           <p className="mt-3 text-muted-foreground">L&apos;inscription salarié n&apos;est pas publique : les accès salariés sont fournis par l&apos;entreprise.</p>
         </div>
