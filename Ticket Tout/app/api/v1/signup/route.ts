@@ -79,6 +79,10 @@ export async function POST(request: Request) {
 
     const company = await db.orm.public.Company.where({ id: result.company.id }).first();
 
+    if (!company) {
+      throw new AppError("Company not found after registration.", 500);
+    }
+
     if (company?.kbisId) {
       const oldDocs = await db.orm.public.Document.where({ id: company.kbisId }).first();
 
