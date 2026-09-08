@@ -16,8 +16,7 @@
     "ci:test:backend:unit": "npm run test -- --testPathPatterns=tests/api",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "brand:check": "node scripts/check-brand.mjs",
-    "auth:check": "node scripts/check-auth-db.mjs"
+    "brand:check": "node scripts/check-brand.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1125.0",

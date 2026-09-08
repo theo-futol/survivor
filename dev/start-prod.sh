@@ -86,7 +86,7 @@ if [ ! -s "$ENV_FILE" ]; then
   echo "Error: .env.production is missing or empty." >&2
   echo "Create it from the template first: cp .env.example .env.production" >&2
   echo "then fill in the production POSTGRES_*, DATABASE_URL, JWT_SECRET," >&2
-  echo "BETTER_AUTH_*, REDIS_* and GARAGE_* values." >&2
+  echo "REDIS_* and GARAGE_* values." >&2
   exit 1
 fi
 
