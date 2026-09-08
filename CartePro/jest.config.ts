@@ -7,6 +7,7 @@ const config: Config = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/tests/setup-env.ts'],
   testMatch: ['<rootDir>/tests/**/*.test.ts'],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {

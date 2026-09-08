@@ -27,8 +27,11 @@ export async function generateQrCode(params: { userId: string; companyId: string
     return { error: 'qrcode_exists' };
   }
 
-  const code = crypto.randomBytes(16).toString('hex');
-  const hashedContent = crypto.createHash('sha256').update(code).digest('hex');
+  // The salarié presents this value and POST /salaries/:id/transactions matches
+  // it against the stored `content` as-is, so the two have to be the same
+  // 64-hex string: the digest is what gets handed out, not the seed behind it.
+  const seed = crypto.randomBytes(16).toString('hex');
+  const hashedContent = crypto.createHash('sha256').update(seed).digest('hex');
   const expiredAt = Temporal.Now.instant().add({ seconds: QRCODE_EXPIRES_IN_SECONDS });
 
   await db.orm.public.QrCode.create({
@@ -38,5 +41,5 @@ export async function generateQrCode(params: { userId: string; companyId: string
     companyId: params.companyId,
   });
 
-  return { code, expiresAt: expiredAt.toString() };
+  return { code: hashedContent, expiresAt: expiredAt.toString() };
 }

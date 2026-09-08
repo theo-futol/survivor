@@ -222,8 +222,15 @@ export function createMockDb()
     get: (_target, name: string) => root(name),
   });
 
+  const handle = { orm: { public: orm } };
+
   return {
-    db: { orm: { public: orm } },
+    db: {
+      ...handle,
+      // The tables are plain in-memory arrays, so there is nothing to commit
+      // and nothing to roll back: run the callback against the same handle.
+      transaction: async <T>(callback: (tx: typeof handle) => Promise<T>): Promise<T> => callback(handle),
+    },
     tables,
   };
 }

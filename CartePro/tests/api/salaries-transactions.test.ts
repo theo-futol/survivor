@@ -7,8 +7,13 @@ import {
   COMPANY_USER_ID,
   EMPLOYEE_ID,
   OTHER_COMPANY_USER_ID,
+  PARTNER_COMPANY_ID,
   PARTNER_USER_ID,
   PENDING_EMPLOYEE_ID,
+  QR_CODE_CONTENT,
+  QR_CODE_EXPIRED_CONTENT,
+  QR_CODE_OTHER_COMPANY_CONTENT,
+  QR_CODE_UNKNOWN_CONTENT,
   UNKNOWN_ID,
   OTHER_COMPANY_ID,
   PARTNER_COMPANY_ID,
@@ -141,21 +146,21 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
 
   it('returns 401 without a token', async () =>
   {
-    expect((await post(EMPLOYEE_ID, payment))?.status).toBe(401);
+    expect((await post(EMPLOYEE_ID, payment)).status).toBe(401);
   });
 
   it('returns 403 for an EMPLOYEE caller', async () =>
   {
     const { token } = await signToken({ sub: EMPLOYEE_ID, role: 'EMPLOYEE' });
 
-    expect((await post(EMPLOYEE_ID, payment, token))?.status).toBe(403);
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(403);
   });
 
   it('returns 400 for a non-uuid identifier', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post('not-a-uuid', payment, token))?.status).toBe(400);
+    expect((await post('not-a-uuid', payment, token)).status).toBe(400);
   });
 
   it('returns 400 for a negative amount', async () =>
@@ -178,7 +183,14 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(EMPLOYEE_ID, { ...payment, type: 'GIFT' }, token))?.status).toBe(400);
+    expect((await post(EMPLOYEE_ID, { ...payment, type: 'GIFT' }, token)).status).toBe(400);
+  });
+
+  it('returns 400 for a malformed QR code', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, { ...payment, content: 'nope' }, token)).status).toBe(400);
   });
 
   it('returns 400 when the content is not a SHA-256 hash', async () =>
@@ -192,7 +204,36 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(UNKNOWN_ID, payment, token))?.status).toBe(404);
+    expect((await post(UNKNOWN_ID, payment, token)).status).toBe(404);
+  });
+
+  it('returns 404 when no QR code matches the submitted one', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_UNKNOWN_CONTENT }, token);
+
+    expect(response.status).toBe(404);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
+  });
+
+  it('returns 400 for an expired QR code', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_EXPIRED_CONTENT }, token);
+
+    expect(response.status).toBe(400);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
+  });
+
+  // The QR code is bound to the company it was issued for, so another partner
+  // cannot cash it in by naming itself in the body.
+  it('returns 403 when the QR code belongs to another company', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, content: QR_CODE_OTHER_COMPANY_CONTENT }, token);
+
+    expect(response.status).toBe(403);
+    expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
   });
 
   it('returns 404 for a QR code that does not exist', async () =>
@@ -231,7 +272,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, amount: 5000 }, token);
 
-    expect(response?.status).toBe(201);
+    expect(response.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
 
     const json = await (await get(EMPLOYEE_ID, token)).json();
@@ -264,12 +305,26 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
   });
 
+  // The transaction is booked against the company the QR code was issued for,
+  // not against whoever happens to be calling.
+  it('records the transaction against the QR code company', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
+
+    const json = await (await get(EMPLOYEE_ID, token)).json();
+    const recorded = json.transactions.find((t: { newBalance?: number }) => t.newBalance === 600);
+
+    expect(recorded.companyId).toBe(PARTNER_COMPANY_ID);
+  });
+
   it('credits the balance on a TOPUP', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, amount: 250, type: 'TOPUP' }, token);
 
-    expect(response?.status).toBe(201);
+    expect(response.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1250);
   });
 
@@ -296,7 +351,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, status: 'REFUSER' }, token);
 
-    expect(response?.status).toBe(201);
+    expect(response.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
 
     const json = await (await get(EMPLOYEE_ID, token)).json();
@@ -309,7 +364,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   {
     const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
 
-    expect((await post(EMPLOYEE_ID, payment, token))?.status).toBe(201);
+    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
   });
 
   // A partner may only cash in for its own shop, even holding a valid code.

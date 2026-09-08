@@ -77,23 +77,42 @@ describe('POST /api/v1/qrcode', () =>
     expect(json.error).toBeDefined();
   });
 
-  it('returns 201 with a plaintext qrcode and stores only its hash', async () =>
+  // POST /salaries/:id/transactions looks the QR code up by its `content`
+  // exactly as submitted, so the value handed to the salarié has to be the
+  // stored 64-hex one — not a shorter seed it was derived from.
+  it('returns 201 with the stored 64-hex qrcode', async () =>
   {
     const { token } = await signToken({ sub: 'user-test-2', role: 'EMPLOYEE' });
     const response = await postQrcode({ companyId: 'company-test-1', userId: 'user-test-2' }, token);
     const json = await response.json();
 
     expect(response.status).toBe(201);
-    expect(typeof json.qrcode).toBe('string');
     expect(typeof json.expiresAt).toBe('string');
+    expect(json.qrcode).toMatch(/^[a-f0-9]{64}$/);
 
     const stored = await db.orm.public.QrCode
       .where({ userId: 'user-test-2', companyId: 'company-test-1' })
       .first();
 
     expect(stored).not.toBeNull();
-    expect(stored?.content).not.toBe(json.qrcode);
-    expect(stored?.content).toMatch(/^[a-f0-9]{64}$/);
+    expect(stored?.content).toBe(json.qrcode);
+  });
+
+  // Two successive codes must not collide, or one salarié's QR code would pay
+  // for another's.
+  it('issues a different qrcode to each employee', async () =>
+  {
+    const first = await postQrcode(
+      { companyId: 'company-test-1', userId: 'user-test-2' },
+      (await signToken({ sub: 'user-test-2', role: 'EMPLOYEE' })).token,
+    );
+    const second = await postQrcode(
+      { companyId: 'company-test-1', userId: 'user-test-1' },
+      (await signToken({ sub: 'user-test-1', role: 'EMPLOYEE' })).token,
+    );
+
+    expect(second.status).toBe(201);
+    expect((await second.json()).qrcode).not.toBe((await first.json()).qrcode);
   });
 
   it('returns 409 when a valid qrcode already exists for the employee and company', async () =>

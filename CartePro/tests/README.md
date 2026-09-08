@@ -33,15 +33,16 @@ Every other route validates its path params and body ids with `z.uuid()`, so the
 
 ### Running the tests
 
-No database or Docker stack needs to be running — the suite is fully mocked (see above). You do need `JWT_SECRET` set in the environment, since `lib/services/auth_service.ts` signs/verifies tokens with it and the tests exercise real login/authorization flows; when running via `docker compose --profile dev up`, this is already injected from the root `.env` (see `docker-compose.yml`), but running directly on the host requires exporting it yourself:
+No database or Docker stack needs to be running — the suite is fully mocked (see above), and no environment variable has to be exported:
 
 ```sh
-export JWT_SECRET=any-non-empty-value
 npm run test
 # or: npm run ci:test:backend:unit
 ```
 
-This invokes `node --experimental-vm-modules node_modules/.bin/jest` (see `jest.config.ts` for the Jest configuration, including `testMatch: ['<rootDir>/tests/**/*.test.ts']`). Without `JWT_SECRET`, every test that goes through `authorize`/`signToken` fails with `DataError: Zero-length key is not supported`.
+This invokes `node --experimental-vm-modules node_modules/.bin/jest` (see `jest.config.ts` for the Jest configuration, including `testMatch: ['<rootDir>/tests/**/*.test.ts']`).
+
+`lib/services/auth_service.ts` signs and verifies tokens with `JWT_SECRET`, and the tests exercise real login/authorization flows, so the variable must be set — with an empty one, every test going through `authorize`/`signToken` fails with `DataError: Zero-length key is not supported`. `setup-env.ts`, wired in through `setupFiles`, defaults it to a throwaway test value; it runs before any module is imported, because `auth_service` reads the secret at load time. A value already present in the environment is left alone, so the suite still runs against the real secret under `docker compose --profile dev up`.
 
 ## Frontend
 
