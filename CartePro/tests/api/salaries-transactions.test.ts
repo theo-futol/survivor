@@ -128,49 +128,49 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
 
   it('returns 401 without a token', async () =>
   {
-    expect((await post(EMPLOYEE_ID, payment)).status).toBe(401);
+    expect((await post(EMPLOYEE_ID, payment))?.status).toBe(401);
   });
 
   it('returns 403 for an EMPLOYEE caller', async () =>
   {
     const { token } = await signToken({ sub: EMPLOYEE_ID, role: 'EMPLOYEE' });
 
-    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(403);
+    expect((await post(EMPLOYEE_ID, payment, token))?.status).toBe(403);
   });
 
   it('returns 400 for a non-uuid identifier', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post('not-a-uuid', payment, token)).status).toBe(400);
+    expect((await post('not-a-uuid', payment, token))?.status).toBe(400);
   });
 
   it('returns 400 for a negative amount', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(EMPLOYEE_ID, { ...payment, amount: -5 }, token)).status).toBe(400);
+    expect((await post(EMPLOYEE_ID, { ...payment, amount: -5 }, token))?.status).toBe(400);
   });
 
   it('returns 400 for an unknown status', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(EMPLOYEE_ID, { ...payment, status: 'PENDING' }, token)).status).toBe(400);
+    expect((await post(EMPLOYEE_ID, { ...payment, status: 'PENDING' }, token))?.status).toBe(400);
   });
 
   it('returns 400 for an unknown type', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(EMPLOYEE_ID, { ...payment, type: 'GIFT' }, token)).status).toBe(400);
+    expect((await post(EMPLOYEE_ID, { ...payment, type: 'GIFT' }, token))?.status).toBe(400);
   });
 
   it('returns 404 for an unknown salarié', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
 
-    expect((await post(UNKNOWN_ID, payment, token)).status).toBe(404);
+    expect((await post(UNKNOWN_ID, payment, token))?.status).toBe(404);
   });
 
   // An overdraft is not rejected, it is recorded: the movement is kept in the
@@ -180,7 +180,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, amount: 5000 }, token);
 
-    expect(response.status).toBe(201);
+    expect(response?.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1000);
 
     const json = await (await get(EMPLOYEE_ID, token)).json();
@@ -195,7 +195,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
     const response = await post(EMPLOYEE_ID, payment, token);
 
-    expect(response.status).toBe(201);
+    expect(response?.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
   });
 
@@ -204,7 +204,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { amount: 250, status: 'VALIDER', type: 'TOPUP' }, token);
 
-    expect(response.status).toBe(201);
+    expect(response?.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(1250);
   });
 
@@ -215,7 +215,7 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYEE_ID, { ...payment, status: 'REFUSER' }, token);
 
-    expect(response.status).toBe(201);
+    expect(response?.status).toBe(201);
     expect(await balanceOf(EMPLOYEE_ID)).toBe(600);
 
     const json = await (await get(EMPLOYEE_ID, token)).json();
@@ -228,6 +228,6 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
   {
     const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
 
-    expect((await post(EMPLOYEE_ID, payment, token)).status).toBe(201);
+    expect((await post(EMPLOYEE_ID, payment, token))?.status).toBe(201);
   });
 });
