@@ -18,6 +18,7 @@ const transactionBodySchema = z.object({
   amount: z.number().positive(),
   type: z.enum(['PAYMENT', 'REFUND', 'TOPUP']),
   content: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Invalid content format not matching SHA-256 hash'),
+  companyId: z.uuid(),
 });
 
 /**
@@ -209,6 +210,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             }
             if (qrcode.userId !== salarieId) {
                 throw new AppError('QrCode does not belong to this salarie', 403);
+            }
+            if (qrcode.companyId !== requestBody.companyId) {
+                throw new AppError('QrCode does not belong to this company', 403);
             }
 
             const currentBalance: number = rows.rows[0].balance;
