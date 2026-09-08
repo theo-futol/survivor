@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, Suspense, useState } from "react"
 import { LoaderCircle } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -35,7 +35,7 @@ function homeForRole(role: string) {
   return null
 }
 
-export function LoginApiSalarieForm() {
+function LoginApiSalarieFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -121,5 +121,20 @@ export function LoginApiSalarieForm() {
         Se connecter à mon espace
       </Button>
     </form>
+  )
+}
+
+export function LoginApiSalarieForm() {
+  return (
+    <Suspense
+      fallback={
+        <Button type="button" className="w-full" disabled>
+          <LoaderCircle className="animate-spin" aria-hidden="true" />
+          Se connecter à mon espace
+        </Button>
+      }
+    >
+      <LoginApiSalarieFormContent />
+    </Suspense>
   )
 }
