@@ -89,6 +89,7 @@ INSERT INTO public.document (id, "storageKey", "mimeType", size, "createdAt") VA
 
 -- users: 2 agents (ADMIN) — referenced by company."agentId" through adminUser
 <<<<<<< HEAD
+<<<<<<< HEAD
 INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('95143b5b-254d-4d63-88e8-b295992dec7c', 'agent1.seed@tickettout.fr', 'Agent', 'Seed1', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
 INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('b0583f66-4596-426c-89c9-9b285dec1ac0', 'agent2.seed@tickettout.fr', 'Agent', 'Seed2', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
 =======
@@ -100,12 +101,17 @@ INSERT INTO public.users (id, email, surname, name, role, balance, password, "cr
 INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('b0583f66-4596-426c-89c9-9b285dec1ac0', 'agent2.seed@tickettout.fr', 'Agent', 'Seed2', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
 >>>>>>> Stashed changes
 >>>>>>> ea33df3 (refactor: use new company partner)
+=======
+INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('95143b5b-254d-4d63-88e8-b295992dec7c', 'agent1.seed@tickettout.fr', 'Agent', 'Seed1', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
+INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('b0583f66-4596-426c-89c9-9b285dec1ac0', 'agent2.seed@tickettout.fr', 'Agent', 'Seed2', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
+>>>>>>> 4078aa0 (refactor: use new company partner)
 
 -- adminUser: shadow table holding only ADMIN users; nothing populates it
 -- automatically, so the agent rows are inserted explicitly here.
 INSERT INTO public."adminUser" ("userId") VALUES ('95143b5b-254d-4d63-88e8-b295992dec7c') ON CONFLICT DO NOTHING;
 INSERT INTO public."adminUser" ("userId") VALUES ('b0583f66-4596-426c-89c9-9b285dec1ac0') ON CONFLICT DO NOTHING;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 -- company (6 partenaires isPartner = TRUE, then 12 employeurs isPartner = FALSE)
 INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", "reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES ('a0f9dfc0-b6d4-4001-8880-c12c01b44f24', 'Le Comptoir du Midi', 'contact@le-comptoir-du-midi.fr', '40312345600134', '555e678b-5e98-4825-8884-b7125a4984fc', 'Restaurant de quartier proposant une cuisine provençale de marché, midi et soir.', '44 rue de la République', '13001', '95143b5b-254d-4d63-88e8-b295992dec7c', 1, TRUE, TRUE, 1, ST_SetSRID(ST_MakePoint(5.3806, 43.2965), 4326), TRUE, '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z') ON CONFLICT DO NOTHING;
@@ -201,6 +207,8 @@ INSERT INTO public.users (id, email, surname, name, role, balance, password, "cr
 =======
 INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus") VALUES ('a5cd5d2b-4324-4c4c-83b8-988e6c01dacd', 'admin.seed@tickettout.fr', 'Seed', 'Admin', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED');
 =======
+=======
+>>>>>>> 4078aa0 (refactor: use new company partner)
 -- company (6 partenaires isPartner = TRUE, then 12 employeurs isPartner = FALSE)
 INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", "reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES ('a0f9dfc0-b6d4-4001-8880-c12c01b44f24', 'Le Comptoir du Midi', 'contact@le-comptoir-du-midi.fr', '40312345600134', '555e678b-5e98-4825-8884-b7125a4984fc', 'Restaurant de quartier proposant une cuisine provençale de marché, midi et soir.', '44 rue de la République', '13001', '95143b5b-254d-4d63-88e8-b295992dec7c', 1, TRUE, TRUE, 1, ST_SetSRID(ST_MakePoint(5.3806, 43.2965), 4326), TRUE, '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z') ON CONFLICT DO NOTHING;
 INSERT INTO public.company (id, name, email, siret, "kbisId", description, address, "postalCode", "agentId", "reasonId", verified, "isFeatured", "categoryId", location, "isPartner", "createdAt", "updatedAt") VALUES ('78f70c80-7c44-4034-8d10-e9e8013b4a78', 'Épicerie Sainte-Claire', 'contact@epicerie-sainte-claire.fr', '40312345600141', 'e61ea263-95ba-4ba2-826c-fe507e93490c', 'Épicerie de proximité proposant produits frais, conserves et paniers de saison.', '21 rue de la République', '83000', '95143b5b-254d-4d63-88e8-b295992dec7c', 2, TRUE, FALSE, 5, ST_SetSRID(ST_MakePoint(5.9280, 43.1242), 4326), TRUE, '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z') ON CONFLICT DO NOTHING;
@@ -275,8 +283,11 @@ INSERT INTO public.users (id, email, surname, name, role, balance, password, "cr
 
 -- users: 1 admin (for exercising admin-only routes)
 INSERT INTO public.users (id, email, surname, name, role, balance, password, "createdAt", "updatedAt", "expiredAt", "accountStatus", "companyId") VALUES ('a5cd5d2b-4324-4c4c-83b8-988e6c01dacd', 'admin.seed@tickettout.fr', 'Seed', 'Admin', 'ADMIN', 0, '5ce41ada64f1e8ffb0acfaafa622b141438f3a5777785e7f0b830fb73e40d3d6', '2026-06-03T00:00:00Z', '2026-06-03T00:00:00Z', NULL, 'ACCEPTED', NULL) ON CONFLICT DO NOTHING;
+<<<<<<< HEAD
 >>>>>>> Stashed changes
 >>>>>>> ea33df3 (refactor: use new company partner)
+=======
+>>>>>>> 4078aa0 (refactor: use new company partner)
 
 -- transaction: employer TOPUPs + 200 PAYMENT/REFUND rows, written in chronological order
 INSERT INTO public.transaction (id, type, "userId", "companyId", amount, "newBalance", "originalTransactionId", status, "createdAt") VALUES ('cdce91f5-0ad3-47f8-8719-56830b1dc127', 'TOPUP', 'dbb36840-1f39-456e-8b44-be5c01126db0', NULL, 5826, 5826, NULL, 'VALIDER', '2026-06-04T08:47:00Z') ON CONFLICT DO NOTHING;
