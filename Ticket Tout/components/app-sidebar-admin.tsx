@@ -37,11 +37,6 @@ export function AppSidebar({ activeTab, onSelectTab, ...props }: AppSidebarProps
       icon: Building2,
     },
     {
-      id: "favorite" as AdminTab,
-      title: "Coup de cœur",
-      icon: Heart,
-    },
-    {
       id: "featured" as AdminTab,
       title: "Featured",
       icon: Sparkles,

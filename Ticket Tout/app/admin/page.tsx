@@ -13,8 +13,6 @@ import {
   WalletCards,
 } from "lucide-react"
 
-import { AdminFeaturedPartner } from "@/components/admin-featured-partner"
-import { AdminMinisterFavorite } from "@/components/admin-minister-favorite"
 import { AppSidebar } from "@/components/app-sidebar-admin"
 import { SiteHeader } from "@/components/site-header"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -179,8 +177,6 @@ export default function Page() {
               {activeTab === "employee" && <EmployeeView />}
               {activeTab === "account" && <AccountView />}
               {activeTab === "business" && <BusinessView />}
-              {activeTab === "favorite" && <AdminMinisterFavorite />}
-              {activeTab === "featured" && <AdminFeaturedPartner />}
             </div>
           </SidebarInset>
         </div>
