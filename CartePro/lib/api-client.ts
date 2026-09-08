@@ -16,6 +16,10 @@ export type ApiCompanyCategory = {
   category: string
 }
 
+export type CategoriesResponse = {
+  categories: ApiCompanyCategory[]
+}
+
 export type ApiCompany = {
   id: string
   name: string

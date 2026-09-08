@@ -85,10 +85,10 @@ model Company {
   description  String
   address      String
   postalCode   String
-  agentId      String
-  agent        AdminUser               @relation("CompanyAgent", fields: [agentId], references: [userId])
-  reasonId     Int
-  reason       CompanyValidationReason @relation(fields: [reasonId], references: [id])
+  agentId      String?
+  agent        AdminUser?               @relation("CompanyAgent", fields: [agentId], references: [userId])
+  reasonId     Int?
+  reason       CompanyValidationReason? @relation(fields: [reasonId], references: [id])
   verified     Boolean
   categoryId   Int
   category     CompanyCategory         @relation(fields: [categoryId], references: [id])

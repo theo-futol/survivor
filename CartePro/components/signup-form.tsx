@@ -1,10 +1,11 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useEffect, useState } from "react"
 import Link from "next/link"
 import { Building2, CheckCircle2, Handshake, LoaderCircle } from "lucide-react"
 
 import { BRAND } from "@/lib/brand"
+import type { ApiCompanyCategory, CategoriesResponse } from "@/lib/api-client"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,26 @@ type AccountType = "company" | "partner"
 export function SignupForm({ accountType }: { accountType: AccountType }) {
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle")
   const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<ApiCompanyCategory[]>([])
   const isCompany = accountType === "company"
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetch("/api/v1/categories", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Les catégories n'ont pas pu être chargées.")
+        return await response.json() as CategoriesResponse
+      })
+      .then((payload) => {
+        if (!cancelled) setCategories(payload.categories)
+      })
+      .catch((caught) => {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : "Les catégories n'ont pas pu être chargées.")
+      })
+
+    return () => { cancelled = true }
+  }, [])
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -39,7 +59,6 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
 
     form.set("accountType", accountType)
     form.set("registrationNumber", siret)
-    if (isCompany) form.set("partnerCategory", "")
 
     try {
       const response = await fetch("/api/v1/signup", {
@@ -98,20 +117,32 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
           <Label htmlFor={`${accountType}-registration`}>SIRET</Label>
           <Input id={`${accountType}-registration`} name="registrationNumber" className="mt-2" required inputMode="numeric" pattern="[0-9 ]{14,17}" placeholder="14 chiffres" />
         </div>
-        {!isCompany && (
-          <div>
-            <Label htmlFor="partner-category">Catégorie d&apos;activité</Label>
-            <select id="partner-category" name="partnerCategory" required className="mt-2 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <option value="">Sélectionner</option>
-              <option>Alimentation & gastronomie</option>
-              <option>Loisirs & culture</option>
-              <option>Sport & bien-être</option>
-              <option>Mode & accessoires</option>
-              <option>Services</option>
-              <option>Autre</option>
-            </select>
-          </div>
-        )}
+        <div>
+          <Label htmlFor={`${accountType}-category`}>Catégorie d&apos;activité</Label>
+          <select
+            id={`${accountType}-category`}
+            name="category"
+            required
+            disabled={categories.length === 0}
+            className="mt-2 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="">Sélectionner</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.category}>{category.category}</option>
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor={`${accountType}-description`}>Description (optionnel)</Label>
+          <textarea
+            id={`${accountType}-description`}
+            name="description"
+            rows={3}
+            maxLength={500}
+            className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder={isCompany ? "Présentez votre organisation en quelques mots." : "Présentez votre établissement en quelques mots."}
+          />
+        </div>
         <div className="sm:col-span-2">
           <Label htmlFor={`${accountType}-kbis`}>Kbis (PDF)</Label>
           <Input id={`${accountType}-kbis`} name="kbis" type="file" accept="application/pdf,.pdf" className="mt-2" required />

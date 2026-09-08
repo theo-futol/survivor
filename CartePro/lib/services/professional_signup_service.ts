@@ -11,8 +11,6 @@ import { s3Client } from "@/lib/services/s3_client"
 
 const MAX_KBIS_SIZE = 10 * 1024 * 1024
 const KBIS_BUCKET = process.env.GARAGE_DEFAULT_BUCKET ?? "kbis-documents"
-const PENDING_REASON = "Inscription en ligne en attente de validation"
-const ONLINE_ADMINISTRATION = "Inscription en ligne"
 
 const passwordSchema = z.string()
   .min(8, { message: "Le mot de passe doit contenir au moins 8 caractères." })
@@ -34,21 +32,14 @@ const signupSchema = z.object({
   address: z.string().trim().min(1).max(255),
   postalCode: z.string().trim().regex(/^\d{5}$/, { message: "Le code postal doit contenir exactement 5 chiffres." }),
   city: z.string().trim().min(1).max(120),
-  partnerCategory: z.string().trim().max(120),
+  category: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500),
 }).superRefine((value, ctx) => {
   if (`${value.address}, ${value.city}`.length > 255) {
     ctx.addIssue({
       code: "custom",
       path: ["address"],
       message: "L'adresse complète ne doit pas dépasser 255 caractères.",
-    })
-  }
-
-  if (value.accountType === "partner" && value.partnerCategory.length === 0) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["partnerCategory"],
-      message: "La catégorie d'activité est obligatoire pour un partenaire.",
     })
   }
 })
@@ -83,70 +74,18 @@ function splitRepresentative(fullName: string) {
   }
 }
 
-async function syncSequence(client: PoolClient, table: "administration" | "companyValidationReason" | "companyCategory") {
-  const quotedTable = table === "administration" ? "administration" : `\"${table}\"`
-  const regclass = `public.${quotedTable}`
-  const sqlTable = `public.${quotedTable}`
-
-  await client.query(
-    `SELECT setval(
-       pg_get_serial_sequence($1, 'id')::regclass,
-       GREATEST(COALESCE((SELECT MAX(id) FROM ${sqlTable}), 1), 1),
-       EXISTS(SELECT 1 FROM ${sqlTable})
-     )`,
-    [regclass],
-  )
-}
-
-async function ensureAdministrationId(client: PoolClient): Promise<number> {
-  await client.query("LOCK TABLE public.administration IN SHARE ROW EXCLUSIVE MODE")
-
-  const existing = await client.query<{ id: number }>(
-    "SELECT id FROM public.administration WHERE name = $1 ORDER BY id LIMIT 1",
-    [ONLINE_ADMINISTRATION],
-  )
-  if (existing.rows[0]) return existing.rows[0].id
-
-  await syncSequence(client, "administration")
-  const inserted = await client.query<{ id: number }>(
-    "INSERT INTO public.administration (name) VALUES ($1) RETURNING id",
-    [ONLINE_ADMINISTRATION],
-  )
-  return inserted.rows[0]!.id
-}
-
-async function ensureReasonId(client: PoolClient): Promise<number> {
-  await client.query('LOCK TABLE public."companyValidationReason" IN SHARE ROW EXCLUSIVE MODE')
-
-  const existing = await client.query<{ id: number }>(
-    'SELECT id FROM public."companyValidationReason" WHERE reason = $1 ORDER BY id LIMIT 1',
-    [PENDING_REASON],
-  )
-  if (existing.rows[0]) return existing.rows[0].id
-
-  await syncSequence(client, "companyValidationReason")
-  const inserted = await client.query<{ id: number }>(
-    'INSERT INTO public."companyValidationReason" (reason) VALUES ($1) RETURNING id',
-    [PENDING_REASON],
-  )
-  return inserted.rows[0]!.id
-}
-
-async function ensureCategoryId(client: PoolClient, category: string): Promise<number> {
-  await client.query('LOCK TABLE public."companyCategory" IN SHARE ROW EXCLUSIVE MODE')
-
+// The category must already exist: an online registration never creates a new
+// one, it can only reference a category the administration has set up.
+async function findCategoryId(client: PoolClient, category: string): Promise<number> {
   const existing = await client.query<{ id: number }>(
     'SELECT id FROM public."companyCategory" WHERE category = $1 LIMIT 1',
     [category],
   )
-  if (existing.rows[0]) return existing.rows[0].id
+  if (!existing.rows[0]) {
+    throw new AppError("The selected category is invalid.", 400)
+  }
 
-  await syncSequence(client, "companyCategory")
-  const inserted = await client.query<{ id: number }>(
-    'INSERT INTO public."companyCategory" (category) VALUES ($1) RETURNING id',
-    [category],
-  )
-  return inserted.rows[0]!.id
+  return existing.rows[0].id
 }
 
 async function assertAvailable(client: PoolClient, email: string, siret: string) {
@@ -202,7 +141,6 @@ export async function registerProfessionalAccount(
   const role = data.accountType === "partner" ? "PARTNER" : "COMPANY"
   const isPartner = role === "PARTNER"
   const storageKey = `professional-signups/${isPartner ? "partners" : "companies"}/${companyId}/kbis.pdf`
-  const category = isPartner ? data.partnerCategory : "Entreprise"
   const representative = splitRepresentative(data.legalRepresentative)
   const fullAddress = `${data.address}, ${data.city}`
   const passwordHash = hashPassword(data.password)
@@ -228,11 +166,7 @@ export async function registerProfessionalAccount(
     await withTransaction(async (client) => {
       await assertAvailable(client, data.email, data.registrationNumber)
 
-      // Keep reference-table locks in a deterministic order so concurrent
-      // registrations cannot deadlock each other.
-      const agentId = await ensureAdministrationId(client)
-      const reasonId = await ensureReasonId(client)
-      const categoryId = await ensureCategoryId(client, category)
+      const categoryId = await findCategoryId(client, data.category)
 
       await client.query(
         `INSERT INTO public.document (id, "storageKey", "mimeType", size, "createdAt")
@@ -241,14 +175,16 @@ export async function registerProfessionalAccount(
       )
 
       await client.query(
+        // No agent and no validation reason at registration time: both are set
+        // later by a real administrator when the file is reviewed.
         `INSERT INTO public.company (
-           id, name, email, siret, "kbisId", address, "postalCode",
-           "agentId", "reasonId", verified, "categoryId",
+           id, name, email, siret, "kbisId", description, address, "postalCode",
+           verified, "categoryId",
            location, "isPartner", active, "createdAt", "updatedAt"
          ) VALUES (
-           $1, $2, $3, $4, $5, $6, $7,
-           $8, $9, FALSE, $10,
-           ST_SetSRID(ST_MakePoint(0, 0), 4326), $11, TRUE, NOW(), NOW()
+           $1, $2, $3, $4, $5, $6, $7, $8,
+           FALSE, $9,
+           ST_SetSRID(ST_MakePoint(0, 0), 4326), $10, TRUE, NOW(), NOW()
          )`,
         [
           companyId,
@@ -256,23 +192,19 @@ export async function registerProfessionalAccount(
           data.email,
           data.registrationNumber,
           documentId,
+          data.description,
           fullAddress,
           data.postalCode,
-          agentId,
-          reasonId,
           categoryId,
           isPartner,
         ],
       )
 
-      // The current schema requires Users.documentId. Reusing the professional
-      // account's KBIS document satisfies the existing one-to-one constraint
-      // without changing the database contract or the employee document flow.
       await client.query(
         `INSERT INTO public.users (
            id, email, surname, name, role, balance, password,
-           "createdAt", "updatedAt", "expiredAt", "documentId", "companyId"
-         ) VALUES ($1, $2, $3, $4, $5, 0, $6, NOW(), NOW(), NULL, $7, $8)`,
+           "createdAt", "updatedAt", "expiredAt", "companyId"
+         ) VALUES ($1, $2, $3, $4, $5, 0, $6, NOW(), NOW(), NULL, $7)`,
         [
           userId,
           data.email,
@@ -280,7 +212,6 @@ export async function registerProfessionalAccount(
           representative.name,
           role,
           passwordHash,
-          documentId,
           companyId,
         ],
       )

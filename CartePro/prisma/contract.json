@@ -274,7 +274,7 @@
                 }
               },
               "agentId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -351,7 +351,7 @@
                 }
               },
               "reasonId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -1396,7 +1396,7 @@
                 "agentId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "categoryId": {
                   "codecId": "pg/int4@1",
@@ -1456,7 +1456,7 @@
                 "reasonId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": false
+                  "nullable": true
                 },
                 "siret": {
                   "codecId": "pg/text@1",
@@ -2335,7 +2335,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d127b237327000f04ac0672b1ec28e8d1cef5fecb5a3ad2911466cf133bff0a3",
+    "storageHash": "7916df1e38010f0dbfa53e0c014436dde33c19631de8f1d60d1295ea19f52332",
     "types": {
       "WgsGeometry": {
         "codecId": "pg/geometry@1",

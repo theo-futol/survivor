@@ -23,7 +23,7 @@ function text(form: FormData, name: string) {
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [accountType, organizationName, registrationNumber, email, password, phone, legalRepresentative, jobTitle, address, postalCode, city, kbis]
+ *             required: [accountType, organizationName, registrationNumber, email, password, phone, legalRepresentative, jobTitle, address, postalCode, city, category, kbis]
  *             properties:
  *               accountType: { type: string, enum: [company, partner] }
  *               organizationName: { type: string }
@@ -36,7 +36,8 @@ function text(form: FormData, name: string) {
  *               address: { type: string }
  *               postalCode: { type: string, pattern: '^\\d{5}$' }
  *               city: { type: string }
- *               partnerCategory: { type: string }
+ *               category: { type: string }
+ *               description: { type: string }
  *               kbis: { type: string, format: binary }
  *     responses:
  *       '201': { description: Compte créé et session ouverte. }
@@ -71,7 +72,8 @@ export async function POST(request: Request) {
       address: text(form, "address"),
       postalCode: text(form, "postalCode"),
       city: text(form, "city"),
-      partnerCategory: text(form, "partnerCategory"),
+      category: text(form, "category"),
+      description: text(form, "description"),
     }, kbis);
 
     const { token, expiresIn } = await signToken({ sub: result.user.id, role: result.user.role })
