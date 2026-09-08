@@ -74,13 +74,30 @@ Only one of `app-dev` / `app-prod` runs at a time, depending on the selected pro
 
 ### Dev mode
 
+Use the helper script — like the prod one, it issues the HTTPS certificate before starting the stack:
+
 ```bash
-docker compose --env-file .env.development --profile dev up --build
+./dev/start-dev.sh
 ```
 
 Starts `db`, `redis`, `garage` and `app-dev`. The `./CartePro` directory is bind-mounted into the container (with `node_modules` kept container-side), so local source changes hot-reload without rebuilding the image.
 
-The app is served directly by Next.js on `http://localhost:3000` — no nginx, no TLS in this profile.
+There is no nginx in this profile: Next.js serves TLS itself (`next dev --experimental-https`) using the same certificate pair as prod. The app is reachable at:
+
+| URL | From |
+| --- | --- |
+| `https://localhost:3000` | this machine |
+| `https://<your-lan-ip>:3000` | phones and laptops on the same network |
+
+The equivalent manual command, if you already have a certificate covering your current LAN IP:
+
+```bash
+docker compose --env-file .env.development --profile dev up --build
+```
+
+> **Do not use the address Next.js prints as `Network:`.** Inside Docker it prints the container's own bridge address (`172.x.y.z`), which is reachable from this machine only and is not in the certificate. Other devices need the **host's** LAN IP, which `./dev/start-dev.sh` prints when it starts.
+
+HTTPS is not optional here: the partner QR scanner needs the camera and `crypto.subtle`, and browsers only expose those on a secure origin. `http://localhost` counts as one, `http://<lan-ip>` does not — so a phone on the LAN must reach the app over HTTPS with a certificate it accepts.
 
 ### Prod mode
 
@@ -111,22 +128,46 @@ docker compose --env-file .env.production --profile prod up --build
 
 #### HTTPS certificates
 
-The `prod` profile puts nginx in front of `app-prod`, so it needs a certificate and a private key:
+Both profiles share one certificate pair, issued by `dev/generate-certs.sh` (which `start-dev.sh` and `start-prod.sh` both source, and which you can also run on its own after switching networks):
+
+```bash
+./dev/generate-certs.sh
+```
+
+The `prod` profile puts nginx in front of `app-prod`, so it needs the certificate and private key as files:
 
 | File | Mounted into nginx as |
 | --- | --- |
 | `CartePro/certificates/localhost.pem` | `/etc/ssl/certs/localhost.pem` |
 | `CartePro/certificates/localhost-key.pem` | `/etc/ssl/private/localhost-key.pem` |
 
-`dev/start-prod.sh` issues them with [mkcert](https://github.com/FiloSottile/mkcert), which also installs a local CA into the system trust store (`mkcert -install`) so browsers on this machine trust the certificate without a warning. The certificate covers **`localhost`, `127.0.0.1`, `::1` and the detected LAN IP**, which is why both `https://localhost` and `https://<lan-ip>` work.
+They are issued with [mkcert](https://github.com/FiloSottile/mkcert), which also installs a local CA into the system trust store (`mkcert -install`) so browsers on this machine trust the certificate without a warning. The certificate covers **`localhost`, `127.0.0.1`, `::1` and the detected LAN IP**, which is why both `https://localhost` and `https://<lan-ip>` work.
 
-The script regenerates the pair when it is missing, expired, or does not cover the current LAN IP — so a certificate issued at a previous IP is replaced automatically rather than silently reused. To force a fresh one:
+The LAN IP is taken from the routing table (which source address reaches the internet), not from the first entry of `hostname -I` — otherwise a Docker bridge address such as `172.18.x.x` can win the race and end up in the certificate, leaving every real device unable to verify it. Override the detection when it picks the wrong interface:
 
 ```bash
-rm -rf "CartePro/certificates" && ./dev/start-prod.sh
+APP_HOST_IP=192.168.1.42 ./dev/start-dev.sh
 ```
 
-`CartePro/certificates/` is gitignored — the private key must never be committed. Other devices on the LAN will still see an untrusted-certificate warning unless the mkcert root CA (`mkcert -CAROOT`) is installed on them too.
+The pair is regenerated when it is missing, expired, or does not cover the current LAN IP — so a certificate issued at a previous IP is replaced automatically rather than silently reused. **Your LAN IP changes when you move between networks**, so re-run the start script (or `./dev/generate-certs.sh`) after switching WiFi. To force a fresh one:
+
+```bash
+rm -rf "CartePro/certificates" && ./dev/start-dev.sh
+```
+
+`CartePro/certificates/` is gitignored — the private key must never be committed.
+
+##### Trusting it on other devices
+
+Other devices on the LAN see an untrusted-certificate warning, because they do not know this machine's mkcert CA. Either accept the warning, or install the CA for a clean padlock — copy `rootCA.pem` from the directory `mkcert -CAROOT` prints:
+
+| Device | How |
+| --- | --- |
+| Android | Settings → Security → Encryption & credentials → Install a certificate → CA certificate |
+| iOS | AirDrop/email the file, install the profile, then Settings → General → About → Certificate Trust Settings → enable it |
+| Another Linux/macOS machine | Install mkcert there, copy `rootCA.pem` and `rootCA-key.pem` into its own `mkcert -CAROOT`, then `mkcert -install` |
+
+Prefer installing the CA when testing the QR scanner: a browser that had to be argued past a certificate warning can still refuse camera access.
 
 nginx's configuration lives in `nginx/nginx.conf` (mounted read-only); it redirects `:80` to `:443` and proxies HTTPS traffic to `app-prod:3000`, forwarding WebSocket upgrade headers.
 
