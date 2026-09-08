@@ -96,14 +96,6 @@ describe('GET /api/v1/partenaires', () =>
     expect(json.data[0].id).toBe(PARTNER_COMPANY_ID);
   });
 
-  it('filters on featured', async () =>
-  {
-    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
-    const json = await (await get('?featured=false', token)).json();
-
-    expect(json.data.every((partner: { isFeatured: boolean }) => partner.isFeatured === false)).toBe(true);
-  });
-
   it('returns 404 for an unknown category', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });

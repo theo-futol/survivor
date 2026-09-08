@@ -35,11 +35,11 @@ export const usersFixture = [
 ];
 
 export const companyFixture = [
-  { id: 'company-test-1', name: 'Test Partner', email: 'partner@example.com', siret: '12345678901234', verified: true, isFeatured: false, isPartner: true, active: true, categoryId: 1, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'company-test-1', name: 'Test Partner', email: 'partner@example.com', siret: '12345678901234', verified: true, isPartner: true, active: true, categoryId: 1, createdAt: '2026-01-01T00:00:00Z' },
 
-  { id: EMPLOYER_COMPANY_ID, name: 'Entreprise SA', email: 'employer@example.com', siret: '11111111111111', kbisId: 'kbis-employer', address: '1 rue A', postalCode: '75001', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isFeatured: false, isPartner: false, active: true, createdAt: '2026-02-01T00:00:00Z' },
-  { id: PARTNER_COMPANY_ID, name: 'Partenaire SARL', email: 'partenaire@example.com', siret: '22222222222222', kbisId: 'kbis-partner', address: '2 rue B', postalCode: '75002', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isFeatured: true, isPartner: true, active: true, createdAt: '2026-02-02T00:00:00Z' },
-  { id: OTHER_COMPANY_ID, name: 'Autre SA', email: 'autre@example.com', siret: '33333333333333', kbisId: 'kbis-other', address: '3 rue C', postalCode: '75003', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isFeatured: false, isPartner: false, active: true, createdAt: '2026-02-03T00:00:00Z' },
+  { id: EMPLOYER_COMPANY_ID, name: 'Entreprise SA', email: 'employer@example.com', siret: '11111111111111', kbisId: 'kbis-employer', address: '1 rue A', postalCode: '75001', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isPartner: false, active: true, createdAt: '2026-02-01T00:00:00Z' },
+  { id: PARTNER_COMPANY_ID, name: 'Partenaire SARL', email: 'partenaire@example.com', siret: '22222222222222', kbisId: 'kbis-partner', address: '2 rue B', postalCode: '75002', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isPartner: true, active: true, createdAt: '2026-02-02T00:00:00Z' },
+  { id: OTHER_COMPANY_ID, name: 'Autre SA', email: 'autre@example.com', siret: '33333333333333', kbisId: 'kbis-other', address: '3 rue C', postalCode: '75003', agentId: 1, reasonId: 1, categoryId: 1, verified: true, isPartner: false, active: true, createdAt: '2026-02-03T00:00:00Z' },
 ];
 
 export const companyCategoryFixture = [

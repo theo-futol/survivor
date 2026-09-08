@@ -26,7 +26,6 @@ export const companyCreateSchema = z.object({
     lng: z.number().min(-180).max(180),
   }),
   verified: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
 });
 
 export const companyPatchSchema = companyCreateSchema.partial().refine(
@@ -43,7 +42,6 @@ export type ListCompaniesFilters = {
   pagination: Pagination;
   search?: string | undefined;
   categorie?: string | undefined;
-  featured?: boolean | undefined;
   verified?: boolean | undefined;
   // Set for non-admin callers so they only ever see their own company.
   id?: string | undefined;
@@ -63,7 +61,7 @@ async function resolveCategoryId(categorie: string): Promise<number>
 
 export async function listCompanies(filters: ListCompaniesFilters)
 {
-  const equality: { isPartner: boolean; active: boolean; isFeatured?: boolean; verified?: boolean; categoryId?: number; id?: string } = {
+  const equality: { isPartner: boolean; active: boolean; verified?: boolean; categoryId?: number; id?: string } = {
     isPartner: filters.isPartner,
     active: true,
   };
@@ -71,11 +69,6 @@ export async function listCompanies(filters: ListCompaniesFilters)
   if (filters.id !== undefined)
   {
     equality.id = filters.id;
-  }
-
-  if (filters.featured !== undefined)
-  {
-    equality.isFeatured = filters.featured;
   }
 
   if (filters.verified !== undefined)
@@ -156,7 +149,6 @@ export async function createCompany(input: CompanyInput, isPartner: boolean)
     categoryId: input.categoryId,
     location: point(input.location.lng, input.location.lat, 4326),
     verified: input.verified ?? false,
-    isFeatured: input.isFeatured ?? false,
     isPartner,
     active: true,
   });

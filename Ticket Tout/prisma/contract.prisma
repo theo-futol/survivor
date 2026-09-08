@@ -90,7 +90,6 @@ model Company {
   reasonId     Int
   reason       CompanyValidationReason @relation(fields: [reasonId], references: [id])
   verified     Boolean
-  isFeatured   Boolean
   categoryId   Int
   category     CompanyCategory         @relation(fields: [categoryId], references: [id])
   location     WgsGeometry
@@ -100,7 +99,6 @@ model Company {
   updatedAt    temporal.updatedAt()
   transactions      Transaction[]
   employees         Users[]
-  featuredPartners  FeaturedPartner[]
 
   @@index([verified])
   @@index([createdAt])
@@ -155,22 +153,6 @@ model QrCode {
   @@index([content])
   @@index([userId])
   @@index([companyId])
-}
-
-model FeaturedPartner {
-  id          Int      @id @default(autoincrement())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  message     String
-  imageKey    String
-  clickAmount Int      @default(0)
-  active      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   temporal.updatedAt()
-
-  @@index([companyId])
-  @@index([active])
-  @@index([createdAt])
 }
 
 model BannedUser {

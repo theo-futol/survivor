@@ -24,7 +24,6 @@ export type ApiCompany = {
   address: string
   postalCode: string
   verified: boolean
-  isFeatured: boolean
   isPartner: boolean
   categoryId: number
   category?: ApiCompanyCategory | null

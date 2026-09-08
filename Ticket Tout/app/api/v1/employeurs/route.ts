@@ -111,7 +111,6 @@ export async function GET(request: Request)
  *                   lat: { type: number }
  *                   lng: { type: number }
  *               verified: { type: boolean }
- *               isFeatured: { type: boolean }
  *     responses:
  *       '201':
  *         description: Employeur créé.

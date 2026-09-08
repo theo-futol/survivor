@@ -6,7 +6,6 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 import { companyCreateSchema, createCompany, listCompanies } from '@/lib/services/company_service';
 
 const categorieSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
-const featuredSchema = z.enum(['true', 'false']).optional();
 
 /**
  * @openapi
@@ -27,9 +26,6 @@ const featuredSchema = z.enum(['true', 'false']).optional();
  *         name: categorie
  *         schema: { type: string }
  *         description: Nom de la catégorie d'entreprise à filtrer.
- *       - in: query
- *         name: featured
- *         schema: { type: string, enum: ['true', 'false'] }
  *     responses:
  *       '200':
  *         description: Liste récupérée avec succès.
@@ -68,13 +64,11 @@ export async function GET(request: Request)
     const url = new URL(request.url);
     const pagination = parsePagination(url);
     const categorie = categorieSchema.parse(url.searchParams.get('categorie') ?? undefined);
-    const featured = featuredSchema.parse(url.searchParams.get('featured') ?? undefined);
 
     const { data, total } = await listCompanies({
       isPartner: true,
       pagination,
       categorie,
-      featured: featured === undefined ? undefined : featured === 'true',
       verified: actor.role === 'EMPLOYEE' ? true : undefined,
       id: actor.role === 'PARTNER' ? (actor.companyId ?? '') : undefined,
     });
@@ -119,7 +113,6 @@ export async function GET(request: Request)
  *                   lat: { type: number }
  *                   lng: { type: number }
  *               verified: { type: boolean }
- *               isFeatured: { type: boolean }
  *     responses:
  *       '201':
  *         description: Partenaire créé.

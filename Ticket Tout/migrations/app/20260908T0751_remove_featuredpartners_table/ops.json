@@ -1,0 +1,81 @@
+[
+  {
+    "id": "dropColumn.company.isFeatured",
+    "label": "Drop column \"isFeatured\" from \"company\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isFeatured",
+        "table": "company"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isFeatured\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "isFeatured"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"isFeatured\"",
+        "sql": "ALTER TABLE \"public\".\"company\" DROP COLUMN \"isFeatured\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isFeatured\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "company",
+          "isFeatured"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropTable.featuredPartner",
+    "label": "Drop table \"featuredPartner\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "featuredPartner"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"featuredPartner\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"featuredPartner\"",
+        "sql": "DROP TABLE \"public\".\"featuredPartner\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"featuredPartner\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"featuredPartner\""
+        ]
+      }
+    ]
+  }
+]

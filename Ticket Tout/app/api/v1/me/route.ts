@@ -57,7 +57,6 @@ export async function GET(request: Request)
           address: companyRow.address,
           postalCode: companyRow.postalCode,
           verified: companyRow.verified,
-          isFeatured: companyRow.isFeatured,
           isPartner: companyRow.isPartner,
           categoryId: companyRow.categoryId,
           category: companyCategory ? { id: companyCategory.id, category: companyCategory.category } : null,
