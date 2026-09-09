@@ -21,7 +21,7 @@ const abondementSchema = z.object({
  * /api/v1/employeurs/{employeurId}/abondements:
  *   post:
  *     summary: Abondement des salariés d'un employeur
- *     description: "Crédite le montant indiqué à chaque salarié actif de l'entreprise. L'opération se déroule dans une seule transaction PostgreSQL : les lignes des salariés sont verrouillées (`SELECT … FOR UPDATE`) avant la mise à jour des soldes, et une transaction immuable de type `TOPUP` (statut `VALIDER`) est créée pour chaque salarié crédité. Les champs `type` et `comment` sont validés mais ne sont pas persistés faute de colonnes dédiées. Un utilisateur `COMPANY` ne peut abonder que sa propre entreprise."
+ *     description: "Crédite le montant indiqué à chaque salarié actif de l'entreprise. L'opération se déroule dans une seule transaction PostgreSQL : les lignes des salariés sont verrouillées (`SELECT … FOR UPDATE`) avant la mise à jour des soldes, et une transaction immuable de type `TOPUP` (statut `VALIDER`) est créée pour chaque salarié crédité. Les champs `type` et `comment` sont validés mais ne sont pas persistés faute de colonnes dédiées. Réservé aux administrateurs : les abondements sont pilotés depuis le tableau de bord d'administration, une entreprise ne peut pas s'abonder elle-même."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -54,11 +54,11 @@ const abondementSchema = z.object({
  *                 montantTotal: { type: integer }
  *       '400': { description: Identifiant ou corps de requête invalide. }
  *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative d'abonder une autre entreprise. }
+ *       '403': { description: Rôle insuffisant. }
  *       '404': { description: Employeur introuvable, ou aucun salarié actif à créditer. }
  *       '500': { description: Erreur serveur interne. }
  */
-export async function POST(request: Request, { params }: { params: Promise<{ employeurId: string }> }) // TO DO : instead of trust employeurId from params, check that the user is authorized to credit this employer's employees through her userId -> role -> companyId
+export async function POST(request: Request, { params }: { params: Promise<{ employeurId: string }> })
 {
   try
   {
@@ -71,6 +71,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ emp
 
     const { employeurId } = paramsSchema.parse(await params);
 
+    // Inert while the route is ADMIN-only — assertOwnsCompany returns early for
+    // an admin — but kept so widening ROUTE_ROLES cannot silently hand a company
+    // the power to abonder another one.
     const actor = await resolveActor(auth);
     assertOwnsCompany(actor, employeurId);
 

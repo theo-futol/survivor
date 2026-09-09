@@ -70,7 +70,7 @@ export default function ProfilePage() {
             {user.role === "COMPANY" && (
               <div className="mx-7 mb-1 rounded-2xl bg-secondary p-5 text-sm sm:mx-8">
                 <p className="font-black">Gestion employeur</p>
-                <p className="mt-1 text-muted-foreground">Consultez les salariés réellement rattachés à votre entreprise et effectuez les abondements depuis l&apos;API v1.</p>
+                <p className="mt-1 text-muted-foreground">Consultez et gérez les salariés rattachés à votre entreprise.</p>
                 <Link href="/employer" className={buttonVariants({ className: "mt-4" })}>
                   <Building2 aria-hidden="true" /> Ouvrir l&apos;espace employeur
                 </Link>

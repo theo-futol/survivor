@@ -45,11 +45,13 @@ describe('POST /api/v1/employeurs/{employeurId}/abondements', () =>
     expect((await post(EMPLOYER_COMPANY_ID, validBody, token)).status).toBe(403);
   });
 
-  it('returns 403 when a COMPANY caller abonds another company', async () =>
+  // Abondement is driven from the admin dashboard: a COMPANY is refused even on
+  // the company it belongs to, so this must not be posted against another one.
+  it('returns 403 for a COMPANY caller, even on its own company', async () =>
   {
     const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
 
-    expect((await post(OTHER_COMPANY_ID, validBody, token)).status).toBe(403);
+    expect((await post(EMPLOYER_COMPANY_ID, validBody, token)).status).toBe(403);
   });
 
   it('returns 400 for a negative montant', async () =>
@@ -89,7 +91,7 @@ describe('POST /api/v1/employeurs/{employeurId}/abondements', () =>
 
   it('credits every active employee and records one TOPUP transaction each', async () =>
   {
-    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
     const response = await post(EMPLOYER_COMPANY_ID, validBody, token);
     const json = await response.json();
 
@@ -97,7 +99,12 @@ describe('POST /api/v1/employeurs/{employeurId}/abondements', () =>
     // Both of the company's employees are credited, PENDING one included.
     expect(json).toEqual({ montant: 5000, salariesCredites: 2, montantTotal: 10000 });
 
-    const listed = await GET(new Request('http://localhost/api/v1/salaries', { headers: headersFor(token) }));
+    // An ADMIN is not scoped to a company the way a COMPANY caller is, so the
+    // employer is named explicitly to keep this reading the credited salariés.
+    const listed = await GET(new Request(
+      `http://localhost/api/v1/salaries?employeurId=${EMPLOYER_COMPANY_ID}`,
+      { headers: headersFor(token) },
+    ));
     const salaries = await listed.json();
 
     expect(salaries.data[0].balance).toBe(6000);
