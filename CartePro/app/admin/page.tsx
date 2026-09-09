@@ -198,6 +198,196 @@ async function fetchAllTransactions(path: string, allowNotFound = false): Promis
   return all
 }
 
+function buildDemoNationalData(): NationalData {
+  const partners: AdminPartner[] = [
+    {
+      id: "demo-partner-1",
+      name: "Le Comptoir des Saveurs",
+      email: "contact@saveurs-demo.fr",
+      siret: "123 456 789 00012",
+      address: "12 avenue des Écoles",
+      postalCode: "75015",
+      verified: true,
+      isPartner: true,
+      categoryId: 9,
+      category: { id: 9, category: "Restaurant" },
+      categoryName: "Restaurant",
+      latitude: 48.8425,
+      longitude: 2.3237,
+      transactionCount: 12,
+      transactionAmount: 184500,
+      paymentCount: 10,
+      refundCount: 1,
+      validatedCount: 12,
+      refusedCount: 1,
+      lastTransactionAt: "2026-09-09T08:15:00Z",
+      transactions: [
+        {
+          id: "demo-tx-1",
+          type: "PAYMENT",
+          userId: "demo-user-1",
+          companyId: "demo-company-1",
+          amount: 1750,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-09T08:15:00Z",
+          partnerId: "demo-partner-1",
+          partnerName: "Le Comptoir des Saveurs",
+          partnerCategory: "Restaurant",
+          partnerPostalCode: "75015",
+          partnerAddress: "12 avenue des Écoles",
+        },
+        {
+          id: "demo-tx-2",
+          type: "PAYMENT",
+          userId: "demo-user-2",
+          companyId: "demo-company-2",
+          amount: 2450,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-08T12:45:00Z",
+          partnerId: "demo-partner-1",
+          partnerName: "Le Comptoir des Saveurs",
+          partnerCategory: "Restaurant",
+          partnerPostalCode: "75015",
+          partnerAddress: "12 avenue des Écoles",
+        },
+        {
+          id: "demo-tx-3",
+          type: "REFUND",
+          userId: "demo-user-3",
+          companyId: "demo-company-3",
+          amount: 500,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-08T18:10:00Z",
+          partnerId: "demo-partner-1",
+          partnerName: "Le Comptoir des Saveurs",
+          partnerCategory: "Restaurant",
+          partnerPostalCode: "75015",
+          partnerAddress: "12 avenue des Écoles",
+        },
+      ],
+      location: { type: "Point", coordinates: [2.3237, 48.8425] },
+    },
+    {
+      id: "demo-partner-2",
+      name: "Boutique Énergie",
+      email: "bonjour@energie-demo.fr",
+      siret: "564 789 321 00014",
+      address: "28 rue de la République",
+      postalCode: "69002",
+      verified: true,
+      isPartner: true,
+      categoryId: 7,
+      category: { id: 7, category: "Commerce" },
+      categoryName: "Commerce",
+      latitude: 45.7591,
+      longitude: 4.8312,
+      transactionCount: 8,
+      transactionAmount: 112300,
+      paymentCount: 7,
+      refundCount: 0,
+      validatedCount: 8,
+      refusedCount: 1,
+      lastTransactionAt: "2026-09-07T17:40:00Z",
+      transactions: [
+        {
+          id: "demo-tx-4",
+          type: "PAYMENT",
+          userId: "demo-user-4",
+          companyId: "demo-company-4",
+          amount: 2300,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-07T17:40:00Z",
+          partnerId: "demo-partner-2",
+          partnerName: "Boutique Énergie",
+          partnerCategory: "Commerce",
+          partnerPostalCode: "69002",
+          partnerAddress: "28 rue de la République",
+        },
+        {
+          id: "demo-tx-5",
+          type: "PAYMENT",
+          userId: "demo-user-5",
+          companyId: "demo-company-5",
+          amount: 3100,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-06T11:05:00Z",
+          partnerId: "demo-partner-2",
+          partnerName: "Boutique Énergie",
+          partnerCategory: "Commerce",
+          partnerPostalCode: "69002",
+          partnerAddress: "28 rue de la République",
+        },
+      ],
+      location: { type: "Point", coordinates: [4.8312, 45.7591] },
+    },
+    {
+      id: "demo-partner-3",
+      name: "Café des Arts",
+      email: "contact@cafedesarts-demo.fr",
+      siret: "852 369 741 00027",
+      address: "4 boulevard Voltaire",
+      postalCode: "33000",
+      verified: false,
+      isPartner: true,
+      categoryId: 4,
+      category: { id: 4, category: "Café" },
+      categoryName: "Café",
+      latitude: 45.4846,
+      longitude: -0.7681,
+      transactionCount: 5,
+      transactionAmount: 63000,
+      paymentCount: 4,
+      refundCount: 1,
+      validatedCount: 5,
+      refusedCount: 0,
+      lastTransactionAt: "2026-09-05T10:20:00Z",
+      transactions: [
+        {
+          id: "demo-tx-6",
+          type: "PAYMENT",
+          userId: "demo-user-6",
+          companyId: "demo-company-6",
+          amount: 1200,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-05T10:20:00Z",
+          partnerId: "demo-partner-3",
+          partnerName: "Café des Arts",
+          partnerCategory: "Café",
+          partnerPostalCode: "33000",
+          partnerAddress: "4 boulevard Voltaire",
+        },
+        {
+          id: "demo-tx-7",
+          type: "PAYMENT",
+          userId: "demo-user-7",
+          companyId: "demo-company-7",
+          amount: 1800,
+          originalTransactionId: null,
+          status: "VALIDER",
+          createdAt: "2026-09-03T15:10:00Z",
+          partnerId: "demo-partner-3",
+          partnerName: "Café des Arts",
+          partnerCategory: "Café",
+          partnerPostalCode: "33000",
+          partnerAddress: "4 boulevard Voltaire",
+        },
+      ],
+      location: { type: "Point", coordinates: [-0.7681, 45.4846] },
+    },
+  ]
+
+  return {
+    partners,
+    transactions: partners.flatMap((partner) => partner.transactions),
+  }
+}
+
 const dbService = {
   async getEmployees(): Promise<AdminEmployee[]> {
     const [employees, companies] = await Promise.all([
@@ -373,14 +563,21 @@ function NationalDashboardView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [usingDemoData, setUsingDemoData] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      setData(await dbService.getNationalData())
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de charger le tableau de bord national.")
+      const nextData = await dbService.getNationalData()
+      const shouldUseDemo = nextData.partners.length === 0 && nextData.transactions.length === 0
+      const resolvedData = shouldUseDemo ? buildDemoNationalData() : nextData
+      setData(resolvedData)
+      setUsingDemoData(shouldUseDemo)
+    } catch {
+      const demoData = buildDemoNationalData()
+      setData(demoData)
+      setUsingDemoData(true)
     } finally {
       setLoading(false)
     }
@@ -452,6 +649,12 @@ function NationalDashboardView() {
           </Button>
         }
       />
+
+      {usingDemoData && (
+        <p className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+          Données de démonstration : montants et transactions simulés pour la prévisualisation.
+        </p>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs nationaux">
         <MetricCard icon={<CircleDollarSign />} label="Volume validé" value={formatMoney(stats.volume)} />
@@ -1443,7 +1646,7 @@ function TopupView() {
     <div className="flex flex-col gap-6">
       <PageHeading
         title="Abondements employeurs"
-        description="Le crédit des salariés est centralisé dans l’espace ministère. L’espace employeur ne propose plus cette action."
+        description="Le crédit des salariés est centralisé dans l’espace administrateur. L’espace employeur ne propose plus cette action."
         action={<Button type="button" variant="outline" onClick={() => void load()}><RefreshCw aria-hidden="true" /> Actualiser</Button>}
       />
 

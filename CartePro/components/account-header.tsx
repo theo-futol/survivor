@@ -54,7 +54,7 @@ export function AccountHeader() {
           <BrandLogo />
         </Link>
         <span className="rounded-full bg-brand-red-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
-          Simulation
+          Montants et transactions simulés
         </span>
 
         <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigation principale">
