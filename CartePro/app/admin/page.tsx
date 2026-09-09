@@ -1598,11 +1598,14 @@ function TopupView() {
 
   async function createTopup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    const formElement = event.currentTarget
+    const form = new FormData(formElement)
+
     setSubmitting(true)
     setSubmitError(null)
     setSuccess(null)
 
-    const form = new FormData(event.currentTarget)
     const employerId = String(form.get("employerId") ?? "")
     const amount = Math.round(Number(form.get("amount") ?? 0) * 100)
 
@@ -1611,6 +1614,7 @@ function TopupView() {
       setSubmitting(false)
       return
     }
+
     if (!Number.isFinite(amount) || amount <= 0) {
       setSubmitError("Le montant doit être supérieur à 0 €.")
       setSubmitting(false)
@@ -1618,19 +1622,38 @@ function TopupView() {
     }
 
     try {
-      const payload = await apiFetch<TopupResponse>(`/api/v1/employeurs/${encodeURIComponent(employerId)}/abondements`, {
-        method: "POST",
-        body: JSON.stringify({
-          montant: amount,
-          date: String(form.get("date") ?? "") || undefined,
-          comment: String(form.get("comment") ?? "").trim() || undefined,
-        }),
-      })
-      setSuccess(`${payload.salariesCredites} salarié${payload.salariesCredites > 1 ? "s" : ""} crédité${payload.salariesCredites > 1 ? "s" : ""} de ${formatMoney(payload.montant)} — total ${formatMoney(payload.montantTotal)}.`)
-      event.currentTarget.reset()
+      const payload = await apiFetch<TopupResponse>(
+        `/api/v1/employeurs/${encodeURIComponent(employerId)}/abondements`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            montant: amount,
+            type: "fixe",
+            date: String(form.get("date") ?? "") || undefined,
+            comment: String(form.get("comment") ?? "").trim() || undefined,
+          }),
+        }
+      )
+
+      setSuccess(
+        `${payload.salariesCredites} salarié${
+          payload.salariesCredites > 1 ? "s" : ""
+        } crédité${
+          payload.salariesCredites > 1 ? "s" : ""
+        } de ${formatMoney(payload.montant)} — total ${formatMoney(
+          payload.montantTotal
+        )}.`
+      )
+
+      formElement.reset()
+
       await load()
     } catch (caught) {
-      setSubmitError(caught instanceof Error ? caught.message : "Impossible d’effectuer l’abondement.")
+      setSubmitError(
+        caught instanceof Error
+          ? caught.message
+          : "Impossible d’effectuer l’abondement."
+      )
     } finally {
       setSubmitting(false)
     }

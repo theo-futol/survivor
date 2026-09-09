@@ -12,7 +12,7 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
 const abondementSchema = z.object({
   montant: z.number().int().positive(),
   date: z.iso.date().optional(),
-  type: z.enum(['fixe', 'variable']),
+  type: z.enum(['fixe', 'variable']).default('fixe'),
   comment: z.string().max(500).regex(/^[^<>'"&]*$/).optional(),
 });
 
