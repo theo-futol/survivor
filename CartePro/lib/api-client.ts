@@ -148,7 +148,7 @@ export function parsePoint(location: unknown): { latitude: number; longitude: nu
 }
 
 export function roleHome(role: ApiRole) {
-  if (role === "EMPLOYEE") return "/"
+  if (role === "EMPLOYEE") return "/employee"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
   return "/profile"

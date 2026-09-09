@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const employeeLinks = [
-  { href: "/", label: "Accueil", icon: Home },
+  { href: "/employee", label: "Accueil", icon: Home },
   { href: "/transactions", label: "Transactions", icon: History },
   { href: "/partners", label: "Partenaires", icon: MapPinned },
   { href: "/profile", label: "Profil", icon: UserRound },
@@ -33,9 +33,9 @@ export function AccountHeader() {
   const pathname = usePathname()
   const { data } = useCurrentUser()
   const role = data?.user.role
-  const employeePath = pathname === "/" || pathname.startsWith("/transactions") || pathname.startsWith("/partners") || pathname.startsWith("/history") || pathname.startsWith("/credited") || pathname.startsWith("/consumes")
+  const employeePath = pathname === "/employee" || pathname.startsWith("/transactions") || pathname.startsWith("/partners") || pathname.startsWith("/history") || pathname.startsWith("/credited") || pathname.startsWith("/consumes")
   const links = role === "EMPLOYEE" || (!role && employeePath) ? employeeLinks : role === "COMPANY" ? companyLinks : role === "ADMIN" ? adminLinks : partnerLinks
-  const homeHref = role ? roleHome(role) : employeePath ? "/" : "/profile"
+  const homeHref = role ? roleHome(role) : employeePath ? "/employee" : "/profile"
   const displayName = data ? `${data.user.name} ${data.user.surname}`.trim() : ""
 
   async function logout() {
