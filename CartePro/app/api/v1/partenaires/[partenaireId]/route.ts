@@ -11,7 +11,7 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  * /api/v1/partenaires/{partenaireId}:
  *   patch:
  *     summary: Mise à jour d'un partenaire
- *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis.
+ *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -60,6 +60,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
       throw new AppError('Invalid JSON in request body', 400);
     });
     const patch = companyPatchSchema.parse(body);
+
+    // A partner managing its own profile must stay "subject to administrative
+    // validation": only an admin may touch the fields that record that review.
+    if (actor.role !== 'ADMIN')
+    {
+      const adminOnlyFields = ['verified', 'agentId', 'reasonId', 'kbisId'] as const;
+      const attempted = adminOnlyFields.filter((field) => field in patch);
+
+      if (attempted.length > 0)
+      {
+        throw new AppError('Seul un administrateur peut modifier ces champs.', 403);
+      }
+    }
 
     const partner = await updateCompany(partenaireId, true, patch);
 

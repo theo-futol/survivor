@@ -183,7 +183,18 @@ export default function CreditCard({
                 )}
               </div>
             </div>
-          ) : (
+          ) : null}
+
+          {isPayment && qrCode && (
+            <p className="mt-4 break-all rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-center font-mono text-[11px] tracking-wide text-white/85 sm:text-xs">
+              Le QR ne scanne pas ? Donnez ce code au partenaire :{" "}
+              <span className="font-bold text-white">
+                {qrCode.match(/.{1,4}/g)?.join(" ") ?? qrCode}
+              </span>
+            </p>
+          )}
+
+          {!isPayment && (
             <>
               {/* PUCE + NFC */}
               <div className="flex items-center justify-between">

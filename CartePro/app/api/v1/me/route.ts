@@ -59,6 +59,7 @@ export async function GET(request: Request)
           verified: companyRow.verified,
           isPartner: companyRow.isPartner,
           categoryId: companyRow.categoryId,
+          description: companyRow.description,
           category: companyCategory ? { id: companyCategory.id, category: companyCategory.category } : null,
         }
       : null;

@@ -102,6 +102,15 @@ describe('GET /api/v1/partenaires', () =>
 
     expect((await get('?categorie=Inconnue', token)).status).toBe(404);
   });
+
+  it('lets a PARTNER caller browse the network when it opts in with network=true', async () =>
+  {
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+    const json = await (await get('?network=true', token)).json();
+
+    expect(json.data.length).toBeGreaterThan(1);
+    expect(json.data.every((partner: { verified: boolean }) => partner.verified === true)).toBe(true);
+  });
 });
 
 describe('POST /api/v1/partenaires', () =>
@@ -150,6 +159,21 @@ describe('PATCH & DELETE /api/v1/partenaires/{partenaireId}', () =>
     const json = await (await patch(PARTNER_COMPANY_ID, { name: 'Partenaire SAS' }, token)).json();
 
     expect(json.name).toBe('Partenaire SAS');
+  });
+
+  it('returns 403 when a partner tries to self-verify', async () =>
+  {
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+
+    expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(403);
+  });
+
+  it('lets an admin set verified on a partner', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const json = await (await patch(PARTNER_COMPANY_ID, { verified: true }, token)).json();
+
+    expect(json.verified).toBe(true);
   });
 
   it('soft-deletes a partner as admin', async () =>

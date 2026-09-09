@@ -12,7 +12,7 @@ const categorieSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
  * /api/v1/partenaires:
  *   get:
  *     summary: Liste paginée des partenaires
- *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un salarié ou un administrateur voit tout le réseau ; un utilisateur `PARTNER` ne voit que sa propre fiche.
+ *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un salarié ou un administrateur voit tout le réseau ; un utilisateur `PARTNER` ne voit que sa propre fiche, sauf s'il passe `network=true` pour parcourir le réseau des partenaires validés (comme le ferait un salarié).
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -26,6 +26,10 @@ const categorieSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
  *         name: categorie
  *         schema: { type: string }
  *         description: Nom de la catégorie d'entreprise à filtrer.
+ *       - in: query
+ *         name: network
+ *         schema: { type: boolean, default: false }
+ *         description: Réservé aux appelants `PARTNER` — passer `true` pour consulter le réseau des autres partenaires validés plutôt que sa propre fiche.
  *     responses:
  *       '200':
  *         description: Liste récupérée avec succès.
@@ -64,13 +68,17 @@ export async function GET(request: Request)
     const url = new URL(request.url);
     const pagination = parsePagination(url);
     const categorie = categorieSchema.parse(url.searchParams.get('categorie') ?? undefined);
+    // Opt-in only: a PARTNER caller stays restricted to its own profile unless
+    // it explicitly asks to browse the network, so every existing caller of
+    // this route keeps its current behavior.
+    const browsingNetwork = actor.role === 'PARTNER' && url.searchParams.get('network') === 'true';
 
     const { data, total } = await listCompanies({
       isPartner: true,
       pagination,
       categorie,
-      verified: actor.role === 'EMPLOYEE' ? true : undefined,
-      id: actor.role === 'PARTNER' ? (actor.companyId ?? '') : undefined,
+      verified: actor.role === 'EMPLOYEE' || browsingNetwork ? true : undefined,
+      id: actor.role === 'PARTNER' && !browsingNetwork ? (actor.companyId ?? '') : undefined,
     });
 
     return Response.json({ data, meta: buildMeta(pagination, total) }, { status: 200 });
