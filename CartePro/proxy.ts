@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { AUTH_COOKIE_NAME, verifyToken } from "@/lib/services/auth_service"
 
-const employeeOnly = ["/transactions", "/partners", "/history", "/credited", "/consumes"]
+const employeeOnly = ["/employee", "/transactions", "/partners", "/history", "/credited", "/consumes"]
 const companyOnly = ["/employer"]
 const partnerOnly = ["/partner"]
 const adminOnly = ["/admin", "/administration"]
@@ -14,7 +14,7 @@ function matches(pathname: string, routes: string[]) {
 }
 
 function homeForRole(role: string) {
-  if (role === "EMPLOYEE") return "/"
+  if (role === "EMPLOYEE") return "/employee"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
   if (role === "PARTNER") return "/partner"
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
   const session = token ? await verifyToken(token) : null
 
   if (!session) {
-    const loginUrl = new URL("/login", request.url)
+    const loginUrl = new URL("/", request.url)
     if (request.nextUrl.pathname !== "/") {
       loginUrl.searchParams.set("next", request.nextUrl.pathname)
     }
@@ -56,6 +56,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/employee/:path*",
     "/transactions/:path*",
     "/partners/:path*",
     "/history/:path*",

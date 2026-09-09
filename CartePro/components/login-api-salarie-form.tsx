@@ -28,7 +28,7 @@ async function readError(response: Response) {
 }
 
 function homeForRole(role: string) {
-  if (role === "EMPLOYEE") return "/"
+  if (role === "EMPLOYEE") return "/employee"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
   if (role === "PARTNER") return "/partner"
