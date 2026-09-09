@@ -10,6 +10,7 @@ interface UploadOptions {
   bucket?: string;
   contentType?: string;
   extension?: string;
+  metadata?: Record<string, string>;
 }
 
 interface UploadResult {
@@ -32,6 +33,7 @@ export async function uploadFile(fileBuffer: Buffer, options: UploadOptions = {}
       Key: key,
       Body: fileBuffer,
       ContentType: options.contentType || "application/octet-stream",
+      Metadata: options.metadata,
     })
   );
 

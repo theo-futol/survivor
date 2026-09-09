@@ -1,13 +1,12 @@
 import { randomUUID } from "node:crypto"
 
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
 import type { PoolClient } from "pg"
 import { z } from "zod"
 
 import { hashPassword } from "@/lib/services/auth_service"
 import { AppError } from "@/lib/services/error_service"
+import { deleteFile, uploadFile } from "@/lib/services/garage_service"
 import { withTransaction } from "@/lib/services/postgres_client"
-import { s3Client } from "@/lib/services/s3_client"
 
 const MAX_KBIS_SIZE = 10 * 1024 * 1024
 const KBIS_BUCKET = process.env.GARAGE_DEFAULT_BUCKET ?? "kbis-documents"
@@ -140,23 +139,22 @@ export async function registerProfessionalAccount(
   const userId = randomUUID()
   const role = data.accountType === "partner" ? "PARTNER" : "COMPANY"
   const isPartner = role === "PARTNER"
-  const storageKey = `professional-signups/${isPartner ? "partners" : "companies"}/${companyId}/kbis.pdf`
   const representative = splitRepresentative(data.legalRepresentative)
   const fullAddress = `${data.address}, ${data.city}`
   const passwordHash = hashPassword(data.password)
 
+  let uploadResult: Awaited<ReturnType<typeof uploadFile>>
   try {
-    await s3Client.send(new PutObjectCommand({
-      Bucket: KBIS_BUCKET,
-      Key: storageKey,
-      Body: kbisBytes,
-      ContentType: "application/pdf",
-      Metadata: {
+    uploadResult = await uploadFile(kbisBytes, {
+      bucket: KBIS_BUCKET,
+      contentType: "application/pdf",
+      extension: "pdf",
+      metadata: {
         source: "professional-signup",
         accounttype: data.accountType,
         siret: data.registrationNumber,
       },
-    }))
+    })
   } catch (error) {
     console.error("Professional signup KBIS upload failed", error)
     throw new AppError("Le stockage du Kbis est temporairement indisponible.", 503)
@@ -171,7 +169,7 @@ export async function registerProfessionalAccount(
       await client.query(
         `INSERT INTO public.document (id, "storageKey", "mimeType", size, "createdAt")
          VALUES ($1, $2, 'application/pdf', $3, NOW())`,
-        [documentId, storageKey, kbisBytes.length],
+        [documentId, uploadResult.key, kbisBytes.length],
       )
 
       await client.query(
@@ -218,7 +216,7 @@ export async function registerProfessionalAccount(
     })
   } catch (error) {
     try {
-      await s3Client.send(new DeleteObjectCommand({ Bucket: KBIS_BUCKET, Key: storageKey }))
+      await deleteFile(uploadResult.key, uploadResult.bucket)
     } catch (cleanupError) {
       console.error("Professional signup KBIS cleanup failed", cleanupError)
     }
