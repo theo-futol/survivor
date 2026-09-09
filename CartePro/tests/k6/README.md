@@ -9,6 +9,7 @@ reachable database are required.
 
 ```bash
 brew install k6            # macOS
+sudo apt install k6       # Ubuntu
 # or: docker run --rm -i grafana/k6 run - < tests/k6/stress.js
 ```
 

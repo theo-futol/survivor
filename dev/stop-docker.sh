@@ -3,8 +3,6 @@
 # Arrêt immédiat du script en cas d'erreur
 set -e
 
-cd "$(dirname "$0")/.."
-
 ENV_FILE=$1
 
 if [ -z "$ENV_FILE" ]; then

@@ -8,11 +8,11 @@
  */
 
 /** Base URL of the running CartePro instance. */
-export const BASE_URL = (__ENV.BASE_URL || 'https://localhost:3000').replace(/\/$/, '');
+export const BASE_URL = __ENV.APP_BASE_URL || 'https://localhost:3000';
 
 /** Optional credentials — when both are set, the login flow is exercised too. */
-export const USER_EMAIL = __ENV.K6_EMAIL || '';
-export const USER_PASSWORD = __ENV.K6_PASSWORD || '';
+export const USER_EMAIL = 'employee@cartepro.test';
+export const USER_PASSWORD = 'EmployeePass1!';
 
 /**
  * `next dev` serves HTTPS with a self-signed certificate (see the `dev` script

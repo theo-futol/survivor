@@ -82,22 +82,13 @@ Use the helper script — like the prod one, it issues the HTTPS certificate bef
 
 Starts `db`, `redis`, `garage` and `app-dev`. The `./CartePro` directory is bind-mounted into the container (with `node_modules` kept container-side), so local source changes hot-reload without rebuilding the image.
 
-There is no nginx in this profile: Next.js serves TLS itself (`next dev --experimental-https`) using the same certificate pair as prod. The app is reachable at:
-
-| URL | From |
-| --- | --- |
-| `https://localhost:3000` | this machine |
-| `https://<your-lan-ip>:3000` | phones and laptops on the same network |
+There is no nginx in this profile: Next.js serves TLS itself (`next dev --experimental-https`) using the same certificate pair as prod.
 
 The equivalent manual command, if you already have a certificate covering your current LAN IP:
 
 ```bash
 docker compose --env-file .env.development --profile dev up --build
 ```
-
-> **Do not use the address Next.js prints as `Network:`.** Inside Docker it prints the container's own bridge address (`172.x.y.z`), which is reachable from this machine only and is not in the certificate. Other devices need the **host's** LAN IP, which `./dev/start-dev.sh` prints when it starts.
-
-HTTPS is not optional here: the partner QR scanner needs the camera and `crypto.subtle`, and browsers only expose those on a secure origin. `http://localhost` counts as one, `http://<lan-ip>` does not — so a phone on the LAN must reach the app over HTTPS with a certificate it accepts.
 
 ### Prod mode
 
@@ -118,7 +109,7 @@ The script:
 4. Refuses to start if `.env.production` is missing or empty.
 5. Runs `docker compose --env-file .env.production --profile prod up`.
 
-Once up, the app is reachable at `https://localhost` and at `https://<your-lan-ip>` from other devices on the same network. Port `80` redirects to `443`.
+Once up, the app is reachable at `https://localhost`. Port `80` redirects to `443`.
 
 The equivalent manual command, if you already have valid certificates:
 
@@ -141,9 +132,6 @@ The `prod` profile puts nginx in front of `app-prod`, so it needs the certificat
 | `CartePro/certificates/localhost.pem` | `/etc/ssl/certs/localhost.pem` |
 | `CartePro/certificates/localhost-key.pem` | `/etc/ssl/private/localhost-key.pem` |
 
-They are issued with [mkcert](https://github.com/FiloSottile/mkcert), which also installs a local CA into the system trust store (`mkcert -install`) so browsers on this machine trust the certificate without a warning. The certificate covers **`localhost`, `127.0.0.1`, `::1` and the detected LAN IP**, which is why both `https://localhost` and `https://<lan-ip>` work.
-
-The LAN IP is taken from the routing table (which source address reaches the internet), not from the first entry of `hostname -I` — otherwise a Docker bridge address such as `172.18.x.x` can win the race and end up in the certificate, leaving every real device unable to verify it. Override the detection when it picks the wrong interface:
 
 ```bash
 APP_HOST_IP=192.168.1.42 ./dev/start-dev.sh
@@ -204,7 +192,7 @@ top-ups that fund them) can be loaded once the dev stack is up:
 
 ```bash
 cd "CartePro" && npm run db:seed:generate   # regenerates mocks/seed.sql, mocks/transactions.csv, mocks/justificatif.md
-cd .. && ./dev/seed-db.sh                       # applies pending migrations, then loads mocks/seed.sql
+cd .. && ./dev/seed-db.sh mocks/seed.sql {container_app_name} {container_db_name}                      # applies pending migrations, then loads mocks/seed.sql
 ```
 
 `mocks/seed.sql` is committed, so `dev/seed-db.sh` can be run directly against
@@ -215,8 +203,7 @@ on an empty database reproduces the exact same ids, amounts, and dates, so
 statement carries `ON CONFLICT DO NOTHING`, so re-applying `mocks/seed.sql` to an
 already seeded database is a no-op instead of a unique-violation. The seed only
 ever `INSERT`s rows in chronological order (never `UPDATE`s a transaction to
-fix a balance); `mocks/justificatif.md` shows the abondements/débits/total
-reconciliation for one of the three employees seeded at a zero balance.
+fix a balance).
 
 Seeded salariés are created with `accountStatus = 'ACCEPTED'`, so they can log in
 straight away (`<prenom>.<nom><n>@example.fr` / `Secret123!`).
