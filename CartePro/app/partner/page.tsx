@@ -1,88 +1,63 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import {
+  Building2,
+  CheckCircle2,
+  Hash,
+  History,
+  LoaderCircle,
+  Mail,
+  MapPin,
+  QrCode,
+  XCircle,
+} from "lucide-react"
+import { AccountHeader } from "@/components/account-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { apiFetch, formatMoney, type ApiCompany } from "@/lib/api-client"
-import { LogOut } from "lucide-react"
-
-interface PartnerSidebarProps {
-  activeTab: string
-  onSelectTab: (tab: string) => void
-}
-
-function PartnerSidebar({ activeTab, onSelectTab }: PartnerSidebarProps) {
-  const router = useRouter()
-  const navItems = [
-    { id: "scan", title: "Scanner QR Code" },
-    { id: "info", title: "Infos Partenaire" },
-    { id: "history", title: "Historique des transactions" },
-  ]
-
-  // TODO: brancher sur la vraie logique de déconnexion (session/auth) une
-  // fois disponible ; pour l'instant on redirige simplement vers /login.
-  function handleLogout() {
-    router.push("/login")
-  }
-
-  return (
-    <aside className="w-56 border-r bg-muted/30 flex flex-col">
-      <div className="p-4 font-bold text-lg">Espace Partenaire</div>
-      <nav className="flex-1">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={`w-full text-left px-4 py-2 hover:bg-muted/50 ${activeTab === item.id ? "bg-muted font-semibold" : ""}`}
-            onClick={() => onSelectTab(item.id)}
-          >
-            {item.title}
-          </button>
-        ))}
-      </nav>
-      <div className="p-2 border-t">
-        <button
-          className="w-full flex items-center gap-2 text-left px-4 py-2 rounded-md text-destructive hover:bg-destructive/10"
-          onClick={handleLogout}
-        >
-          <LogOut className="size-4" />
-          Déconnexion
-        </button>
-      </div>
-    </aside>
-  )
-}
 
 function PartnerInfo({ company }: { company: ApiCompany | null }) {
   if (!company) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-2">Informations du partenaire</h2>
-        <p className="text-muted-foreground">
+      <section className="rounded-3xl border border-dashed bg-card p-8 text-center shadow-sm">
+        <Building2 className="mx-auto size-12 text-muted-foreground" aria-hidden="true" />
+        <h2 className="mt-4 text-2xl font-black">Informations du partenaire</h2>
+        <p className="mt-2 text-muted-foreground">
           Votre compte n&apos;est rattaché à aucune entreprise partenaire.
         </p>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-2">Informations du partenaire</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle>{company.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-2">Catégorie : {company.category?.category ?? "—"}</div>
-          <div className="mb-2">Adresse : {company.address}, {company.postalCode}</div>
-          <div className="mb-2">SIRET : {company.siret}</div>
-          <div className="mb-2">Contact : {company.email}</div>
-        </CardContent>
-      </Card>
+    <section className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+      <div className="bg-primary p-7 text-primary-foreground sm:p-8">
+        <p className="text-sm font-semibold text-primary-foreground/80">Informations du partenaire</p>
+        <h2 className="mt-1 text-2xl font-black">{company.name}</h2>
+      </div>
+      <div className="grid gap-5 p-7 sm:grid-cols-2 sm:p-8">
+        <InfoField icon={<Building2 />} label="Catégorie" value={company.category?.category ?? "—"} />
+        <InfoField icon={<MapPin />} label="Adresse" value={`${company.address}, ${company.postalCode}`} />
+        <InfoField icon={<Hash />} label="SIRET" value={company.siret} />
+        <InfoField icon={<Mail />} label="Contact" value={company.email} />
+      </div>
+    </section>
+  )
+}
+
+function InfoField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-secondary p-5">
+      <div className="flex items-center gap-2 text-primary">
+        <span className="[&>svg]:size-4" aria-hidden="true">{icon}</span>
+        <p className="text-sm font-bold">{label}</p>
+      </div>
+      <p className="mt-2 break-words font-semibold">{value}</p>
     </div>
   )
 }
@@ -148,65 +123,76 @@ function TransactionHistory({ partenaireId, companyName }: TransactionHistoryPro
     .reduce((sum, t) => sum + (t.type === "REFUND" ? -t.amount : t.amount), 0)
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-2">Historique des transactions — {companyName}</h2>
+    <section className="overflow-hidden rounded-3xl border bg-card shadow-sm" aria-labelledby="partner-history-title">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5 sm:px-7">
+        <div>
+          <h2 id="partner-history-title" className="text-2xl font-black">Historique des transactions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {companyName}
+            {!loading && !error && ` · ${transactions.length} transaction${transactions.length > 1 ? "s" : ""}`}
+          </p>
+        </div>
+        {!loading && !error && transactions.length > 0 && (
+          <div className="rounded-2xl bg-secondary px-5 py-3 text-right">
+            <p className="text-sm font-semibold text-primary">Encaissé</p>
+            <p className="text-xl font-black">{formatMoney(total)}</p>
+          </div>
+        )}
+      </div>
 
-      {error && <div className="rounded bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <p role="alert" className="m-5 rounded-2xl bg-brand-red-soft p-4 text-sm font-semibold text-brand-red-dark sm:m-7">
+          {error}
+        </p>
+      )}
 
       {loading ? (
-        <div className="text-muted-foreground">Chargement des transactions...</div>
+        <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
+          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Chargement des transactions…
+        </div>
       ) : transactions.length === 0 && !error ? (
-        <div className="text-muted-foreground">Aucune transaction pour le moment.</div>
+        <div className="p-10 text-center text-sm text-muted-foreground">Aucune transaction pour le moment.</div>
       ) : (
-        <>
-          <div className="text-sm text-muted-foreground">
-            {transactions.length} transaction{transactions.length > 1 ? "s" : ""} · encaissé :{" "}
-            <span className="font-semibold text-foreground">{formatMoney(total)}</span>
-          </div>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left px-4 py-2 font-semibold">Date</th>
-                  <th className="text-left px-4 py-2 font-semibold">Client</th>
-                  <th className="text-left px-4 py-2 font-semibold">Type</th>
-                  <th className="text-left px-4 py-2 font-semibold">Statut</th>
-                  <th className="text-right px-4 py-2 font-semibold">Montant</th>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px] text-sm">
+            <thead className="bg-muted/50 text-left">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Date</th>
+                <th className="px-4 py-3 font-semibold">Client</th>
+                <th className="px-4 py-3 font-semibold">Type</th>
+                <th className="px-4 py-3 font-semibold">Statut</th>
+                <th className="px-4 py-3 text-right font-semibold">Montant</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {transactions.map((t) => (
+                <tr key={t.id}>
+                  <td className="px-4 py-3">
+                    {new Date(t.createdAt).toLocaleString("fr-FR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {t.user ? `${t.user.name} ${t.user.surname}` : "—"}
+                  </td>
+                  <td className="px-4 py-3">{t.type}</td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      variant={t.status === "VALIDER" ? "outline" : "destructive"}
+                      className={t.status === "VALIDER" ? "border-transparent bg-brand-success-soft text-brand-success" : undefined}
+                    >
+                      {t.status === "VALIDER" ? "Validée" : "Refusée"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold">{formatMoney(t.amount)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {transactions.map((t) => (
-                  <tr key={t.id} className="border-t">
-                    <td className="px-4 py-2">
-                      {new Date(t.createdAt).toLocaleString("fr-FR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </td>
-                    <td className="px-4 py-2">
-                      {t.user ? `${t.user.name} ${t.user.surname}` : "—"}
-                    </td>
-                    <td className="px-4 py-2">{t.type}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={
-                          t.status === "VALIDER"
-                            ? "text-brand-green-deep font-semibold"
-                            : "text-destructive font-semibold"
-                        }
-                      >
-                        {t.status === "VALIDER" ? "Validée" : "Refusée"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-right">{formatMoney(t.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -404,23 +390,24 @@ function QrCodeScanner({ companyId }: QrCodeScannerProps) {
   const showCamera = !scanned && !resolving && !error
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-2">Scanner un QR Code</h2>
-      <p className="text-muted-foreground">
+    <section className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8" aria-labelledby="scan-title">
+      <p className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Caisse</p>
+      <h2 id="scan-title" className="mt-1 text-2xl font-black">Scanner un QR code</h2>
+      <p className="mt-2 max-w-2xl text-muted-foreground">
         Scannez le QR code du salarié, saisissez le montant à facturer, puis validez l&apos;encaissement.
       </p>
-      <Button onClick={() => setOpen(true)} disabled={!companyId}>
-        Ouvrir le lecteur QR Code
+      <Button className="mt-5" onClick={() => setOpen(true)} disabled={!companyId}>
+        <QrCode aria-hidden="true" /> Ouvrir le lecteur QR code
       </Button>
       {!companyId && (
-        <p className="text-sm text-muted-foreground">
+        <p className="mt-3 text-sm text-muted-foreground">
           Votre compte n&apos;est rattaché à aucune entreprise partenaire : l&apos;encaissement est indisponible.
         </p>
       )}
       <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : handleClose())}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Encaisser un paiement</DialogTitle>
+            <DialogTitle className="text-xl">Encaisser un paiement</DialogTitle>
             <DialogDescription>
               {scanned
                 ? "Saisissez le montant à facturer, puis validez la transaction."
@@ -430,17 +417,23 @@ function QrCodeScanner({ companyId }: QrCodeScannerProps) {
           <div className="flex flex-col items-center gap-4">
             {error && (
               <div className="w-full space-y-3 text-center">
-                <p className="text-sm text-destructive">{error}</p>
+                <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  {error}
+                </p>
                 <Button variant="outline" onClick={() => setAttempt((current) => current + 1)}>
                   Rescanner
                 </Button>
               </div>
             )}
-            {resolving && <div className="text-sm text-muted-foreground">Lecture du QR code…</div>}
+            {resolving && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Lecture du QR code…
+              </p>
+            )}
             {showCamera && (
               <video
                 ref={videoRef}
-                className="w-full aspect-square rounded-lg bg-black object-cover"
+                className="w-full aspect-square rounded-2xl bg-black object-cover"
                 muted
                 playsInline
               />
@@ -450,11 +443,9 @@ function QrCodeScanner({ companyId }: QrCodeScannerProps) {
               <QrPaymentForm scanned={scanned} companyId={companyId} onDone={handleClose} />
             )}
           </div>
-          <DialogFooter showCloseButton>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   )
 }
 
@@ -504,18 +495,26 @@ function QrPaymentForm({ scanned, companyId, onDone }: QrPaymentFormProps) {
   }
 
   if (result) {
+    const success = result.status === "VALIDER"
     return (
-      <div className="w-full space-y-3 text-center">
-        {result.status === "VALIDER" ? (
+      <div className="w-full space-y-4 text-center">
+        <div
+          className={`mx-auto flex size-12 items-center justify-center rounded-full ${
+            success ? "bg-brand-success-soft text-brand-success" : "bg-brand-red-soft text-brand-red-dark"
+          }`}
+        >
+          {success ? <CheckCircle2 aria-hidden="true" /> : <XCircle aria-hidden="true" />}
+        </div>
+        {success ? (
           <>
-            <p className="font-semibold text-brand-green-deep">Paiement validé</p>
+            <p className="font-black text-brand-success">Paiement validé</p>
             <p className="text-sm text-muted-foreground">
               Nouveau solde de {scanned.name} : {formatMoney(result.newBalance)}
             </p>
           </>
         ) : (
           <>
-            <p className="font-semibold text-destructive">Paiement refusé — solde insuffisant</p>
+            <p className="font-black text-brand-red-dark">Paiement refusé — solde insuffisant</p>
             <p className="text-sm text-muted-foreground">
               Solde de {scanned.name} : {formatMoney(result.newBalance)}
             </p>
@@ -528,9 +527,9 @@ function QrPaymentForm({ scanned, companyId, onDone }: QrPaymentFormProps) {
 
   return (
     <form className="w-full space-y-3" onSubmit={handleSubmit}>
-      <div className="rounded bg-muted p-3 text-center">
+      <div className="rounded-2xl bg-secondary p-4 text-center">
         <div className="text-sm text-muted-foreground">Salarié</div>
-        <div className="font-semibold">{scanned.name} {scanned.surname}</div>
+        <div className="font-black">{scanned.name} {scanned.surname}</div>
       </div>
       <div>
         <Label htmlFor="payment-amount">Montant à facturer (€)</Label>
@@ -541,42 +540,79 @@ function QrPaymentForm({ scanned, companyId, onDone }: QrPaymentFormProps) {
           step="0.01"
           inputMode="decimal"
           autoFocus
+          className="mt-2"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
         />
       </div>
       <Button type="submit" className="w-full" disabled={submitting}>
+        {submitting && <LoaderCircle className="animate-spin" aria-hidden="true" />}
         {submitting ? "Validation…" : "Valider la transaction"}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </form>
   )
 }
 
+const PARTNER_TABS = [
+  { id: "scan", label: "Scanner QR Code", icon: QrCode },
+  { id: "info", label: "Infos partenaire", icon: Building2 },
+  { id: "history", label: "Historique", icon: History },
+] as const
+
 export default function PartenairePage() {
-  const [tab, setTab] = useState("scan")
+  const [tab, setTab] = useState<(typeof PARTNER_TABS)[number]["id"]>("scan")
   const { data: session, loading } = useCurrentUser()
   const company = session?.company ?? null
 
   return (
-    <div className="flex min-h-screen">
-      <PartnerSidebar activeTab={tab} onSelectTab={setTab} />
-      <main className="flex-1 p-6">
-        {loading ? (
-          <div className="text-muted-foreground">Chargement de votre espace…</div>
-        ) : (
-          <>
-            {tab === "info" && <PartnerInfo company={company} />}
-            {tab === "history" && (
-              <TransactionHistory
-                partenaireId={company?.id ?? null}
-                companyName={company?.name ?? "votre établissement"}
-              />
-            )}
-            {tab === "scan" && <QrCodeScanner companyId={company?.id ?? null} />}
-          </>
-        )}
+    <div className="min-h-svh bg-background">
+      <AccountHeader />
+      <main id="contenu-principal" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Espace partenaire</p>
+        <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{company?.name ?? "Bienvenue"}</h1>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Scannez les QR codes de paiement, consultez vos informations et l&apos;historique de votre caisse.
+        </p>
+
+        <div className="mt-7 flex flex-wrap items-center gap-2" role="tablist" aria-label="Navigation espace partenaire">
+          {PARTNER_TABS.map(({ id, label, icon: Icon }) => (
+            <Button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              variant={tab === id ? "default" : "outline"}
+              onClick={() => setTab(id)}
+            >
+              <Icon aria-hidden="true" /> {label}
+            </Button>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 rounded-3xl border bg-card p-10 text-sm text-muted-foreground">
+              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Chargement de votre espace…
+            </div>
+          ) : (
+            <>
+              {tab === "info" && <PartnerInfo company={company} />}
+              {tab === "history" && (
+                <TransactionHistory
+                  partenaireId={company?.id ?? null}
+                  companyName={company?.name ?? "votre établissement"}
+                />
+              )}
+              {tab === "scan" && <QrCodeScanner companyId={company?.id ?? null} />}
+            </>
+          )}
+        </div>
       </main>
     </div>
   )
