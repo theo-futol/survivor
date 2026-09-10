@@ -151,5 +151,6 @@ export function roleHome(role: ApiRole) {
   if (role === "EMPLOYEE") return "/employee"
   if (role === "COMPANY") return "/employer"
   if (role === "ADMIN") return "/admin"
+  if (role === "PARTNER") return "/partner"
   return "/profile"
 }

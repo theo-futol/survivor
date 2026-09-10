@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { BriefcaseBusiness, History, Home, LogOut, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react"
+import { BriefcaseBusiness, Handshake, History, Home, LogOut, MapPinned, Menu, ShieldCheck, UserRound } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { BRAND } from "@/lib/brand"
@@ -22,7 +22,10 @@ const companyLinks = [
   { href: "/employer", label: "Espace employeur", icon: BriefcaseBusiness },
   { href: "/profile", label: "Profil", icon: UserRound },
 ]
-const partnerLinks = [{ href: "/profile", label: "Profil", icon: UserRound }]
+const partnerLinks = [
+  { href: "/partner", label: "Espace partenaire", icon: Handshake },
+  { href: "/profile", label: "Profil", icon: UserRound },
+]
 const adminLinks = [
   { href: "/admin", label: "Administration", icon: ShieldCheck },
   { href: "/profile", label: "Profil", icon: UserRound },
