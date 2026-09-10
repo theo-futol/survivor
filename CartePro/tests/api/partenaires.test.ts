@@ -301,3 +301,60 @@ describe('PATCH & DELETE /api/v1/partenaires/{partenaireId}', () =>
     expect(json.data.some((partner: { id: string }) => partner.id === PARTNER_COMPANY_ID)).toBe(false);
   });
 });
+
+// `active` suspends and reactivates a partner without deleting it, the way
+// `DELETE` alone never could once the row disappeared from every read.
+describe('PATCH /api/v1/partenaires/{partenaireId} — active toggle', () =>
+{
+  beforeEach(() => resetMockDb());
+
+  it('returns 403 when a partner tries to set its own active flag', async () =>
+  {
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+
+    expect((await patch(PARTNER_COMPANY_ID, { active: false }, token)).status).toBe(403);
+  });
+
+  it('suspends the partner and hides it from the default listing', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await patch(PARTNER_COMPANY_ID, { active: false }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.active).toBe(false);
+
+    const listed = await (await get('', token)).json();
+
+    expect(listed.data.some((partner: { id: string }) => partner.id === PARTNER_COMPANY_ID)).toBe(false);
+  });
+
+  it('keeps a suspended partner visible to an admin passing includeInactive=true', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(PARTNER_COMPANY_ID, { active: false }, token);
+
+    const listed = await (await get('?includeInactive=true', token)).json();
+    const found = listed.data.find((partner: { id: string }) => partner.id === PARTNER_COMPANY_ID);
+
+    expect(found?.active).toBe(false);
+  });
+
+  it('reactivates a suspended partner, restoring it to the default listing', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(PARTNER_COMPANY_ID, { active: false }, token);
+
+    const response = await patch(PARTNER_COMPANY_ID, { active: true }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.active).toBe(true);
+
+    const listed = await (await get('', token)).json();
+
+    expect(listed.data.some((partner: { id: string }) => partner.id === PARTNER_COMPANY_ID)).toBe(true);
+  });
+});

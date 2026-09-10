@@ -284,3 +284,67 @@ describe('DELETE /api/v1/employeurs/{employeurId}', () =>
     expect(json.data.some((company: { id: string }) => company.id === EMPLOYER_COMPANY_ID)).toBe(false);
   });
 });
+
+// `active` suspends and reactivates a company without deleting it, the way
+// `DELETE` alone never could once the row disappeared from every read.
+describe('PATCH /api/v1/employeurs/{employeurId} — active toggle', () =>
+{
+  beforeEach(() => resetMockDb());
+
+  function listAsAdmin(token: string, includeInactive = false)
+  {
+    const suffix = includeInactive ? '?includeInactive=true' : '';
+
+    return GET(new Request(`http://localhost/api/v1/employeurs${suffix}`, { headers: headersFor(token) }));
+  }
+
+  it('returns 403 when a COMPANY caller tries to set its own active flag', async () =>
+  {
+    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+
+    expect((await patch(EMPLOYER_COMPANY_ID, { active: false }, token)).status).toBe(403);
+  });
+
+  it('suspends the employer and hides it from the default listing', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await patch(EMPLOYER_COMPANY_ID, { active: false }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.active).toBe(false);
+
+    const listed = await (await listAsAdmin(token)).json();
+
+    expect(listed.data.some((company: { id: string }) => company.id === EMPLOYER_COMPANY_ID)).toBe(false);
+  });
+
+  it('keeps a suspended employer visible to an admin passing includeInactive=true', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { active: false }, token);
+
+    const listed = await (await listAsAdmin(token, true)).json();
+    const found = listed.data.find((company: { id: string }) => company.id === EMPLOYER_COMPANY_ID);
+
+    expect(found?.active).toBe(false);
+  });
+
+  it('reactivates a suspended employer, restoring it to the default listing', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { active: false }, token);
+
+    const response = await patch(EMPLOYER_COMPANY_ID, { active: true }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.active).toBe(true);
+
+    const listed = await (await listAsAdmin(token)).json();
+
+    expect(listed.data.some((company: { id: string }) => company.id === EMPLOYER_COMPANY_ID)).toBe(true);
+  });
+});

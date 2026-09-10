@@ -111,6 +111,7 @@ export interface Business {
   address: string
   postalCode: string
   verified: boolean
+  active: boolean
   description?: string
   createdAt?: string
   employees: Person[]
@@ -415,7 +416,7 @@ const dbService = {
 
   async getBusinesses(): Promise<Business[]> {
     const [companies, employees] = await Promise.all([
-      fetchAllPages<ApiCompany>("/api/v1/employeurs"),
+      fetchAllPages<ApiCompany>("/api/v1/employeurs?includeInactive=true"),
       fetchAllPages<ApiSalary>("/api/v1/salaries?includeInactive=true"),
     ])
 
@@ -428,6 +429,7 @@ const dbService = {
       address: company.address,
       postalCode: company.postalCode,
       verified: company.verified,
+      active: company.active ?? true,
       description: company.description,
       createdAt: company.createdAt,
       employees: employees
@@ -441,7 +443,7 @@ const dbService = {
   },
 
   async getNationalData(): Promise<NationalData> {
-    const partners = await fetchAllPages<ApiPartner>("/api/v1/partenaires")
+    const partners = await fetchAllPages<ApiPartner>("/api/v1/partenaires?includeInactive=true")
 
     const withTransactions = await Promise.all(
       partners.map(async (partner): Promise<AdminPartner> => {
@@ -843,18 +845,21 @@ function PartnerView() {
     }
   }
 
-  async function closePartner(partner: AdminPartner) {
-    const confirmed = window.confirm(`Clôturer le compte partenaire « ${partner.name} » ? Cette opération utilise la suppression logique existante.`)
+  async function setPartnerActive(partner: AdminPartner, active: boolean) {
+    const confirmed = active || window.confirm(`Suspendre le compte partenaire « ${partner.name} » ? Il n'apparaîtra plus dans le réseau et ne pourra plus se connecter, mais reste réactivable à tout moment.`)
     if (!confirmed) return
 
     setActionId(partner.id)
     setActionError(null)
     try {
-      await apiFetch(`/api/v1/partenaires/${encodeURIComponent(partner.id)}`, { method: "DELETE" })
-      setPartners((current) => current.filter((item) => item.id !== partner.id))
-      setSelectedPartner(null)
+      await apiFetch(`/api/v1/partenaires/${encodeURIComponent(partner.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      })
+      setPartners((current) => current.map((item) => item.id === partner.id ? { ...item, active } : item))
+      setSelectedPartner((current) => current?.id === partner.id ? { ...current, active } : current)
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : "Impossible de clôturer ce partenaire.")
+      setActionError(caught instanceof Error ? caught.message : "Impossible de mettre à jour ce partenaire.")
     } finally {
       setActionId(null)
     }
@@ -886,10 +891,11 @@ function PartnerView() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Résumé partenaires">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Résumé partenaires">
         <MetricCard icon={<Store />} label="Partenaires" value={String(partners.length)} />
         <MetricCard icon={<BadgeCheck />} label="Validés" value={String(partners.filter((partner) => partner.verified).length)} />
         <MetricCard icon={<UserCheck />} label="En attente" value={String(partners.filter((partner) => !partner.verified).length)} />
+        <MetricCard icon={<Ban />} label="Suspendus" value={String(partners.filter((partner) => !(partner.active ?? true)).length)} />
         <MetricCard icon={<CircleDollarSign />} label="Volume validé" value={formatMoney(partners.reduce((sum, partner) => sum + partner.transactionAmount, 0))} />
       </section>
 
@@ -924,7 +930,10 @@ function PartnerView() {
                 </button>
 
                 <div>
-                  <PartnerStatusBadge verified={partner.verified} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PartnerStatusBadge verified={partner.verified} />
+                    {!(partner.active ?? true) && <Badge variant="destructive">Suspendu</Badge>}
+                  </div>
                   <p className="mt-2 text-xs text-muted-foreground">{partner.address} {partner.postalCode}</p>
                 </div>
 
@@ -942,8 +951,15 @@ function PartnerView() {
                   <Button type="button" size="sm" variant="outline" onClick={() => setSelectedPartner(partner)}>
                     Détails
                   </Button>
-                  <Button type="button" size="sm" variant="destructive" disabled={actionId === partner.id} onClick={() => void closePartner(partner)}>
-                    <Trash2 aria-hidden="true" /> Clôturer
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={(partner.active ?? true) ? "outline" : "default"}
+                    disabled={actionId === partner.id}
+                    onClick={() => void setPartnerActive(partner, !(partner.active ?? true))}
+                  >
+                    {(partner.active ?? true) ? <XCircle aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+                    {(partner.active ?? true) ? "Suspendre" : "Réactiver"}
                   </Button>
                 </div>
               </article>
@@ -966,6 +982,8 @@ function PartnerView() {
               <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
                 <h4 className="font-bold">Identité</h4>
                 <DetailRow label="Statut" value={selectedPartner.verified ? "Validé" : "En attente de validation"} />
+                <Separator />
+                <DetailRow label="Compte" value={(selectedPartner.active ?? true) ? "Actif" : "Suspendu"} />
                 <Separator />
                 <DetailRow label="Email" value={selectedPartner.email} />
                 <Separator />
@@ -1057,8 +1075,14 @@ function PartnerView() {
                   <CheckCircle2 aria-hidden="true" /> Valider la demande
                 </Button>
               ) : <span />}
-              <Button type="button" variant="destructive" disabled={actionId === selectedPartner.id} onClick={() => void closePartner(selectedPartner)}>
-                <Trash2 aria-hidden="true" /> Clôturer le compte
+              <Button
+                type="button"
+                variant={(selectedPartner.active ?? true) ? "destructive" : "default"}
+                disabled={actionId === selectedPartner.id}
+                onClick={() => void setPartnerActive(selectedPartner, !(selectedPartner.active ?? true))}
+              >
+                {(selectedPartner.active ?? true) ? <XCircle aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+                {(selectedPartner.active ?? true) ? "Suspendre le compte" : "Réactiver le compte"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1449,18 +1473,21 @@ function BusinessView() {
     }
   }
 
-  async function closeBusiness(business: Business) {
-    const confirmed = window.confirm(`Clôturer le compte employeur « ${business.name} » ?`)
+  async function setBusinessActive(business: Business, active: boolean) {
+    const confirmed = active || window.confirm(`Suspendre le compte employeur « ${business.name} » ? Il n'apparaîtra plus dans les listings et ne pourra plus se connecter, mais reste réactivable à tout moment.`)
     if (!confirmed) return
 
     setActionId(business.id)
     setActionError(null)
     try {
-      await apiFetch(`/api/v1/employeurs/${encodeURIComponent(business.id)}`, { method: "DELETE" })
-      setBusinesses((current) => current.filter((item) => item.id !== business.id))
-      setSelectedBusiness(null)
+      await apiFetch(`/api/v1/employeurs/${encodeURIComponent(business.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      })
+      setBusinesses((current) => current.map((item) => item.id === business.id ? { ...item, active } : item))
+      setSelectedBusiness((current) => current?.id === business.id ? { ...current, active } : current)
     } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : "Impossible de clôturer cette entreprise.")
+      setActionError(caught instanceof Error ? caught.message : "Impossible de mettre à jour cette entreprise.")
     } finally {
       setActionId(null)
     }
@@ -1477,11 +1504,12 @@ function BusinessView() {
         action={<Button type="button" variant="outline" onClick={() => void load()}><RefreshCw aria-hidden="true" /> Actualiser</Button>}
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard icon={<Building2 />} label="Entreprises" value={String(businesses.length)} />
         <MetricCard icon={<Users />} label="Salariés rattachés" value={String(businesses.reduce((sum, business) => sum + business.employees.length, 0))} />
         <MetricCard icon={<BadgeCheck />} label="Vérifiées" value={String(businesses.filter((business) => business.verified).length)} />
         <MetricCard icon={<UserCheck />} label="À vérifier" value={String(businesses.filter((business) => !business.verified).length)} />
+        <MetricCard icon={<Ban />} label="Suspendues" value={String(businesses.filter((business) => !business.active).length)} />
       </section>
 
       {actionError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{actionError}</div>}
@@ -1503,6 +1531,7 @@ function BusinessView() {
                 </button>
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                   <Badge variant={business.verified ? "default" : "outline"}>{business.verified ? "Vérifiée" : "À vérifier"}</Badge>
+                  {!business.active && <Badge variant="destructive">Suspendue</Badge>}
                   <Badge variant="secondary"><Users className="mr-1 size-3" aria-hidden="true" /> {business.employees.length} salarié{business.employees.length > 1 ? "s" : ""}</Badge>
                   {!business.verified && (
                     <Button type="button" size="sm" disabled={actionId === business.id} onClick={() => void validateBusiness(business)}>
@@ -1510,7 +1539,16 @@ function BusinessView() {
                     </Button>
                   )}
                   <Button type="button" size="sm" variant="outline" onClick={() => setSelectedBusiness(business)}>Détails</Button>
-                  <Button type="button" size="sm" variant="destructive" disabled={actionId === business.id} onClick={() => void closeBusiness(business)}><Trash2 aria-hidden="true" /> Clôturer</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={business.active ? "outline" : "default"}
+                    disabled={actionId === business.id}
+                    onClick={() => void setBusinessActive(business, !business.active)}
+                  >
+                    {business.active ? <XCircle aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+                    {business.active ? "Suspendre" : "Réactiver"}
+                  </Button>
                 </div>
               </div>
             </article>
@@ -1536,6 +1574,8 @@ function BusinessView() {
                 <Separator />
                 <DetailRow label="Statut" value={selectedBusiness.verified ? "Vérifiée" : "À vérifier"} />
                 <Separator />
+                <DetailRow label="Compte" value={selectedBusiness.active ? "Actif" : "Suspendu"} />
+                <Separator />
                 <DetailRow label="Salariés" value={String(selectedBusiness.employees.length)} />
                 {selectedBusiness.createdAt && <><Separator /><DetailRow label="Créée le" value={formatDateTime(selectedBusiness.createdAt)} /></>}
               </div>
@@ -1560,7 +1600,15 @@ function BusinessView() {
                   <UserCheck aria-hidden="true" /> Valider la demande
                 </Button>
               ) : <span />}
-              <Button type="button" variant="destructive" disabled={actionId === selectedBusiness.id} onClick={() => void closeBusiness(selectedBusiness)}><Trash2 aria-hidden="true" /> Clôturer le compte</Button>
+              <Button
+                type="button"
+                variant={selectedBusiness.active ? "destructive" : "default"}
+                disabled={actionId === selectedBusiness.id}
+                onClick={() => void setBusinessActive(selectedBusiness, !selectedBusiness.active)}
+              >
+                {selectedBusiness.active ? <XCircle aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+                {selectedBusiness.active ? "Suspendre le compte" : "Réactiver le compte"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}

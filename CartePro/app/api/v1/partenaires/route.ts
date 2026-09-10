@@ -6,13 +6,14 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 import { companyCreateSchema, createCompany, listCompanies } from '@/lib/services/company_service';
 
 const categorieSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
+const includeInactiveSchema = z.enum(['true', 'false']).default('false').transform((value) => value === 'true');
 
 /**
  * @openapi
  * /api/v1/partenaires:
  *   get:
  *     summary: Liste paginée des partenaires
- *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un salarié ou un administrateur voit tout le réseau ; un utilisateur `PARTNER` ne voit que sa propre fiche, sauf s'il passe `network=true` pour parcourir le réseau des partenaires validés (comme le ferait un salarié).
+ *     description: Retourne les partenaires actifs (entreprises dont `isPartner` vaut `true`), profil complet et catégorie d'entreprise incluse. Un salarié ou un administrateur voit tout le réseau ; un utilisateur `PARTNER` ne voit que sa propre fiche, sauf s'il passe `network=true` pour parcourir le réseau des partenaires validés (comme le ferait un salarié). Les partenaires suspendus (`active = false`) sont exclus, sauf pour un `ADMIN` passant `includeInactive=true` — seul moyen de retrouver un compte suspendu pour le réactiver.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -30,6 +31,10 @@ const categorieSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
  *         name: network
  *         schema: { type: boolean, default: false }
  *         description: Réservé aux appelants `PARTNER` — passer `true` pour consulter le réseau des autres partenaires validés plutôt que sa propre fiche.
+ *       - in: query
+ *         name: includeInactive
+ *         schema: { type: boolean, default: false }
+ *         description: Réservé à `ADMIN` — inclut aussi les partenaires suspendus.
  *     responses:
  *       '200':
  *         description: Liste récupérée avec succès.
@@ -72,6 +77,7 @@ export async function GET(request: Request)
     // it explicitly asks to browse the network, so every existing caller of
     // this route keeps its current behavior.
     const browsingNetwork = actor.role === 'PARTNER' && url.searchParams.get('network') === 'true';
+    const includeInactive = includeInactiveSchema.parse(url.searchParams.get('includeInactive') ?? undefined);
 
     const { data, total } = await listCompanies({
       isPartner: true,
@@ -79,6 +85,7 @@ export async function GET(request: Request)
       categorie,
       verified: actor.role === 'EMPLOYEE' || browsingNetwork ? true : undefined,
       id: actor.role === 'PARTNER' && !browsingNetwork ? (actor.companyId ?? '') : undefined,
+      includeInactive: actor.role === 'ADMIN' && includeInactive,
     });
 
     return Response.json({ data, meta: buildMeta(pagination, total) }, { status: 200 });

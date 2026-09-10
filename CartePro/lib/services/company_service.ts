@@ -33,7 +33,7 @@ export const companyCreateSchema = companyBaseSchema;
 
 export const companyPatchSchema = companyBaseSchema
   .partial()
-  .extend({ verified: z.boolean().optional() })
+  .extend({ verified: z.boolean().optional(), active: z.boolean().optional() })
   .refine(
     (patch) => Object.keys(patch).length > 0,
     { message: 'Le corps de la requête ne doit pas être vide.' },
@@ -51,6 +51,9 @@ export type ListCompaniesFilters = {
   verified?: boolean | undefined;
   // Set for non-admin callers so they only ever see their own company.
   id?: string | undefined;
+  // Admin-only: also return suspended companies (active: false), otherwise
+  // invisible everywhere so a suspended account could never be reactivated.
+  includeInactive?: boolean | undefined;
 };
 
 async function resolveCategoryId(categorie: string): Promise<number>
@@ -67,10 +70,14 @@ async function resolveCategoryId(categorie: string): Promise<number>
 
 export async function listCompanies(filters: ListCompaniesFilters)
 {
-  const equality: { isPartner: boolean; active: boolean; verified?: boolean; categoryId?: number; id?: string } = {
+  const equality: { isPartner: boolean; active?: boolean; verified?: boolean; categoryId?: number; id?: string } = {
     isPartner: filters.isPartner,
-    active: true,
   };
+
+  if (!filters.includeInactive)
+  {
+    equality.active = true;
+  }
 
   if (filters.id !== undefined)
   {
@@ -107,9 +114,16 @@ export async function listCompanies(filters: ListCompaniesFilters)
   return { data, total };
 }
 
-export async function getCompany(id: string, isPartner: boolean)
+export async function getCompany(id: string, isPartner: boolean, includeInactive = false)
 {
-  const company = await db.orm.public.Company.where({ id, isPartner, active: true }).first();
+  const equality: { id: string; isPartner: boolean; active?: boolean } = { id, isPartner };
+
+  if (!includeInactive)
+  {
+    equality.active = true;
+  }
+
+  const company = await db.orm.public.Company.where(equality).first();
 
   if (!company)
   {
@@ -175,7 +189,11 @@ export async function setCompanyOwnerAccountStatus(companyId: string, accountSta
 
 export async function updateCompany(id: string, isPartner: boolean, patch: CompanyPatch)
 {
-  await getCompany(id, isPartner);
+  // A suspended company is invisible under the default `active: true` lookup,
+  // so reactivating it (or any other admin patch touching `active`) has to
+  // look it up regardless of its current state — otherwise it could never be
+  // brought back.
+  await getCompany(id, isPartner, patch.active !== undefined);
   await assertUnique(patch, id);
 
   const { location, ...rest } = patch;

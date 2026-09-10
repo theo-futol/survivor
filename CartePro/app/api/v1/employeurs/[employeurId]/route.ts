@@ -12,7 +12,7 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
  * /api/v1/employeurs/{employeurId}:
  *   patch:
  *     summary: Mise à jour d'un employeur
- *     description: Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa propre entreprise ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation à l'entreprise et fait passer à `ACCEPTED` le compte utilisateur créé avec elle à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`. Les comptes salariés ne sont pas touchés : ils relèvent de leur propre vérification.
+ *     description: Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa propre entreprise ; un `ADMIN` peut modifier n'importe laquelle. Le champ `isPartner` est piloté par le serveur et ne peut jamais être fourni. Les champs `verified`, `active`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation à l'entreprise et fait passer à `ACCEPTED` le compte utilisateur créé avec elle à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`. `active` suspend ou réactive le compte : un employeur suspendu (`active = false`) disparaît des listings et son compte ne peut plus se connecter, sans perdre son historique ni celui de ses salariés ; le repasser à `true` le restaure intégralement. Les comptes salariés ne sont pas touchés par ce champ : ils relèvent de leur propre statut `active`.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -67,7 +67,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ em
 
     if (patch.verified !== undefined)
     {
-      const current = await getCompany(employeurId, false);
+      const current = await getCompany(employeurId, false, true);
 
       if (patch.verified && !current.verified)
       {

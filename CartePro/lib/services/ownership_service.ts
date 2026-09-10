@@ -60,7 +60,7 @@ export function assertCanAccessSalarie(actor: Actor, salarie: { id: string; comp
 // Fields that record the outcome of an administrative review. A company or a
 // partner managing its own profile must stay subject to that review, so it may
 // never set them on itself — only an admin can.
-const ADMIN_ONLY_COMPANY_FIELDS = ['verified', 'agentId', 'reasonId', 'kbisId'] as const;
+const ADMIN_ONLY_COMPANY_FIELDS = ['verified', 'active', 'agentId', 'reasonId', 'kbisId'] as const;
 
 export function assertCanEditAdminFields(actor: Actor, patch: object): void
 {

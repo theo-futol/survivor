@@ -6,16 +6,21 @@ import { buildMeta, parsePagination } from '@/lib/services/pagination';
 import { companyCreateSchema, createCompany, listCompanies } from '@/lib/services/company_service';
 
 const searchSchema = z.string().max(120).regex(/^[^<>'"&]*$/).optional();
+const includeInactiveSchema = z.enum(['true', 'false']).default('false').transform((value) => value === 'true');
 
 /**
  * @openapi
  * /api/v1/employeurs:
  *   get:
  *     summary: Liste paginée des employeurs
- *     description: Retourne les employeurs actifs (entreprises dont `isPartner` vaut `false`). Les employeurs supprimés (`active = false`) sont exclus. Un utilisateur `COMPANY` ne voit que sa propre entreprise ; un `ADMIN` les voit toutes.
+ *     description: Retourne les employeurs actifs (entreprises dont `isPartner` vaut `false`). Les employeurs suspendus (`active = false`) sont exclus, sauf pour un `ADMIN` passant `includeInactive=true` — seul moyen de retrouver un compte suspendu pour le réactiver. Un utilisateur `COMPANY` ne voit que sa propre entreprise ; un `ADMIN` les voit toutes.
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: query
+ *         name: includeInactive
+ *         schema: { type: boolean, default: false }
+ *         description: Réservé à `ADMIN` — inclut aussi les employeurs suspendus.
  *       - in: query
  *         name: page
  *         schema: { type: integer, minimum: 1, default: 1 }
@@ -63,12 +68,14 @@ export async function GET(request: Request)
     const url = new URL(request.url);
     const pagination = parsePagination(url);
     const search = searchSchema.parse(url.searchParams.get('search') ?? undefined);
+    const includeInactive = includeInactiveSchema.parse(url.searchParams.get('includeInactive') ?? undefined);
 
     const { data, total } = await listCompanies({
       isPartner: false,
       pagination,
       search,
       id: actor.role === 'ADMIN' ? undefined : (actor.companyId ?? '') ,
+      includeInactive: actor.role === 'ADMIN' && includeInactive,
     });
 
     return Response.json({ data, meta: buildMeta(pagination, total) }, { status: 200 });

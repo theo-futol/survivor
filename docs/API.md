@@ -18,7 +18,8 @@ carries an `@openapi` JSDoc block, rendered as Swagger UI on the `/docs` page.
   `Secure` over HTTPS or in production), so the web app is authenticated without touching the
   token in JavaScript.
 - Errors: `400` (bad body), `401` (invalid credentials, or a deactivated account), `403`
-  (`accountStatus` is not `ACCEPTED` — "Compte non validé"), `500`.
+  (`accountStatus` is not `ACCEPTED` — "Compte non validé"; or, for a `COMPANY`/`PARTNER` account,
+  its company is suspended, `active = false` — "Compte désactivé"), `500`.
 
 - Endpoint: `DELETE /api/v1/login` — logout. Clears the session cookie, returns `200 { "ok": true }`.
 
@@ -50,7 +51,10 @@ If PostgreSQL (or both Redis and PostgreSQL) is unreachable during those checks,
 - Amounts are **integers, in cents**.
 - Text fields reject `< > ' " &` so nothing can be echoed back into HTML.
 - Deletions are **logical**: a company gets `active = false`, a salarié gets `expiredAt` dated. The
-  rows stay because immutable transactions reference them. They then disappear from every read.
+  rows stay because immutable transactions reference them. They then disappear from every read
+  (unless an `ADMIN` passes `includeInactive=true`), but both flags are reversible — `PATCH …
+  {"active": true}` for a company, `{"active": true}` for a salarié — so a suspension is not
+  actually terminal.
 - Password storage: **SHA-256** (`crypto.createHash('sha256')`), compared in constant time. Plaintext
   is never stored and never returned.
 - See `administratif/fiche-registre.md` for the full data model, relationships and data protection measures.
@@ -110,9 +114,11 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 
 - `GET /api/v1/employeurs`
   - Roles: `ADMIN`, `COMPANY`
-  - Query: `?page=&limit=&search=` (`search` is a case-insensitive filter on the company name)
+  - Query: `?page=&limit=&search=&includeInactive=` (`search` is a case-insensitive filter on the
+    company name; `includeInactive=true` is `ADMIN`-only and also returns suspended companies)
   - Scope: a `COMPANY` only ever sees its own company, whatever it asks for; `ADMIN` sees all.
-    Soft-deleted companies (`active = false`) are excluded.
+    Suspended companies (`active = false`) are excluded unless an `ADMIN` passes
+    `includeInactive=true` — the only way to find one again in order to reactivate it.
   - Success: `200` `{ "data": [ ... ], "meta": { "page": 1, "limit": 20, "total": 123 } }`
 
 - `POST /api/v1/employeurs`
@@ -146,10 +152,10 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 
 - `PATCH /api/v1/employeurs/{employeurId}`
   - Roles: `ADMIN`, `COMPANY` (own only)
-  - Body: any non-empty subset of the creation fields, plus `verified`. `isPartner` and `active` are
-    server-driven and are rejected.
-  - `verified`, `agentId`, `reasonId` and `kbisId` record the administrative review: only an `ADMIN`
-    may send them, a `COMPANY` gets a `403` — it cannot validate itself.
+  - Body: any non-empty subset of the creation fields, plus `verified` and `active`. `isPartner` is
+    server-driven and is always rejected.
+  - `verified`, `active`, `agentId`, `reasonId` and `kbisId` record the administrative review: only an
+    `ADMIN` may send them, a `COMPANY` gets a `403` — it cannot validate or suspend itself.
   - Setting `verified` to `true` on a company that was not verified yet **emails the company** to
     tell it the account is validated and that it can now sign in. The mail is sent before the write,
     so a provider outage answers `502` and leaves the company unverified, ready to be retried.
@@ -160,13 +166,20 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
     have their own review through `PATCH /api/v1/salaries/{salarieId}`. The rewrite runs on every
     `verified` patch rather than only on the transition, so re-sending the patch repairs a
     half-applied validation without emailing the company twice.
+  - `active` suspends or reactivates the company instead of deleting it: `active=false` hides it from
+    every listing (including the admin dashboard, unless `includeInactive=true` is passed) and its
+    `POST /api/v1/login` account is locked out with a `403`, without touching `accountStatus` or any
+    history — employee accounts of the company are unaffected and can still sign in. `active=true`
+    restores it fully; unlike `verified`, only an explicit patch changes it.
   - Success: `200` returns the updated object.
   - Errors: `400`, `403`, `404`, `409`, `502` (validation email not sent).
 
 - `DELETE /api/v1/employeurs/{employeurId}`
   - Roles: `ADMIN`
-  - Behavior: **logical delete** — sets `active = false`. It never returns `409`; the row is kept
-    precisely because transactions reference it.
+  - Behavior: **logical delete** — sets `active = false`, the same flag `PATCH … {"active": false}`
+    sets. It never returns `409`; the row is kept precisely because transactions reference it. Prefer
+    the `PATCH` form when the intent is a reversible suspension, since it can also be reverted with
+    `active=true`.
   - Success: `204`.
 
 ---
@@ -299,10 +312,14 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 
 - `GET /api/v1/partenaires`
   - Roles: `ADMIN`, `PARTNER`, `COMPANY`, `EMPLOYEE`
-  - Query: `?page=&limit=&categorie=` (`categorie` is the category **name**, not its id; an unknown
-    one is a `404`).
-  - Scope: an `EMPLOYEE` only sees **verified** partners; a `PARTNER` only sees its own record;
-    `ADMIN` and `COMPANY` see the whole active network.
+  - Query: `?page=&limit=&categorie=&network=&includeInactive=` (`categorie` is the category **name**,
+    not its id, an unknown one is a `404`; `network=true` lets a `PARTNER` browse other verified
+    partners instead of only its own record; `includeInactive=true` is `ADMIN`-only and also returns
+    suspended partners).
+  - Scope: an `EMPLOYEE` only sees **verified** partners; a `PARTNER` only sees its own record unless
+    browsing the network; `ADMIN` and `COMPANY` see the whole active network. Suspended partners
+    (`active = false`) are excluded unless an `ADMIN` passes `includeInactive=true` — the only way to
+    find one again in order to reactivate it.
   - Output: full profile including the company category.
   - Success: `200` paginated list (shape A).
 
@@ -313,12 +330,15 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 
 - `PATCH /api/v1/partenaires/{partenaireId}`
   - Roles: `ADMIN`, `PARTNER` (own)
-  - Same rules as `PATCH /api/v1/employeurs/{employeurId}`: `verified`, `agentId`, `reasonId` and
-    `kbisId` are admin-only, and flipping `verified` to `true` emails the partner.
+  - Same rules as `PATCH /api/v1/employeurs/{employeurId}`: `verified`, `active`, `agentId`,
+    `reasonId` and `kbisId` are admin-only, flipping `verified` to `true` emails the partner, and
+    `active` suspends or reactivates the account instead of deleting it (see the employers section
+    for the full behavior).
 
 - `DELETE /api/v1/partenaires/{partenaireId}`
   - Roles: `ADMIN`
-  - Behavior: **logical delete** — sets `active = false`.
+  - Behavior: **logical delete** — sets `active = false`, the same flag `PATCH … {"active": false}`
+    sets. Prefer the `PATCH` form when the intent is a reversible suspension.
   - Success: `204`.
 
 ---

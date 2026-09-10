@@ -40,7 +40,7 @@ const loginSchema = z.object({
  *       '401':
  *         description: Identifiants invalides.
  *       '403':
- *         description: Compte non validé — son `accountStatus` n'est pas `ACCEPTED`.
+ *         description: Compte non validé (`accountStatus` différent de `ACCEPTED`), ou compte entreprise/partenaire suspendu (`Company.active = false`).
  *       '500':
  *         description: Erreur serveur interne.
  */
@@ -71,6 +71,19 @@ export async function POST(request: Request)
     if (user.accountStatus !== 'ACCEPTED')
     {
       return Response.json({ error: 'Compte non validé' }, { status: 403 });
+    }
+
+    // A suspended company/partner (`active = false`) keeps its history but its
+    // own login account must be locked out, without touching accountStatus so
+    // reactivating it needs no re-verification.
+    if ((user.role === 'COMPANY' || user.role === 'PARTNER') && user.companyId !== null)
+    {
+      const company = await db.orm.public.Company.where({ id: user.companyId }).first();
+
+      if (company && !company.active)
+      {
+        return Response.json({ error: 'Compte désactivé' }, { status: 403 });
+      }
     }
 
     const { token, expiresIn } = await signToken({ sub: user.id, role: user.role });
