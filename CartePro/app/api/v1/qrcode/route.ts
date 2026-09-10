@@ -12,7 +12,7 @@ const qrcodeSchema = z.object({
  * /api/v1/qrcode:
  *   post:
  *     summary: Génération d'un QR code de paiement
- *     description: Génère un QR code de paiement pour le salarié authentifié, valide 5 minutes. Le contenu est haché (SHA-256) avant stockage ; seul le code en clair est retourné au client. Un seul QR code valide est autorisé par salarié et par entreprise partenaire à la fois.
+ *     description: Génère un QR code de paiement pour le salarié authentifié, valide 5 minutes. Le contenu est haché (SHA-256) avant stockage ; seul le code en clair est retourné au client. Si un QR code valide existe déjà pour ce salarié et cette entreprise, il est retourné tel quel plutôt que d'en générer un nouveau.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -27,6 +27,17 @@ const qrcodeSchema = z.object({
  *               userId:
  *                 type: string
  *     responses:
+ *       '200':
+ *         description: QR code valide déjà existant, retourné tel quel.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 qrcode:
+ *                   type: string
+ *                 expiresAt:
+ *                   type: string
  *       '201':
  *         description: QR code généré avec succès.
  *         content:
@@ -46,8 +57,6 @@ const qrcodeSchema = z.object({
  *         description: Rôle insuffisant, ou tentative de génération pour un autre salarié.
  *       '404':
  *         description: Entreprise partenaire introuvable.
- *       '409':
- *         description: Un QR code valide existe déjà pour ce salarié et cette entreprise.
  *       '500':
  *         description: Erreur serveur interne.
  */
@@ -81,15 +90,13 @@ export async function POST(request: Request)
 
     if ('error' in result)
     {
-      if (result.error === 'company_not_found')
-      {
-        return Response.json({ error: 'Company not found' }, { status: 404 });
-      }
-
-      return Response.json({ error: 'A valid QR code already exists for this company' }, { status: 409 });
+      return Response.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    return Response.json({ qrcode: result.code, expiresAt: result.expiresAt }, { status: 201 });
+    return Response.json(
+      { qrcode: result.code, expiresAt: result.expiresAt },
+      { status: result.reused ? 200 : 201 },
+    );
   }
   catch (error)
   {

@@ -38,6 +38,11 @@ type PaymentState = {
   loading: boolean
 }
 
+type ActiveQr = {
+  qrcode: string
+  expiresAt: string
+}
+
 export default function EmployeePage() {
   const { data: session, loading: sessionLoading } = useCurrentUser()
 
@@ -46,6 +51,8 @@ export default function EmployeePage() {
   const [loadingData, setLoadingData] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [payment, setPayment] = useState<PaymentState | null>(null)
+  const [activeQrCodes, setActiveQrCodes] = useState<Record<string, ActiveQr>>({})
+  const [now, setNow] = useState(() => Date.now())
 
   const qrTriggerRef = useRef<HTMLButtonElement | null>(null)
   const closeQrButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -113,6 +120,16 @@ export default function EmployeePage() {
     })
   }, [payment?.partner.id])
 
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  function isQrActive(companyId: string) {
+    const active = activeQrCodes[companyId]
+    return active !== undefined && new Date(active.expiresAt).getTime() > now
+  }
+
   const totals = useMemo(() => {
     const validated = transactions.filter(
       (transaction) => transaction.status === "VALIDER"
@@ -168,6 +185,11 @@ export default function EmployeePage() {
         error: null,
         loading: false,
       })
+
+      setActiveQrCodes((prev) => ({
+        ...prev,
+        [partner.id]: { qrcode: result.qrcode, expiresAt: result.expiresAt },
+      }))
     } catch (caught) {
       setPayment({
         partner,
@@ -180,6 +202,21 @@ export default function EmployeePage() {
         loading: false,
       })
     }
+  }
+
+  function showPaymentQr(partner: ApiPartner, trigger: HTMLButtonElement) {
+    const active = activeQrCodes[partner.id]
+    if (!active) return
+
+    qrTriggerRef.current = trigger
+
+    setPayment({
+      partner,
+      qrcode: active.qrcode,
+      expiresAt: active.expiresAt,
+      error: null,
+      loading: false,
+    })
   }
 
   function closePaymentQr() {
@@ -275,10 +312,7 @@ export default function EmployeePage() {
                 role="alert"
                 className="mt-4 rounded-xl bg-brand-red-soft px-4 py-3 text-sm font-semibold text-brand-red-dark"
               >
-                {payment.error ===
-                "A valid QR code already exists for this company"
-                  ? "Un QR est déjà actif pour ce partenaire. Réessayez après son expiration (5 minutes)."
-                  : payment.error}
+                {payment.error}
               </p>
             )}
 
@@ -415,15 +449,16 @@ export default function EmployeePage() {
                       <Button
                         size="sm"
                         onClick={(event) =>
-                          void openPaymentQr(
-                            partner,
-                            event.currentTarget
-                          )
+                          isQrActive(partner.id)
+                            ? showPaymentQr(partner, event.currentTarget)
+                            : void openPaymentQr(partner, event.currentTarget)
                         }
                         disabled={payment?.loading === true}
                       >
                         <QrCode aria-hidden="true" />
-                        Générer le QR
+                        {isQrActive(partner.id)
+                          ? "Montrer le QR code"
+                          : "Générer le QR"}
                       </Button>
                     </div>
                   </article>

@@ -115,17 +115,19 @@ describe('POST /api/v1/qrcode', () =>
     expect((await second.json()).qrcode).not.toBe((await first.json()).qrcode);
   });
 
-  it('returns 409 when a valid qrcode already exists for the employee and company', async () =>
+  it('returns 200 with the same qrcode when a valid one already exists for the employee and company', async () =>
   {
     const { token } = await signToken({ sub: 'user-test-2', role: 'EMPLOYEE' });
 
     const first = await postQrcode({ companyId: 'company-test-1', userId: 'user-test-2' }, token);
+    const firstJson = await first.json();
     expect(first.status).toBe(201);
 
     const second = await postQrcode({ companyId: 'company-test-1', userId: 'user-test-2' }, token);
-    const json = await second.json();
+    const secondJson = await second.json();
 
-    expect(second.status).toBe(409);
-    expect(json.error).toBeDefined();
+    expect(second.status).toBe(200);
+    expect(secondJson.qrcode).toBe(firstJson.qrcode);
+    expect(secondJson.expiresAt).toBe(firstJson.expiresAt);
   });
 });

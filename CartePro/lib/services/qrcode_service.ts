@@ -4,8 +4,8 @@ import { db } from '@/lib/prisma/db';
 const QRCODE_EXPIRES_IN_SECONDS = 300;
 
 export type GenerateQrCodeResult =
-  | { code: string; expiresAt: string }
-  | { error: 'company_not_found' | 'qrcode_exists' };
+  | { code: string; expiresAt: string; reused: boolean }
+  | { error: 'company_not_found' };
 
 export async function generateQrCode(params: { userId: string; companyId: string }): Promise<GenerateQrCodeResult>
 {
@@ -20,11 +20,12 @@ export async function generateQrCode(params: { userId: string; companyId: string
 
   const existingQrCode = await db.orm.public.QrCode
     .where({ userId: params.userId, companyId: params.companyId })
+    .orderBy((q) => q.expiredAt.desc())
     .first();
 
   if (existingQrCode && Temporal.Instant.compare(existingQrCode.expiredAt, now) > 0)
   {
-    return { error: 'qrcode_exists' };
+    return { code: existingQrCode.content, expiresAt: existingQrCode.expiredAt.toString(), reused: true };
   }
 
   // The salarié presents this value and POST /salaries/:id/transactions matches
@@ -41,5 +42,5 @@ export async function generateQrCode(params: { userId: string; companyId: string
     companyId: params.companyId,
   });
 
-  return { code: hashedContent, expiresAt: expiredAt.toString() };
+  return { code: hashedContent, expiresAt: expiredAt.toString(), reused: false };
 }

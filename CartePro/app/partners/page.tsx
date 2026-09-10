@@ -29,6 +29,11 @@ type PaymentState = {
   error: string | null
 }
 
+type ActiveQr = {
+  qrcode: string
+  expiresAt: string
+}
+
 export default function PartnersPage() {
   const { data: session, loading: sessionLoading, error: sessionError } = useCurrentUser()
   const [partners, setPartners] = useState<ApiPartner[]>([])
@@ -38,6 +43,8 @@ export default function PartnersPage() {
   const [category, setCategory] = useState("all")
   const [selected, setSelected] = useState<ApiPartner | undefined>()
   const [payment, setPayment] = useState<PaymentState | null>(null)
+  const [activeQrCodes, setActiveQrCodes] = useState<Record<string, ActiveQr>>({})
+  const [now, setNow] = useState(() => Date.now())
   const lastQrTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const employee = session?.user
@@ -118,6 +125,10 @@ export default function PartnersPage() {
         body: JSON.stringify({ companyId: partner.id, userId: employee.id }),
       })
       setPayment({ partner, qrcode: result.qrcode, expiresAt: result.expiresAt, loading: false, error: null })
+      setActiveQrCodes((prev) => ({
+        ...prev,
+        [partner.id]: { qrcode: result.qrcode, expiresAt: result.expiresAt },
+      }))
     } catch (caught) {
       setPayment({
         partner,
@@ -129,11 +140,29 @@ export default function PartnersPage() {
     }
   }
 
+  function showPaymentDialog(partner: ApiPartner, trigger: HTMLButtonElement) {
+    const active = activeQrCodes[partner.id]
+    if (!active) return
+
+    lastQrTriggerRef.current = trigger
+    setPayment({ partner, qrcode: active.qrcode, expiresAt: active.expiresAt, loading: false, error: null })
+  }
+
+  function isQrActive(companyId: string) {
+    const active = activeQrCodes[companyId]
+    return active !== undefined && new Date(active.expiresAt).getTime() > now
+  }
+
   function handleDialogOpenChange(open: boolean) {
     if (open) return
     setPayment(null)
     window.requestAnimationFrame(() => lastQrTriggerRef.current?.focus())
   }
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   return (
     <div className="min-h-svh bg-background">
@@ -214,8 +243,16 @@ export default function PartnersPage() {
                         <Button variant="outline" onClick={() => setSelected(partner)} disabled={!hasCoordinates} title={hasCoordinates ? undefined : "Coordonnées géographiques indisponibles"}>
                           <MapPin aria-hidden="true" /> Localiser
                         </Button>
-                        <Button onClick={(event) => void openPaymentDialog(partner, event.currentTarget)} disabled={!employee || payment?.loading === true}>
-                          <QrCode aria-hidden="true" /> Générer le QR
+                        <Button
+                          onClick={(event) =>
+                            isQrActive(partner.id)
+                              ? showPaymentDialog(partner, event.currentTarget)
+                              : void openPaymentDialog(partner, event.currentTarget)
+                          }
+                          disabled={!employee || payment?.loading === true}
+                        >
+                          <QrCode aria-hidden="true" />{" "}
+                          {isQrActive(partner.id) ? "Montrer le QR code" : "Générer le QR"}
                         </Button>
                       </div>
                     </article>
