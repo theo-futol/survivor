@@ -59,14 +59,26 @@ acceptable trade-off.
 Both profiles run the same flow from `scenario.js`, one iteration per
 simulated visitor, with 1 s of think time:
 
-| Group        | Endpoint                 | Checks                        |
-| ------------ | ------------------------ | ----------------------------- |
-| `health`     | `GET /health`            | 200, `version` present        |
-| `categories` | `GET /api/v1/categories` | 200, `categories` is an array |
-| `login`      | `POST /api/v1/login`     | 200, `token` present          |
+| Group        | Endpoint                 | Checks                                |
+| ------------ | ------------------------ | ------------------------------------- |
+| `health`     | `GET /health`            | 200, `version` present                |
+| `categories` | `GET /api/v1/categories` | 200, `categories` is an array         |
+| `login`      | `POST /api/v1/login`     | 200, `token` present                  |
+| `qrcode`     | `POST /api/v1/qrcode`    | 200 or 201, 64-hex `qrcode`, `expiresAt` |
 
-The `login` group only runs when credentials are supplied — it writes nothing,
-but it does hit password verification, which is the expensive path:
+Before the VUs start, `setup()` (`setupQrContext`) logs in once and calls
+`GET /api/v1/partenaires?limit=100` to collect the company ids. Each VU then
+takes `companyIds[(__VU - 1) % n]`: a valid QR code is reused per
+`(userId, companyId)` pair, so spreading the VUs over distinct companies is what
+keeps the endpoint minting new codes (201) instead of replaying one (200).
+
+The `qrcode` group reuses the token **and the `user.id`** returned by the `login`
+group of the same iteration — the route answers 403 when the body's `userId` is
+not the token subject, so the id must never come from `config.js`. Both groups
+are skipped when credentials are missing or the company list comes back empty,
+so the scripts still run against a target without seed data.
+
+The `login` group writes nothing, but it does hit password verification:
 
 ```bash
 k6 run -e K6_EMAIL=user@example.com -e K6_PASSWORD='Passw0rd!' tests/k6/average-load.js
@@ -103,4 +115,10 @@ pipeline as-is.
 | `checks`            | > 99%                 | > 95%                 |
 
 Per-endpoint latency is also reported through the custom `health_duration`,
-`categories_duration` and `login_duration` trends.
+`categories_duration`, `login_duration` and `qrcode_duration` trends, plus the
+`qrcode_minted` (201) / `qrcode_reused` (200) counters — their ratio is what
+tells how much write load the run actually produced.
+
+## Results
+
+`RAPPORT.md` holds the findings of the last full run (French, as delivered).

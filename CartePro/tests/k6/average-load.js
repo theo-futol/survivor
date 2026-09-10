@@ -1,4 +1,4 @@
-import { visitorFlow } from './scenario.js';
+import { setupQrContext, visitorFlow } from './scenario.js';
 import { averageLoadOptions } from './config.js';
 
 /**
@@ -9,7 +9,9 @@ import { averageLoadOptions } from './config.js';
  */
 export const options = averageLoadOptions;
 
-export default function ()
+export { setupQrContext as setup };
+
+export default function (data)
 {
-  visitorFlow();
+  visitorFlow(data);
 }

@@ -1,4 +1,4 @@
-import { visitorFlow } from './scenario.js';
+import { setupQrContext, visitorFlow } from './scenario.js';
 import { options as stressOptions } from './config.js';
 
 /**
@@ -7,7 +7,9 @@ import { options as stressOptions } from './config.js';
  */
 export const options = stressOptions;
 
-export default function ()
+export { setupQrContext as setup };
+
+export default function (data)
 {
-  visitorFlow();
+  visitorFlow(data);
 }
