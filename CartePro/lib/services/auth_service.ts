@@ -5,7 +5,7 @@ import { ROUTE_ROLES, type RouteKey } from '@/lib/roles-config';
 import { isBanned } from '@/lib/services/redis_service';
 import { db } from '@/lib/prisma/db';
 
-export const AUTH_COOKIE_NAME = 'ticket_tout_token';
+export const AUTH_COOKIE_NAME = 'cartepro_token';
 
 const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET']!);
 const JWT_EXPIRES_IN_SECONDS = process.env['JWT_TTL_SECONDS'] ? parseInt(process.env['JWT_TTL_SECONDS']!, 10) : 1800;

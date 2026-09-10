@@ -131,12 +131,12 @@ describe('brevo provider', () =>
 
   it('points the sdk at BREVO_URL when set', async () =>
   {
-    process.env['BREVO_URL'] = 'https://proxy.tickettout.fr/v3';
+    process.env['BREVO_URL'] = 'https://proxy.cartepro.fr/v3';
 
     await createBrevoProvider().send(MESSAGE);
 
     expect(clientConstructor.mock.calls[0]![0])
-      .toMatchObject({ baseUrl: 'https://proxy.tickettout.fr/v3' });
+      .toMatchObject({ baseUrl: 'https://proxy.cartepro.fr/v3' });
   });
 
   it('fails with a 500 when BREVO_API_KEY is missing', async () =>

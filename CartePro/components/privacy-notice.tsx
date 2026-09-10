@@ -6,7 +6,7 @@ import { ShieldCheck, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-const STORAGE_KEY = "ticket-tout-privacy-notice-v1"
+const STORAGE_KEY = "cartepro-privacy-notice-v1"
 
 export function PrivacyNotice() {
   const [visible, setVisible] = useState(false)

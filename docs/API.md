@@ -14,7 +14,7 @@ carries an `@openapi` JSDoc block, rendered as Swagger UI on the `/docs` page.
 ```
 
 - `expiresIn` comes from `JWT_TTL_SECONDS` and defaults to **1800 seconds (30 minutes)**.
-- The same JWT is also written to the **HttpOnly cookie `ticket_tout_token`** (`SameSite=Lax`,
+- The same JWT is also written to the **HttpOnly cookie `cartepro_token`** (`SameSite=Lax`,
   `Secure` over HTTPS or in production), so the web app is authenticated without touching the
   token in JavaScript.
 - Errors: `400` (bad body), `401` (invalid credentials, or a deactivated account), `403`
