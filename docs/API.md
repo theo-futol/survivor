@@ -153,6 +153,13 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
   - Setting `verified` to `true` on a company that was not verified yet **emails the company** to
     tell it the account is validated and that it can now sign in. The mail is sent before the write,
     so a provider outage answers `502` and leaves the company unverified, ready to be retried.
+  - Any `verified` patch also rewrites the `accountStatus` of the **account created with the company
+    at registration** (the user with this `companyId` whose role is `COMPANY` or `PARTNER`):
+    `ACCEPTED` when validating, `PENDING` when revoking. That is what actually lets it log in —
+    `POST /api/v1/login` only ever checks `accountStatus`. Employee accounts are untouched: they
+    have their own review through `PATCH /api/v1/salaries/{salarieId}`. The rewrite runs on every
+    `verified` patch rather than only on the transition, so re-sending the patch repairs a
+    half-applied validation without emailing the company twice.
   - Success: `200` returns the updated object.
   - Errors: `400`, `403`, `404`, `409`, `502` (validation email not sent).
 

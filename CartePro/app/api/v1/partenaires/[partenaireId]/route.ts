@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { authorize } from '@/lib/services/auth_service';
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
 import { assertCanEditAdminFields, assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
-import { companyPatchSchema, getCompany, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
+import { companyPatchSchema, getCompany, setCompanyOwnerAccountStatus, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
 import { sendCompanyVerifiedEmail } from '@/lib/services/account_mail_service';
 
 const paramsSchema = z.object({ partenaireId: z.uuid() });
@@ -12,7 +12,7 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  * /api/v1/partenaires/{partenaireId}:
  *   patch:
  *     summary: Mise à jour d'un partenaire
- *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation au partenaire.
+ *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation au partenaire et fait passer à `ACCEPTED` le compte utilisateur créé avec lui à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -65,11 +65,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
 
     assertCanEditAdminFields(actor, patch);
 
-    if (patch.verified === true)
+    if (patch.verified !== undefined)
     {
       const current = await getCompany(partenaireId, true);
 
-      if (!current.verified)
+      if (patch.verified && !current.verified)
       {
         // The mail goes out before anything is written, so a provider failure
         // (502 from the Brevo provider) leaves the partner unverified and the
@@ -79,6 +79,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
     }
 
     const partner = await updateCompany(partenaireId, true, patch);
+
+    if (patch.verified !== undefined)
+    {
+      // Login only ever consults `accountStatus`, so validating the company has
+      // to activate the account registered with it — and suspend it again when
+      // the validation is revoked. Written on every `verified` patch, not just
+      // on the transition: re-sending the patch then repairs a half-applied
+      // validation without mailing the partner twice.
+      await setCompanyOwnerAccountStatus(partenaireId, patch.verified ? 'ACCEPTED' : 'PENDING');
+    }
 
     return Response.json(partner, { status: 200 });
   }

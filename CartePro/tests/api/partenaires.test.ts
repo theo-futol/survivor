@@ -1,7 +1,7 @@
 import { GET, POST } from '@/app/api/v1/partenaires/route';
 import { DELETE, PATCH } from '@/app/api/v1/partenaires/[partenaireId]/route';
 import { signToken } from '@/lib/services/auth_service';
-import { resetMockDb } from '../mocks/mock-db';
+import { mockTables, resetMockDb } from '../mocks/mock-db';
 import { failNextEmail, resetMockEmail, sentEmails } from '../mocks/mock-email';
 import {
   ADMIN_ID,
@@ -162,6 +162,11 @@ describe('PATCH /api/v1/partenaires/{partenaireId} — administrative validation
     resetMockEmail();
   }
 
+  function accountStatusOf(userId: string)
+  {
+    return mockTables['Users']!.find((row) => row['id'] === userId)!['accountStatus'];
+  }
+
   it('verifies the partner and mails it a validation notice', async () =>
   {
     await unverify();
@@ -210,6 +215,37 @@ describe('PATCH /api/v1/partenaires/{partenaireId} — administrative validation
 
     expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(200);
     expect(sentEmails).toHaveLength(0);
+  });
+
+  // Login only checks accountStatus, so the account registered with the partner
+  // has to follow the partner's own validation.
+  it('activates and suspends the account registered with the partner', async () =>
+  {
+    await unverify();
+
+    expect(accountStatusOf(PARTNER_USER_ID)).toBe('PENDING');
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(PARTNER_COMPANY_ID, { verified: true }, token);
+
+    expect(accountStatusOf(PARTNER_USER_ID)).toBe('ACCEPTED');
+
+    await patch(PARTNER_COMPANY_ID, { verified: false }, token);
+
+    expect(accountStatusOf(PARTNER_USER_ID)).toBe('PENDING');
+  });
+
+  it('leaves the account PENDING when the validation mail cannot be sent', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    failNextEmail();
+
+    expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(502);
+    expect(accountStatusOf(PARTNER_USER_ID)).toBe('PENDING');
   });
 });
 

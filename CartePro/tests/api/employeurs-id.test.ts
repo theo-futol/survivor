@@ -1,12 +1,13 @@
 import { DELETE, PATCH } from '@/app/api/v1/employeurs/[employeurId]/route';
 import { GET } from '@/app/api/v1/employeurs/route';
 import { signToken } from '@/lib/services/auth_service';
-import { resetMockDb } from '../mocks/mock-db';
+import { mockTables, resetMockDb } from '../mocks/mock-db';
 import { failNextEmail, resetMockEmail, sentEmails } from '../mocks/mock-email';
 import {
   ADMIN_ID,
   COMPANY_USER_ID,
   EMPLOYER_COMPANY_ID,
+  PENDING_EMPLOYEE_ID,
   OTHER_COMPANY_ID,
   PARTNER_COMPANY_ID,
   UNKNOWN_ID,
@@ -126,6 +127,11 @@ describe('PATCH /api/v1/employeurs/{employeurId} — administrative validation',
     resetMockEmail();
   }
 
+  function accountStatusOf(userId: string)
+  {
+    return mockTables['Users']!.find((row) => row['id'] === userId)!['accountStatus'];
+  }
+
   it('returns 403 when a COMPANY caller tries to verify its own company', async () =>
   {
     await unverify();
@@ -186,6 +192,65 @@ describe('PATCH /api/v1/employeurs/{employeurId} — administrative validation',
     await patch(EMPLOYER_COMPANY_ID, { name: 'Entreprise SA' }, token);
 
     expect(sentEmails).toHaveLength(0);
+  });
+
+  // Login only checks accountStatus, so the account registered with the company
+  // has to follow the company's own validation.
+  it('activates the account registered with the company', async () =>
+  {
+    await unverify();
+
+    expect(accountStatusOf(COMPANY_USER_ID)).toBe('PENDING');
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { verified: true }, token);
+
+    expect(accountStatusOf(COMPANY_USER_ID)).toBe('ACCEPTED');
+  });
+
+  it('leaves the employees of the company to their own verification', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { verified: false }, token);
+    await patch(EMPLOYER_COMPANY_ID, { verified: true }, token);
+
+    expect(accountStatusOf(PENDING_EMPLOYEE_ID)).toBe('PENDING');
+  });
+
+  it('suspends the account again when the validation is revoked', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { verified: false }, token);
+
+    expect(accountStatusOf(COMPANY_USER_ID)).toBe('PENDING');
+  });
+
+  // Repairs a validation whose account update did not land: no second email,
+  // but the account status is written again.
+  it('re-applies the account status on an already-verified company', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    mockTables['Users']!.find((row) => row['id'] === COMPANY_USER_ID)!['accountStatus'] = 'PENDING';
+
+    expect((await patch(EMPLOYER_COMPANY_ID, { verified: true }, token)).status).toBe(200);
+    expect(sentEmails).toHaveLength(0);
+    expect(accountStatusOf(COMPANY_USER_ID)).toBe('ACCEPTED');
+  });
+
+  it('leaves the account PENDING when the validation mail cannot be sent', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    failNextEmail();
+
+    expect((await patch(EMPLOYER_COMPANY_ID, { verified: true }, token)).status).toBe(502);
+    expect(accountStatusOf(COMPANY_USER_ID)).toBe('PENDING');
   });
 });
 

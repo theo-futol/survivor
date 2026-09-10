@@ -162,6 +162,17 @@ export async function createCompany(input: CompanyInput, isPartner: boolean)
   });
 }
 
+// The account created alongside the company at registration. Employees share
+// the companyId but are reviewed one by one by their employer, so the role
+// filter deliberately excludes them. `updatedAt` is managed by the contract.
+export async function setCompanyOwnerAccountStatus(companyId: string, accountStatus: 'ACCEPTED' | 'PENDING')
+{
+  await db.orm.public.Users
+    .where({ companyId })
+    .where((user) => user.role.in(['COMPANY', 'PARTNER']))
+    .update({ accountStatus });
+}
+
 export async function updateCompany(id: string, isPartner: boolean, patch: CompanyPatch)
 {
   await getCompany(id, isPartner);
