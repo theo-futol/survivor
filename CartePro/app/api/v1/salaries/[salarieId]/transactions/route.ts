@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { db } from '@/lib/prisma/db';
 import { z } from 'zod';
 import { withTransaction } from '@/lib/services/postgres_client';
@@ -15,7 +16,7 @@ const salaryParamsSchema = z.object({
 });
 
 const transactionBodySchema = z.object({
-  amount: z.number().int().positive(),
+  amount: z.number().positive(),
   type: z.enum(['PAYMENT', 'REFUND', 'TOPUP']),
   content: z.string().regex(/^[a-fA-F0-9]{64}$/, 'Invalid content format not matching SHA-256 hash'),
   companyId: z.uuid(),
@@ -150,7 +151,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  *             type: object
  *             required: [amount, type, content, companyId]
  *             properties:
- *               amount: { type: number, minimum: 1, description: Montant en centimes. }
+ *               amount: { type: number, minimum: 1, description: "Montant en centimes, arrondi au centime le plus proche s'il est décimal." }
  *               type: { type: string, enum: [PAYMENT, REFUND, TOPUP] }
  *               content: { type: string, description: Hash SHA-256 (64 caractères hexadécimaux) du code scanné. }
  *               companyId: { type: string, format: uuid }
@@ -199,6 +200,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             assertOwnsCompany(await resolveActor(auth), companyId);
         }
 
+        // The ledger stores integer cents (int4 column), so a decimal amount is
+        // rounded to the nearest cent before it ever reaches a balance computation
+        // or the INSERT below.
+        const amountCents = Math.round(amount);
+
         const ledgerCompanyId = type === 'TOPUP' ? null : companyId;
 
         const { newBalance, status } = await withTransaction(async (client) => {
@@ -231,7 +237,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             }
 
             const currentBalance: number = Number(locked.rows[0]!.balance);
-            const projectedBalance: number = type === 'PAYMENT' ? currentBalance - amount : currentBalance + amount;
+            const projectedBalance: number = type === 'PAYMENT' ? currentBalance - amountCents : currentBalance + amountCents;
             const authorizeOverdraft: number = 0;
 
             const status = projectedBalance < authorizeOverdraft ? 'REFUSER' as const : 'VALIDER' as const;
@@ -242,9 +248,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ sal
             }
 
             const inserted = await client.query(
-                `INSERT INTO "transaction" (type, "userId", "companyId", amount, "newBalance", status)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [type, salarieId, ledgerCompanyId, amount, newBalance, status],
+                `INSERT INTO "transaction" (id, type, "userId", "companyId", amount, "newBalance", status)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [randomUUID(), type, salarieId, ledgerCompanyId, amountCents, newBalance, status],
             );
             if (inserted.rowCount === 0) {
                 throw new AppError('Failed to create transaction', 500);
