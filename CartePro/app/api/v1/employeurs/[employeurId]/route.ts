@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { authorize } from '@/lib/services/auth_service';
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
-import { assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
-import { companyPatchSchema, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
+import { assertCanEditAdminFields, assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
+import { companyPatchSchema, getCompany, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
+import { sendCompanyVerifiedEmail } from '@/lib/services/account_mail_service';
 
 const paramsSchema = z.object({ employeurId: z.uuid() });
 
@@ -11,7 +12,7 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
  * /api/v1/employeurs/{employeurId}:
  *   patch:
  *     summary: Mise à jour d'un employeur
- *     description: Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa propre entreprise ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis.
+ *     description: Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa propre entreprise ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation à l'entreprise.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -37,6 +38,7 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
  *       '403': { description: Rôle insuffisant, ou tentative de modifier une autre entreprise. }
  *       '404': { description: Employeur introuvable. }
  *       '409': { description: Un employeur possède déjà cet email, ce SIRET ou ce KBIS. }
+ *       '502': { description: L'email de validation n'a pas pu être envoyé ; l'employeur reste non vérifié. }
  *       '500': { description: Erreur serveur interne. }
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ employeurId: string }> })
@@ -60,6 +62,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ em
       throw new AppError('Invalid JSON in request body', 400);
     });
     const patch = companyPatchSchema.parse(body);
+
+    assertCanEditAdminFields(actor, patch);
+
+    if (patch.verified === true)
+    {
+      const current = await getCompany(employeurId, false);
+
+      if (!current.verified)
+      {
+        // The mail goes out before anything is written, so a provider failure
+        // (502 from the Brevo provider) leaves the employer unverified and the
+        // validation can simply be retried.
+        await sendCompanyVerifiedEmail({ name: current.name, email: current.email });
+      }
+    }
 
     const company = await updateCompany(employeurId, false, patch);
 

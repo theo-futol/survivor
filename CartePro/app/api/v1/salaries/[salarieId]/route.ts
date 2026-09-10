@@ -4,17 +4,9 @@ import { authorize, hashPassword, passwordSchema } from '@/lib/services/auth_ser
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
 import { assertCanAccessSalarie, resolveActor } from '@/lib/services/ownership_service';
 import { sendEmail } from '@/lib/services/email_service';
+import { DEMO_DISCLAIMER, buildLoginLink } from '@/lib/services/account_mail_service';
 
 const paramsSchema = z.object({ salarieId: z.uuid() });
-
-// Read at call time, not at module load, so importing this route stays free of
-// environment assumptions during tests and `next build`.
-function buildLoginLink(): string
-{
-  const baseUrl = process.env['APP_BASE_URL'] ?? 'http://localhost:3000';
-
-  return `${baseUrl.replace(/\/+$/, '')}/login`;
-}
 
 const safeText = (max: number) =>
   z.string().min(1).max(max).regex(/^[^<>'"&]*$/, { message: "Les caractères spéciaux (<, >, ', \", &) sont interdits." });
@@ -210,7 +202,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
           '',
           "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
           '',
-          "Démonstrateur technique, ne constitue pas un service public en exploitation.",
+          DEMO_DISCLAIMER,
         ].join('\n'),
       });
     }

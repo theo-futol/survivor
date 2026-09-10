@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { authorize } from '@/lib/services/auth_service';
 import { AppError, commonErrorHandler } from '@/lib/services/error_service';
-import { assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
-import { companyPatchSchema, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
+import { assertCanEditAdminFields, assertOwnsCompany, resolveActor } from '@/lib/services/ownership_service';
+import { companyPatchSchema, getCompany, softDeleteCompany, updateCompany } from '@/lib/services/company_service';
+import { sendCompanyVerifiedEmail } from '@/lib/services/account_mail_service';
 
 const paramsSchema = z.object({ partenaireId: z.uuid() });
 
@@ -11,7 +12,7 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  * /api/v1/partenaires/{partenaireId}:
  *   patch:
  *     summary: Mise à jour d'un partenaire
- *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403.
+ *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Les champs `isPartner` et `active` sont pilotés par le serveur et ne peuvent pas être fournis. Les champs `verified`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation au partenaire.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -37,6 +38,7 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  *       '403': { description: Rôle insuffisant, ou tentative de modifier un autre partenaire. }
  *       '404': { description: Partenaire introuvable. }
  *       '409': { description: Un partenaire possède déjà cet email, ce SIRET ou ce KBIS. }
+ *       '502': { description: L'email de validation n'a pas pu être envoyé ; le partenaire reste non vérifié. }
  *       '500': { description: Erreur serveur interne. }
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ partenaireId: string }> })
@@ -61,16 +63,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
     });
     const patch = companyPatchSchema.parse(body);
 
-    // A partner managing its own profile must stay "subject to administrative
-    // validation": only an admin may touch the fields that record that review.
-    if (actor.role !== 'ADMIN')
-    {
-      const adminOnlyFields = ['verified', 'agentId', 'reasonId', 'kbisId'] as const;
-      const attempted = adminOnlyFields.filter((field) => field in patch);
+    assertCanEditAdminFields(actor, patch);
 
-      if (attempted.length > 0)
+    if (patch.verified === true)
+    {
+      const current = await getCompany(partenaireId, true);
+
+      if (!current.verified)
       {
-        throw new AppError('Seul un administrateur peut modifier ces champs.', 403);
+        // The mail goes out before anything is written, so a provider failure
+        // (502 from the Brevo provider) leaves the partner unverified and the
+        // validation can simply be retried.
+        await sendCompanyVerifiedEmail({ name: current.name, email: current.email });
       }
     }
 

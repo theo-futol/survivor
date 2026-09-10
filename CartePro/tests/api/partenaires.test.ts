@@ -2,6 +2,7 @@ import { GET, POST } from '@/app/api/v1/partenaires/route';
 import { DELETE, PATCH } from '@/app/api/v1/partenaires/[partenaireId]/route';
 import { signToken } from '@/lib/services/auth_service';
 import { resetMockDb } from '../mocks/mock-db';
+import { failNextEmail, resetMockEmail, sentEmails } from '../mocks/mock-email';
 import {
   ADMIN_ID,
   EMPLOYER_COMPANY_ID,
@@ -132,6 +133,83 @@ describe('POST /api/v1/partenaires', () =>
 
     expect(response.status).toBe(201);
     expect(json.isPartner).toBe(true);
+  });
+
+  it('creates the partner unverified even when the body asks for verified', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const json = await (await post({ ...validBody, verified: true }, token)).json();
+
+    expect(json.verified).toBe(false);
+  });
+});
+
+// The partner fixture starts verified, so the validation cases first send it
+// back to unverified — the state a registration actually leaves it in.
+describe('PATCH /api/v1/partenaires/{partenaireId} — administrative validation', () =>
+{
+  beforeEach(() =>
+  {
+    resetMockDb();
+    resetMockEmail();
+  });
+
+  async function unverify()
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(PARTNER_COMPANY_ID, { verified: false }, token);
+    resetMockEmail();
+  }
+
+  it('verifies the partner and mails it a validation notice', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await patch(PARTNER_COMPANY_ID, { verified: true }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.verified).toBe(true);
+
+    expect(sentEmails).toHaveLength(1);
+    expect(sentEmails[0]!.to).toBe('partenaire@example.com');
+    expect(sentEmails[0]!.text).toContain('http://localhost:3000/login');
+    expect(sentEmails[0]!.text).toContain('Démonstrateur technique, ne constitue pas un service public en exploitation.');
+  });
+
+  it('leaves the partner unverified when the mail cannot be sent', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    failNextEmail();
+
+    expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(502);
+
+    const json = await (await patch(PARTNER_COMPANY_ID, { name: 'Partenaire SARL' }, token)).json();
+
+    expect(json.verified).toBe(false);
+  });
+
+  it('sends nothing when a partner is refused verification', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: PARTNER_USER_ID, role: 'PARTNER' });
+
+    expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(403);
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  it('sends nothing when the partner is already verified', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await patch(PARTNER_COMPANY_ID, { verified: true }, token)).status).toBe(200);
+    expect(sentEmails).toHaveLength(0);
   });
 });
 

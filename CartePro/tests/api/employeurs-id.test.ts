@@ -2,6 +2,7 @@ import { DELETE, PATCH } from '@/app/api/v1/employeurs/[employeurId]/route';
 import { GET } from '@/app/api/v1/employeurs/route';
 import { signToken } from '@/lib/services/auth_service';
 import { resetMockDb } from '../mocks/mock-db';
+import { failNextEmail, resetMockEmail, sentEmails } from '../mocks/mock-email';
 import {
   ADMIN_ID,
   COMPANY_USER_ID,
@@ -103,6 +104,88 @@ describe('PATCH /api/v1/employeurs/{employeurId}', () =>
 
     expect(response.status).toBe(200);
     expect(json.name).toBe('Entreprise SAS');
+  });
+});
+
+// Every company fixture starts verified, so each case first sends the employer
+// back to unverified — the state a registration actually leaves it in — and then
+// exercises the validation itself.
+describe('PATCH /api/v1/employeurs/{employeurId} — administrative validation', () =>
+{
+  beforeEach(() =>
+  {
+    resetMockDb();
+    resetMockEmail();
+  });
+
+  async function unverify()
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { verified: false }, token);
+    resetMockEmail();
+  }
+
+  it('returns 403 when a COMPANY caller tries to verify its own company', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: COMPANY_USER_ID, role: 'COMPANY' });
+    const response = await patch(EMPLOYER_COMPANY_ID, { verified: true }, token);
+
+    expect(response.status).toBe(403);
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  it('verifies the employer and mails it a validation notice', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await patch(EMPLOYER_COMPANY_ID, { verified: true }, token);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.verified).toBe(true);
+
+    expect(sentEmails).toHaveLength(1);
+    expect(sentEmails[0]!.to).toBe('employer@example.com');
+    expect(sentEmails[0]!.text).toContain('http://localhost:3000/login');
+    expect(sentEmails[0]!.text).toContain('Démonstrateur technique, ne constitue pas un service public en exploitation.');
+  });
+
+  it('leaves the employer unverified when the mail cannot be sent', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    failNextEmail();
+
+    expect((await patch(EMPLOYER_COMPANY_ID, { verified: true }, token)).status).toBe(502);
+
+    const json = await (await patch(EMPLOYER_COMPANY_ID, { name: 'Entreprise SA' }, token)).json();
+
+    expect(json.verified).toBe(false);
+  });
+
+  it('sends nothing when the employer is already verified', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    expect((await patch(EMPLOYER_COMPANY_ID, { verified: true }, token)).status).toBe(200);
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  it('sends nothing for an ordinary patch', async () =>
+  {
+    await unverify();
+
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+
+    await patch(EMPLOYER_COMPANY_ID, { name: 'Entreprise SA' }, token);
+
+    expect(sentEmails).toHaveLength(0);
   });
 });
 

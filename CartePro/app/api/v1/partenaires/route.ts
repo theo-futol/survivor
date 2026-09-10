@@ -95,7 +95,7 @@ export async function GET(request: Request)
  * /api/v1/partenaires:
  *   post:
  *     summary: Création d'un partenaire
- *     description: Crée une entreprise partenaire (`isPartner = true`). Tous les champs non nullables de la table `Company` sont requis, y compris `kbisId` qui doit référencer un document KBIS déjà existant. Réservé aux administrateurs.
+ *     description: Crée une entreprise partenaire (`isPartner = true`). Tous les champs non nullables de la table `Company` sont requis, y compris `kbisId` qui doit référencer un document KBIS déjà existant. Réservé aux administrateurs. Le champ `verified` n'est pas acceptable à la création : toute inscription crée un partenaire non vérifié, validé ensuite via `PATCH`.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -120,7 +120,6 @@ export async function GET(request: Request)
  *                 properties:
  *                   lat: { type: number }
  *                   lng: { type: number }
- *               verified: { type: boolean }
  *     responses:
  *       '201':
  *         description: Partenaire créé.

@@ -10,7 +10,7 @@ const safeText = (max: number) =>
 
 // Every non-nullable Company column is required — the illustrative body in
 // docs/API.md omits several of them.
-export const companyCreateSchema = z.object({
+const companyBaseSchema = z.object({
   name: safeText(120),
   email: z.email(),
   siret: z.string().regex(/^\d{14}$/, { message: 'Le SIRET doit contenir exactement 14 chiffres.' }),
@@ -25,13 +25,19 @@ export const companyCreateSchema = z.object({
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
   }),
-  verified: z.boolean().optional(),
 });
 
-export const companyPatchSchema = companyCreateSchema.partial().refine(
-  (patch) => Object.keys(patch).length > 0,
-  { message: 'Le corps de la requête ne doit pas être vide.' },
-);
+// `verified` is deliberately absent from the creation schema: a company is
+// always born unverified and only an administrator can validate it afterwards.
+export const companyCreateSchema = companyBaseSchema;
+
+export const companyPatchSchema = companyBaseSchema
+  .partial()
+  .extend({ verified: z.boolean().optional() })
+  .refine(
+    (patch) => Object.keys(patch).length > 0,
+    { message: 'Le corps de la requête ne doit pas être vide.' },
+  );
 
 export type CompanyInput = z.infer<typeof companyCreateSchema>;
 
@@ -148,7 +154,9 @@ export async function createCompany(input: CompanyInput, isPartner: boolean)
     reasonId: input.reasonId,
     categoryId: input.categoryId,
     location: point(input.location.lng, input.location.lat, 4326),
-    verified: input.verified ?? false,
+    // Registration never yields a verified company: an administrator reviews
+    // the file and flips the flag through PATCH.
+    verified: false,
     isPartner,
     active: true,
   });

@@ -146,4 +146,14 @@ describe('POST /api/v1/employeurs', () =>
     expect(json.active).toBe(true);
     expect(json.name).toBe('Nouvelle SA');
   });
+
+  // Verification is an administrative act performed after the fact, never
+  // something the creation payload can grant itself.
+  it('creates the employer unverified even when the body asks for verified', async () =>
+  {
+    const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const json = await (await post({ ...validBody, verified: true }, token)).json();
+
+    expect(json.verified).toBe(false);
+  });
 });

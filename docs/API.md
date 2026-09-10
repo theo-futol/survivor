@@ -82,7 +82,8 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
   - `kbis` must be a **PDF of at most 5 MB**. It is stored in Garage (S3), and a `document` row
     records its storage key; the company row points at it through `kbisId`.
   - Behavior: creates the company and its owner user, unverified so the account stays visible in the
-    admin backlog, then opens a session (same JWT + cookie as login).
+    admin backlog, then opens a session (same JWT + cookie as login). An acknowledgement email is
+    then sent to the company (best effort — a mail failure never rolls back the account).
   - Success: `201` with the created account, plus `expiresIn`.
   - Errors: `400` (invalid form or Kbis), `409` (email or SIRET already used), `503` (Garage
     unavailable).
@@ -133,19 +134,27 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
   "agentId": "uuid-of-admin-user",
   "reasonId": 1,
   "categoryId": 1,
-  "location": { "lat": 43.29, "lng": 5.37 },
-  "verified": false
+  "location": { "lat": 43.29, "lng": 5.37 }
 }
 ```
+
+  - `verified` is **not accepted here**: every company is created unverified and is validated
+    afterwards through `PATCH`.
 
   - Success: `201` returns the created employer.
   - Errors: `400`, `409` (email, SIRET or KBIS already used).
 
 - `PATCH /api/v1/employeurs/{employeurId}`
   - Roles: `ADMIN`, `COMPANY` (own only)
-  - Body: any non-empty subset of the creation fields. `isPartner` and `active` are server-driven and
-    are rejected.
+  - Body: any non-empty subset of the creation fields, plus `verified`. `isPartner` and `active` are
+    server-driven and are rejected.
+  - `verified`, `agentId`, `reasonId` and `kbisId` record the administrative review: only an `ADMIN`
+    may send them, a `COMPANY` gets a `403` — it cannot validate itself.
+  - Setting `verified` to `true` on a company that was not verified yet **emails the company** to
+    tell it the account is validated and that it can now sign in. The mail is sent before the write,
+    so a provider outage answers `502` and leaves the company unverified, ready to be retried.
   - Success: `200` returns the updated object.
+  - Errors: `400`, `403`, `404`, `409`, `502` (validation email not sent).
 
 - `DELETE /api/v1/employeurs/{employeurId}`
   - Roles: `ADMIN`
@@ -158,7 +167,8 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 ## Abondements
 
 - `POST /api/v1/employeurs/{employeurId}/abondements`
-  - Roles: `ADMIN`, `COMPANY` (own only)
+  - Roles: `ADMIN` only. Abondements are driven from the admin dashboard
+    (`app/admin/page.tsx`); a company cannot fund itself, and the employer space never calls this.
   - Body:
 
 ```json
@@ -173,7 +183,7 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
     transaction (status `VALIDER`) is inserted per employee. A `TOPUP` row is stored with a **null
     `companyId`**, as required by the `transaction_type_matches_company` constraint.
   - Success: `201` `{ "montant": 5000, "salariesCredites": 12, "montantTotal": 60000 }`
-  - Errors: `403` (another company), `404` (employer not found, **or no active employee to credit**).
+  - Errors: `404` (employer not found, **or no active employee to credit**).
 
 ---
 
@@ -291,10 +301,13 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 
 - `POST /api/v1/partenaires`
   - Roles: `ADMIN`
-  - Same body and constraints as `POST /api/v1/employeurs`, with `isPartner = true`.
+  - Same body and constraints as `POST /api/v1/employeurs`, with `isPartner = true`. `verified` is
+    likewise not accepted.
 
 - `PATCH /api/v1/partenaires/{partenaireId}`
   - Roles: `ADMIN`, `PARTNER` (own)
+  - Same rules as `PATCH /api/v1/employeurs/{employeurId}`: `verified`, `agentId`, `reasonId` and
+    `kbisId` are admin-only, and flipping `verified` to `true` emails the partner.
 
 - `DELETE /api/v1/partenaires/{partenaireId}`
   - Roles: `ADMIN`
@@ -389,7 +402,7 @@ transaction lists, and `?featured=` on partners. The filters that do exist are l
 | Role | Permissions |
 |---|---|
 | `ADMIN` | Full access to all resources and operations, plus the admin-only exports (ban, CSV, KBIS). |
-| `COMPANY` | Manages its own company record, its employees, their transactions and abondements. Reads the partner network. |
+| `COMPANY` | Manages its own company record, its employees and their transactions. Reads the partner network. Cannot abonder — that is an admin operation. |
 | `PARTNER` | Reads and edits its own partner record, reads its own transactions, resolves QR codes issued for it and cashes them in. |
 | `EMPLOYEE` | Reads its own profile, balance and transactions, edits its own name and password, browses verified partners, generates its own payment QR codes. |
 

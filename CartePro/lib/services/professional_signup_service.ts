@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import type { PoolClient } from "pg"
 import { z } from "zod"
 
+import { sendCompanyRegistrationEmail } from "@/lib/services/account_mail_service"
 import { hashPassword } from "@/lib/services/auth_service"
 import { AppError } from "@/lib/services/error_service"
 import { deleteFile, uploadFile } from "@/lib/services/garage_service"
@@ -228,6 +229,15 @@ export async function registerProfessionalAccount(
 
     console.error("Professional signup database transaction failed", error)
     throw new AppError("La création du compte a échoué.", 500)
+  }
+
+  // Best-effort, and deliberately not the mail-before-write rule used when an
+  // admin validates a company: the account already exists at this point, so a
+  // Brevo outage must neither roll it back nor fail the signup request.
+  try {
+    await sendCompanyRegistrationEmail({ name: data.organizationName, email: data.email })
+  } catch (error) {
+    console.error("Professional signup acknowledgement email failed", error)
   }
 
   return {
