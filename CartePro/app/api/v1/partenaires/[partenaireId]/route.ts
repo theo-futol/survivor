@@ -12,7 +12,17 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  * /api/v1/partenaires/{partenaireId}:
  *   patch:
  *     summary: Mise à jour d'un partenaire
- *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Le champ `isPartner` est piloté par le serveur et ne peut jamais être fourni. Les champs `verified`, `active`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation au partenaire et fait passer à `ACCEPTED` le compte utilisateur créé avec lui à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`. `active` suspend ou réactive le compte : un partenaire suspendu (`active = false`) disparaît des listings publics et son compte ne peut plus se connecter, sans perdre son historique ; le repasser à `true` le restaure intégralement.
+ *     description: >-
+ *       Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa
+ *       propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Le champ `isPartner` est
+ *       piloté par le serveur et ne peut jamais être fourni. Les champs `verified`, `active`,
+ *       `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un
+ *       `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un
+ *       email de validation au partenaire et fait passer à `ACCEPTED` le compte utilisateur créé
+ *       avec lui à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le
+ *       remet à `PENDING`. `active` suspend ou réactive le compte : un partenaire suspendu
+ *       (`active = false`) disparaît des listings publics et son compte ne peut plus se
+ *       connecter, sans perdre son historique ; le repasser à `true` le restaure intégralement.
  *     security:
  *       - bearerAuth: []
  *       - cookieAuth: []
