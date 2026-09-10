@@ -77,19 +77,18 @@ function query(text: string, values: unknown[] = []): QueryResult
     return { rows: [], rowCount: before - mockTables['QrCode']!.length };
   }
 
-  // The ledger row for a QR code payment, refund or top-up. The id is left to
-  // the database, so the mock assigns one the same way the ORM mock does.
-  if (/^INSERT INTO "transaction" \(type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)$/i.test(sql))
+  // The ledger row for a QR code payment, refund or top-up.
+  if (/^INSERT INTO "transaction" \(id, type, "userId", "companyId", amount, "newBalance", status\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7\)$/i.test(sql))
   {
     mockTables['Transaction']!.push({
-      id: `transaction-${mockTables['Transaction']!.length + 1}`,
-      type: values[0],
-      userId: values[1],
-      companyId: values[2],
-      amount: values[3],
-      newBalance: values[4],
+      id: values[0],
+      type: values[1],
+      userId: values[2],
+      companyId: values[3],
+      amount: values[4],
+      newBalance: values[5],
       originalTransactionId: null,
-      status: values[5],
+      status: values[6],
       createdAt: new Date().toISOString(),
     });
 

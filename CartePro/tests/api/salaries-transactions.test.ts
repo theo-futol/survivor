@@ -166,13 +166,20 @@ describe('POST /api/v1/salaries/{salarieId}/transactions', () =>
     expect((await post(EMPLOYEE_ID, { ...payment, amount: -5 }, token))?.status).toBe(400);
   });
 
-  // Balances are integer cents, so a fractional amount would be silently coerced
-  // by the int4 column if it ever reached it.
-  it('returns 400 for a fractional amount', async () =>
+  // Balances are integer cents (int4 column), so a decimal amount is rounded to
+  // the nearest cent before it is booked, rather than rejected outright.
+  it('rounds a fractional amount to the nearest cent', async () =>
   {
     const { token } = await signToken({ sub: ADMIN_ID, role: 'ADMIN' });
+    const response = await post(EMPLOYEE_ID, { ...payment, amount: 10.5 }, token);
+    const json = await response.json();
 
-    expect((await post(EMPLOYEE_ID, { ...payment, amount: 10.5 }, token)).status).toBe(400);
+    expect(response.status).toBe(201);
+    expect(json.newBalance).toBe(1000 - 11);
+
+    const { transactions } = await (await get(EMPLOYEE_ID, token)).json();
+
+    expect(transactions.find((t: { newBalance: number }) => t.newBalance === 989).amount).toBe(11);
   });
 
   it('returns 400 for an unknown type', async () =>
