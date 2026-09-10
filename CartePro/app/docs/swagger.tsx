@@ -8,5 +8,18 @@ type SwaggerProps = {
 }
 
 export default function Swagger({ spec }: SwaggerProps) {
-  return <SwaggerUI spec={spec} />
+  return (
+    <div className="swagger-wrapper bg-white min-h-screen py-4">
+      <SwaggerUI
+        spec={spec}
+        filter={true}
+        persistAuthorization={true}
+        displayRequestDuration={true}
+        docExpansion="list"
+        defaultModelsExpandDepth={1}
+        defaultModelExpandDepth={1}
+        tryItOutEnabled={true}
+      />
+    </div>
+  )
 }

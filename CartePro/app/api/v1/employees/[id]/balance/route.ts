@@ -12,10 +12,13 @@ const balanceSchema = z.object({
  * @openapi
  * /api/v1/employees/{id}/balance:
  *   get:
+ *     tags:
+ *       - Salariés
  *     summary: Consultation du solde d'un salarié
- *     description: Retourne le solde courant du salarié identifié par `id`. Un `ADMIN` consulte n'importe quel salarié, une entreprise `COMPANY` uniquement ses propres salariés, et un `EMPLOYEE` uniquement le sien.
+ *     description: "Retourne le solde disponible en temps réel du salarié désigné par son identifiant UUID (exprimé en centimes d'euro). Un `ADMIN` peut consulter n'importe quel salarié, une entreprise `COMPANY` uniquement ses salariés, et un `EMPLOYEE` uniquement son propre solde."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -23,27 +26,51 @@ const balanceSchema = z.object({
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Identifiant du salarié.
+ *         description: "Identifiant UUID du salarié"
  *     responses:
  *       '200':
- *         description: Solde récupéré avec succès.
+ *         description: Solde disponible récupéré avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - balance
  *               properties:
  *                 balance:
- *                   type: number
+ *                   type: integer
+ *                   description: "Solde disponible en centimes d'euro (ex: 12345 pour 123,45 €)"
+ *                   example: 12345
  *       '400':
- *         description: Identifiant invalide.
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '401':
- *         description: Token manquant ou invalide.
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '403':
- *         description: Rôle insuffisant, ou tentative de consulter le solde d'un autre salarié.
+ *         description: "Rôle insuffisant ou tentative de consulter le solde d'un tiers."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '404':
  *         description: Salarié introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '500':
  *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request,{ params }: { params: Promise<{ id: string }> })
 {

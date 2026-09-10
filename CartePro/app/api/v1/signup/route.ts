@@ -13,36 +13,126 @@ function text(form: FormData, name: string) {
  * @openapi
  * /api/v1/signup:
  *   post:
+ *     tags:
+ *       - Authentification
  *     summary: Inscription publique entreprise ou partenaire
- *     description: Crée le document Kbis dans Garage, l'entreprise et son utilisateur propriétaire dans PostgreSQL, puis ouvre une session JWT. Le compte est créé non vérifié afin de rester visible dans l'administration avant validation.
+ *     description: "Enregistre le document KBIS dans Garage (S3), crée la fiche entreprise et son compte utilisateur propriétaire dans PostgreSQL (au statut non vérifié pour revue administrative), puis ouvre une session JWT."
  *     requestBody:
  *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [accountType, organizationName, registrationNumber, email, password, phone, legalRepresentative, jobTitle, address, postalCode, city, category, kbis]
+ *             required:
+ *               - accountType
+ *               - organizationName
+ *               - registrationNumber
+ *               - email
+ *               - password
+ *               - phone
+ *               - legalRepresentative
+ *               - jobTitle
+ *               - address
+ *               - postalCode
+ *               - city
+ *               - category
+ *               - kbis
  *             properties:
- *               accountType: { type: string, enum: [company, partner] }
- *               organizationName: { type: string }
- *               registrationNumber: { type: string, pattern: '^\\d{14}$' }
- *               email: { type: string, format: email }
- *               password: { type: string, format: password }
- *               phone: { type: string }
- *               legalRepresentative: { type: string }
- *               jobTitle: { type: string }
- *               address: { type: string }
- *               postalCode: { type: string, pattern: '^\\d{5}$' }
- *               city: { type: string }
- *               category: { type: string }
- *               description: { type: string }
- *               kbis: { type: string, format: binary }
+ *               accountType:
+ *                 type: string
+ *                 enum: [company, partner]
+ *                 description: "Type d'organisation : 'company' pour employeur, 'partner' pour partenaire"
+ *                 example: "company"
+ *               organizationName:
+ *                 type: string
+ *                 description: "Raison sociale de l'organisation"
+ *                 example: "Acme Corp SAS"
+ *               registrationNumber:
+ *                 type: string
+ *                 pattern: '^\\d{14}$'
+ *                 description: "Numéro SIRET à 14 chiffres"
+ *                 example: "12345678901234"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "contact@acmepartner.fr"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: "8 à 32 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial"
+ *                 example: "Secret123!"
+ *               phone:
+ *                 type: string
+ *                 example: "0601020304"
+ *               legalRepresentative:
+ *                 type: string
+ *                 description: "Représentant légal de l'entreprise"
+ *                 example: "Jean Dupont"
+ *               jobTitle:
+ *                 type: string
+ *                 description: "Fonction du représentant"
+ *                 example: "Directeur Général"
+ *               address:
+ *                 type: string
+ *                 example: "12 rue de la République"
+ *               postalCode:
+ *                 type: string
+ *                 pattern: '^\\d{5}$'
+ *                 example: "13001"
+ *               city:
+ *                 type: string
+ *                 example: "Marseille"
+ *               category:
+ *                 type: string
+ *                 description: "Libellé de la catégorie d'activité"
+ *                 example: "Services"
+ *               description:
+ *                 type: string
+ *                 description: "Description facultative de l'activité"
+ *                 example: "Prestations d'ingénierie et de conseil"
+ *               kbis:
+ *                 type: string
+ *                 format: binary
+ *                 description: "Fichier PDF du KBIS (maximum 5 Mo)"
  *     responses:
- *       '201': { description: Compte créé et session ouverte. }
- *       '400': { description: Formulaire ou Kbis invalide. }
- *       '409': { description: Email ou SIRET déjà utilisé. }
- *       '503': { description: Stockage Garage temporairement indisponible. }
- * 
+ *       '201':
+ *         description: Compte créé avec succès et session ouverte.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/UserSummary'
+ *                 company:
+ *                   $ref: '#/components/schemas/CompanyDetail'
+ *                 expiresIn:
+ *                   type: integer
+ *                   example: 1800
+ *       '400':
+ *         description: "Formulaire invalide ou fichier KBIS non conforme (doit être un PDF de moins de 5 Mo)."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: "L'adresse email ou le SIRET est déjà associé à un compte."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '503':
+ *         description: "Service de stockage Garage S3 temporairement indisponible."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request) {
   try {

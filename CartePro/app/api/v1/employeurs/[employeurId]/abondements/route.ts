@@ -20,43 +20,104 @@ const abondementSchema = z.object({
  * @openapi
  * /api/v1/employeurs/{employeurId}/abondements:
  *   post:
- *     summary: Abondement des salariés d'un employeur
- *     description: "Crédite le montant indiqué à chaque salarié actif de l'entreprise. L'opération se déroule dans une seule transaction PostgreSQL : les lignes des salariés sont verrouillées (`SELECT … FOR UPDATE`) avant la mise à jour des soldes, et une transaction immuable de type `TOPUP` (statut `VALIDER`) est créée pour chaque salarié crédité. Les champs `type` et `comment` sont validés mais ne sont pas persistés faute de colonnes dédiées. Réservé aux administrateurs : les abondements sont pilotés depuis le tableau de bord d'administration, une entreprise ne peut pas s'abonder elle-même."
+ *     tags:
+ *       - Abondements
+ *     summary: Distribution d'abondement aux salariés d'un employeur
+ *     description: "Crédite collectivement le montant indiqué (en centimes d'euro) à chaque salarié actif de l'entreprise employeuse. L'opération est atomique (exécutée dans une seule transaction PostgreSQL sous verrou `SELECT … FOR UPDATE`) et génère une écriture immuable de type `TOPUP` (statut `VALIDER`) pour chaque salarié crédité. Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: employeurId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant de l'entreprise employeur"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [montant, type]
+ *             required:
+ *               - montant
+ *               - type
  *             properties:
- *               montant: { type: integer, minimum: 1 }
- *               date: { type: string, format: date }
- *               type: { type: string, enum: [fixe, variable] }
- *               comment: { type: string }
+ *               montant:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: "Montant crédité par salarié en centimes d'euro (ex: 5000 pour 50,00 €)"
+ *                 example: 5000
+ *               date:
+ *                 type: string
+ *                 format: date
+ *                 description: "Date indicative de l'opération (facultative)"
+ *                 example: "2026-09-01"
+ *               type:
+ *                 type: string
+ *                 enum: [fixe, variable]
+ *                 description: "Type d'abondement"
+ *                 example: "fixe"
+ *               comment:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: "Commentaire ou motif de l'opération"
+ *                 example: "Abondement rentrée scolaire"
  *     responses:
  *       '201':
- *         description: Abondement effectué.
+ *         description: Abondement distribué avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - montant
+ *                 - salariesCredites
+ *                 - montantTotal
  *               properties:
- *                 montant: { type: integer }
- *                 salariesCredites: { type: integer }
- *                 montantTotal: { type: integer }
- *       '400': { description: Identifiant ou corps de requête invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant. }
- *       '404': { description: Employeur introuvable, ou aucun salarié actif à créditer. }
- *       '500': { description: Erreur serveur interne. }
+ *                 montant:
+ *                   type: integer
+ *                   description: "Montant unitaire par salarié en centimes d'euro"
+ *                   example: 5000
+ *                 salariesCredites:
+ *                   type: integer
+ *                   description: "Nombre de salariés actifs ayant bénéficié de la dotation"
+ *                   example: 12
+ *                 montantTotal:
+ *                   type: integer
+ *                   description: "Montant total distribué en centimes d'euro"
+ *                   example: 60000
+ *       '400':
+ *         description: Identifiant employeur invalide ou corps de requête malformé.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: "Employeur introuvable ou aucun salarié actif à créditer."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request, { params }: { params: Promise<{ employeurId: string }> })
 {

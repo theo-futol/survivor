@@ -15,31 +15,109 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
  *     description: Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa propre entreprise ; un `ADMIN` peut modifier n'importe laquelle. Le champ `isPartner` est piloté par le serveur et ne peut jamais être fourni. Les champs `verified`, `active`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation à l'entreprise et fait passer à `ACCEPTED` le compte utilisateur créé avec elle à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`. `active` suspend ou réactive le compte : un employeur suspendu (`active = false`) disparaît des listings et son compte ne peut plus se connecter, sans perdre son historique ni celui de ses salariés ; le repasser à `true` le restaure intégralement. Les comptes salariés ne sont pas touchés par ce champ : ils relèvent de leur propre statut `active`.
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: employeurId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant unique de l'employeur"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             description: Sous-ensemble non vide des champs de création.
+ *             description: "Sous-ensemble non vide des champs modifiables de l'employeur"
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Entreprise SA Nouvelle Dénomination"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "direction@entreprise.fr"
+ *               siret:
+ *                 type: string
+ *                 pattern: '^\\d{14}$'
+ *                 example: "12345678901234"
+ *               address:
+ *                 type: string
+ *                 example: "14 boulevard Maritime"
+ *               postalCode:
+ *                 type: string
+ *                 pattern: '^\\d{5}$'
+ *                 example: "13002"
+ *               description:
+ *                 type: string
+ *                 example: "Nouvelle description d'activité"
+ *               categoryId:
+ *                 type: integer
+ *                 example: 2
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   lat:
+ *                     type: number
+ *                     example: 43.3
+ *                   lng:
+ *                     type: number
+ *                     example: 5.4
+ *               verified:
+ *                 type: boolean
+ *                 description: "Réservé ADMIN : valide l'employeur et active le compte utilisateur associé"
+ *                 example: true
  *     responses:
  *       '200':
- *         description: Employeur mis à jour.
+ *         description: Employeur mis à jour avec succès.
  *         content:
  *           application/json:
- *             schema: { type: object }
- *       '400': { description: Identifiant ou corps de requête invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de modifier une autre entreprise. }
- *       '404': { description: Employeur introuvable. }
- *       '409': { description: Un employeur possède déjà cet email, ce SIRET ou ce KBIS. }
- *       '502': { description: L'email de validation n'a pas pu être envoyé ; l'employeur reste non vérifié. }
- *       '500': { description: Erreur serveur interne. }
+ *             schema:
+ *               $ref: '#/components/schemas/CompanyDetail'
+ *       '400':
+ *         description: Identifiant ou corps de requête invalide (ou tentative de modifier un champ interdit).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de modifier l'entreprise d'un tiers / modifier un champ réservé à l'administrateur."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Employeur introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: "Un employeur possède déjà cette adresse email, ce SIRET ou ce document KBIS."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '502':
+ *         description: "Échec de l'envoi de l'email de validation : la modification n'a pas été enregistrée."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ employeurId: string }> })
 {
@@ -103,22 +181,54 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ em
  * @openapi
  * /api/v1/employeurs/{employeurId}:
  *   delete:
- *     summary: Suppression d'un employeur
- *     description: Suppression logique — la ligne est conservée et son champ `active` passe à `false`, car les transactions immuables la référencent. L'employeur disparaît alors de toutes les lectures. Réservé aux administrateurs.
+ *     tags:
+ *       - Employeurs
+ *     summary: Suppression logique d'un employeur
+ *     description: "Suppression logique : le statut `active` passe à `false`. La ligne est conservée en base de données pour garantir l'intégrité référentielle des transactions passées, mais disparaît des requêtes de consultation. Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: employeurId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant unique de l'employeur à supprimer"
  *     responses:
- *       '204': { description: Employeur supprimé. }
- *       '400': { description: Identifiant invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant. }
- *       '404': { description: Employeur introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *       '204':
+ *         description: Employeur désactivé avec succès (aucun contenu retourné).
+ *       '400':
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Employeur introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ employeurId: string }> })
 {

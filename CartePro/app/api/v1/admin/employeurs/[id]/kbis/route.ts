@@ -13,28 +13,64 @@ const KBIS_BUCKET = process.env.GARAGE_DEFAULT_BUCKET ?? "kbis-documents"
  * @openapi
  * /api/v1/admin/employeurs/{id}/kbis:
  *   get:
- *     summary: Téléchargement du KBIS d'un employeur
- *     description: Récupère le document KBIS référencé par l'entreprise dans PostgreSQL puis lit le fichier correspondant dans Garage. Réservé aux administrateurs.
+ *     tags:
+ *       - Administration
+ *     summary: Téléchargement de l'extrait KBIS d'un employeur
+ *     description: "Récupère le document KBIS associé à l'entreprise employeur dans PostgreSQL, puis extrait et renvoie le flux PDF correspondant depuis le stockage objet Garage S3 (`kbis-<siret>.pdf`). Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant unique de l'employeur"
  *     responses:
  *       '200':
- *         description: Fichier KBIS.
+ *         description: Extrait KBIS au format PDF.
  *         content:
  *           application/pdf:
  *             schema:
  *               type: string
  *               format: binary
- *       '400': { description: Identifiant invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Réservé aux administrateurs. }
- *       '404': { description: Employeur ou document KBIS introuvable. }
- *       '503': { description: Stockage Garage temporairement indisponible. }
+ *       '400':
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Employeur ou document KBIS introuvable dans la base ou sur Garage S3.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '503':
+ *         description: Service de stockage Garage S3 temporairement inaccessible.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

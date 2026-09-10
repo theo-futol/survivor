@@ -15,8 +15,10 @@ const banSchema = z.object({
  * @openapi
  * /api/v1/admin/ban:
  *   post:
- *     summary: Bannissement d'un utilisateur
- *     description: "Bannit un utilisateur pour le motif indiqué. Le bannissement est écrit à deux endroits : la table `BannedUser`, qui fait foi pour les lectures (par exemple le champ `isBanned` de `GET /api/v1/salaries`), et une clé Redis à durée de vie limitée que `authorize()` consulte à chaque requête, ce qui invalide immédiatement le token de l'utilisateur. Réservé aux administrateurs."
+ *     tags:
+ *       - Administration
+ *     summary: Bannissement immédiat d'un utilisateur
+ *     description: "Bannit un utilisateur et révoque immédiatement ses accès. L'interdiction est inscrite à la fois dans la table persistante `bannedUser` et dans le cache Redis consulté à chaque requête par le middleware de sécurité `authorize()`, invalidant sur-le-champ son jeton JWT actif. Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -25,27 +27,78 @@ const banSchema = z.object({
  *         application/json:
  *           schema:
  *             type: object
- *             required: [userId, reason]
+ *             required:
+ *               - userId
+ *               - reason
  *             properties:
- *               userId: { type: string, format: uuid }
- *               reason: { type: string, maxLength: 500 }
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: "Identifiant unique de l'utilisateur à révoquer"
+ *                 example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *               reason:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: "Motif argumenté de l'exclusion"
+ *                 example: "Suspicion de fraude transactionnelle"
  *     responses:
  *       '200':
- *         description: Utilisateur banni.
+ *         description: Utilisateur révoqué et banni avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - status
+ *                 - userId
+ *                 - reason
  *               properties:
- *                 status: { type: string, example: banned }
- *                 userId: { type: string }
- *                 reason: { type: string }
- *       '400': { description: Corps de requête invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant. }
- *       '404': { description: Utilisateur introuvable. }
- *       '409': { description: Utilisateur déjà banni. }
- *       '500': { description: Erreur serveur interne. }
+ *                 status:
+ *                   type: string
+ *                   example: "banned"
+ *                 userId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                 reason:
+ *                   type: string
+ *                   example: "Suspicion de fraude transactionnelle"
+ *       '400':
+ *         description: Corps de requête invalide ou identifiant non conforme.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Utilisateur introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: Utilisateur déjà banni.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request)
 {

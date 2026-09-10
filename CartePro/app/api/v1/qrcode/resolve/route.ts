@@ -12,37 +12,89 @@ const resolveSchema = z.object({
  * @openapi
  * /api/v1/qrcode/resolve:
  *   post:
- *     summary: Résolution d'un QR code de paiement scanné
- *     description: "Traduit le hash SHA-256 d'un QR code scanné en salarié à facturer, pour que le partenaire puisse ensuite appeler `POST /api/v1/salaries/{salarieId}/transactions`. Le hash voyage dans le corps et non dans l'URL : c'est lui qui autorise l'encaissement, il n'a donc rien à faire dans les journaux d'accès. Un partenaire ne peut résoudre que les QR codes émis pour sa propre entreprise ; un `ADMIN` les résout tous. Le QR code n'est pas consommé ici, seul l'encaissement le consomme."
+ *     tags:
+ *       - QR Code
+ *     summary: Résolution d'un QR code scanné par un partenaire
+ *     description: "Résout le hash SHA-256 d'un code scanné pour identifier le salarié bénéficiaire et vérifier la validité du code avant d'initier la transaction de paiement. Le hash voyage dans le corps de la requête afin de ne jamais figurer dans les logs d'URL. Un partenaire marchand ne peut résoudre que les codes émis pour son propre établissement ; un `ADMIN` peut résoudre n'importe quel code. La résolution ne consomme pas le QR code."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [content]
+ *             required:
+ *               - content
  *             properties:
- *               content: { type: string, description: Hash SHA-256 (64 caractères hexadécimaux) du code scanné. }
+ *               content:
+ *                 type: string
+ *                 pattern: '^[a-fA-F0-9]{64}$'
+ *                 description: "Empreinte SHA-256 (64 caractères hexadécimaux) du code QR scanné"
+ *                 example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
  *     responses:
  *       '200':
- *         description: QR code valide.
+ *         description: QR code valide et profil du salarié retourné.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - salarieId
+ *                 - name
+ *                 - surname
+ *                 - companyId
+ *                 - expiresAt
  *               properties:
- *                 salarieId: { type: string, format: uuid }
- *                 name: { type: string }
- *                 surname: { type: string }
- *                 companyId: { type: string, format: uuid }
- *                 expiresAt: { type: string }
- *       '400': { description: Corps de requête invalide, ou QR code expiré. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou QR code émis pour une autre entreprise. }
- *       '404': { description: QR code introuvable, ou salarié introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *                 salarieId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                 name:
+ *                   type: string
+ *                   example: "Jean"
+ *                 surname:
+ *                   type: string
+ *                   example: "Dupont"
+ *                 companyId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2026-09-02T12:35:00.000Z"
+ *       '400':
+ *         description: "Corps de requête invalide ou QR code expiré."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou QR code émis pour un autre point de vente."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: "QR code inconnu ou salarié associé introuvable/inactif."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request)
 {

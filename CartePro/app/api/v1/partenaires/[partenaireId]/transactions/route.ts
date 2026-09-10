@@ -17,10 +17,13 @@ const partnerParamsSchema = z.object({
  * @openapi
  * /api/v1/partenaires/{partenaireId}/transactions:
  *   get:
- *     summary: Retrieve transactions for a specific partner
- *     description: "Return the paginated list of transactions billed to the given partner, newest first, each with the salarié who paid. A `PARTNER` may only read its own company; an `ADMIN` may read any. A partner with no sales yet gets an empty list, not a 404."
+ *     tags:
+ *       - Transactions
+ *     summary: Historique des encaissements d'un partenaire
+ *     description: "Retourne la liste paginée des transactions encaissées par le partenaire marchand, de la plus récente à la plus ancienne, incluant l'identité du salarié bénéficiaire ayant payé. Un `PARTNER` ne consulte que ses propres transactions de caisse ; un `ADMIN` peut consulter celles de n'importe quel partenaire. Un partenaire sans transaction retourne une liste vide avec un code 200."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: partenaireId
@@ -28,53 +31,105 @@ const partnerParamsSchema = z.object({
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Partner ID.
+ *         description: "Identifiant du partenaire marchand"
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *           default: 1
+ *         description: "Numéro de la page"
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
  *           default: 20
+ *         description: "Nombre de transactions par page"
  *     responses:
  *       '200':
- *         description: Paginated list of transactions for the specified partner.
+ *         description: Historique des encaissements récupéré avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - transactions
+ *                 - meta
  *               properties:
  *                 transactions:
  *                   type: array
  *                   items:
  *                     type: object
  *                     properties:
- *                       id: { type: string, format: uuid }
- *                       amount: { type: number }
- *                       status: { type: string }
- *                       type: { type: string }
- *                       createdAt: { type: string, format: date-time }
- *                       updatedAt: { type: string, format: date-time }
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                         example: "c71a3932-d17e-4629-9dc4-1b4d3752eef5"
+ *                       amount:
+ *                         type: integer
+ *                         description: "Montant en centimes d'euro"
+ *                         example: 1850
+ *                       status:
+ *                         type: string
+ *                         enum: [VALIDER, REFUSER]
+ *                         example: "VALIDER"
+ *                       type:
+ *                         type: string
+ *                         enum: [PAYMENT, REFUND, TOPUP]
+ *                         example: "PAYMENT"
+ *                       companyId:
+ *                         type: string
+ *                         format: uuid
+ *                         example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                       user:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                             example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                           name:
+ *                             type: string
+ *                             example: "Jean"
+ *                           surname:
+ *                             type: string
+ *                             example: "Dupont"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2026-09-02T12:30:00.000Z"
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2026-09-02T12:30:00.000Z"
  *                 meta:
- *                   type: object
- *                   properties:
- *                     page: { type: integer }
- *                     limit: { type: integer }
- *                     totalCount: { type: integer }
- *                     totalPages: { type: integer }
- *                     hasNextPage: { type: boolean }
- *                     hasPrevPage: { type: boolean }
+ *                   $ref: '#/components/schemas/PaginationMetaB'
  *       '400':
- *         description: Invalid parameters.
+ *         description: Identifiant ou paramètres de pagination invalides.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '401':
- *         description: Missing or invalid token.
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '403':
- *         description: Insufficient role, or an attempt to read another partner's transactions.
+ *         description: "Rôle insuffisant ou tentative de consulter les encaissements d'un autre point de vente."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '500':
- *         description: Server error.
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request, { params }: { params: Promise<{ partenaireId: string }> })
 {

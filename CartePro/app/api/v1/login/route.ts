@@ -18,31 +18,83 @@ const loginSchema = z.object({
  * @openapi
  * /api/v1/login:
  *   post:
+ *     tags:
+ *       - Authentification
  *     summary: Authentification par email et mot de passe
- *     description: "Vérifie les identifiants, retourne un token JWT et ouvre aussi une session web via un cookie HttpOnly. Le JWT peut toujours être utilisé dans le header Authorization: Bearer <token>."
+ *     description: "Vérifie les identifiants, retourne un token JWT et ouvre une session web sécurisée via le cookie HttpOnly `cartepro_token`. Le JWT peut être réutilisé dans le header `Authorization: Bearer <token>`."
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
+ *               - password
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "user@example.com"
  *               password:
  *                 type: string
+ *                 format: password
+ *                 description: "8 à 32 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial."
+ *                 example: "Secret123!"
  *     responses:
  *       '200':
  *         description: Authentification réussie.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - token
+ *                 - expiresIn
+ *                 - user
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Jeton JWT
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 expiresIn:
+ *                   type: integer
+ *                   description: Durée de validité en secondes
+ *                   example: 1800
+ *                 user:
+ *                   type: object
+ *                   required:
+ *                     - id
+ *                     - role
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                     role:
+ *                       type: string
+ *                       enum: [ADMIN, COMPANY, PARTNER, EMPLOYEE]
+ *                       example: "EMPLOYEE"
  *       '400':
- *         description: Corps de requête invalide.
+ *         description: Corps de requête invalide ou critères de mot de passe non respectés.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '401':
- *         description: Identifiants invalides.
+ *         description: Identifiants invalides ou compte inactif.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '403':
  *         description: Compte non validé (`accountStatus` différent de `ACCEPTED`), ou compte entreprise/partenaire suspendu (`Company.active = false`).
  *       '500':
  *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request)
 {
@@ -114,11 +166,23 @@ export async function POST(request: Request)
  * @openapi
  * /api/v1/login:
  *   delete:
- *     summary: Déconnexion
- *     description: Supprime le cookie de session JWT du navigateur.
+ *     tags:
+ *       - Authentification
+ *     summary: Déconnexion de la session web
+ *     description: "Supprime le cookie de session JWT HttpOnly (`cartepro_token`) du navigateur."
  *     responses:
  *       '200':
  *         description: Déconnexion réussie.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - ok
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
  */
 export async function DELETE(request: Request)
 {

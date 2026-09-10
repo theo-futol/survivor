@@ -15,31 +15,109 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  *     description: Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa propre fiche ; un `ADMIN` peut modifier n'importe laquelle. Le champ `isPartner` est piloté par le serveur et ne peut jamais être fourni. Les champs `verified`, `active`, `agentId`, `reasonId` et `kbisId` relèvent de la validation administrative : seul un `ADMIN` peut les fournir, sous peine de 403. Le passage de `verified` à `true` envoie un email de validation au partenaire et fait passer à `ACCEPTED` le compte utilisateur créé avec lui à l'inscription, qui peut alors se connecter ; repasser `verified` à `false` le remet à `PENDING`. `active` suspend ou réactive le compte : un partenaire suspendu (`active = false`) disparaît des listings publics et son compte ne peut plus se connecter, sans perdre son historique ; le repasser à `true` le restaure intégralement.
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: partenaireId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant unique du partenaire marchand"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             description: Sous-ensemble non vide des champs de création.
+ *             description: "Sous-ensemble non vide des champs modifiables du partenaire"
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Le Bistrot Gourmand & Co"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "contact@bistrotgourmand.fr"
+ *               siret:
+ *                 type: string
+ *                 pattern: '^\\d{14}$'
+ *                 example: "98765432109876"
+ *               address:
+ *                 type: string
+ *                 example: "10 place du Marché"
+ *               postalCode:
+ *                 type: string
+ *                 pattern: '^\\d{5}$'
+ *                 example: "13001"
+ *               description:
+ *                 type: string
+ *                 example: "Restaurant bistronomique et terrasse"
+ *               categoryId:
+ *                 type: integer
+ *                 example: 1
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   lat:
+ *                     type: number
+ *                     example: 43.297
+ *                   lng:
+ *                     type: number
+ *                     example: 5.372
+ *               verified:
+ *                 type: boolean
+ *                 description: "Réservé ADMIN : valide le partenaire marchand et active son compte utilisateur"
+ *                 example: true
  *     responses:
  *       '200':
- *         description: Partenaire mis à jour.
+ *         description: Partenaire mis à jour avec succès.
  *         content:
  *           application/json:
- *             schema: { type: object }
- *       '400': { description: Identifiant ou corps de requête invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de modifier un autre partenaire. }
- *       '404': { description: Partenaire introuvable. }
- *       '409': { description: Un partenaire possède déjà cet email, ce SIRET ou ce KBIS. }
- *       '502': { description: L'email de validation n'a pas pu être envoyé ; le partenaire reste non vérifié. }
- *       '500': { description: Erreur serveur interne. }
+ *             schema:
+ *               $ref: '#/components/schemas/CompanyDetail'
+ *       '400':
+ *         description: Identifiant ou corps de requête invalide (ou tentative de modifier un champ interdit).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de modifier un autre partenaire marchand / modifier un champ d'administration."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Partenaire introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: "Un partenaire possède déjà cette adresse email, ce SIRET ou ce document KBIS."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '502':
+ *         description: "Échec de l'envoi de l'email de validation : la modification n'a pas été enregistrée."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ partenaireId: string }> })
 {
@@ -103,22 +181,54 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
  * @openapi
  * /api/v1/partenaires/{partenaireId}:
  *   delete:
- *     summary: Suppression d'un partenaire
- *     description: Suppression logique — la ligne est conservée et son champ `active` passe à `false`, car les transactions immuables la référencent. Le partenaire disparaît alors de toutes les lectures. Réservé aux administrateurs.
+ *     tags:
+ *       - Partenaires
+ *     summary: Suppression logique d'un partenaire marchand
+ *     description: "Suppression logique : le champ `active` passe à `false`. La ligne est conservée en base de données pour garantir l'intégrité référentielle de l'historique des encaissements et transactions passées. Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: partenaireId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant unique du partenaire marchand à supprimer"
  *     responses:
- *       '204': { description: Partenaire supprimé. }
- *       '400': { description: Identifiant invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant. }
- *       '404': { description: Partenaire introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *       '204':
+ *         description: Partenaire désactivé avec succès (aucun contenu retourné).
+ *       '400':
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Partenaire introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ partenaireId: string }> })
 {

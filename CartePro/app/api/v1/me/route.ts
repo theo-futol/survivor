@@ -6,21 +6,53 @@ import { commonErrorHandler } from '@/lib/services/error_service';
  * @openapi
  * /api/v1/me:
  *   get:
- *     summary: Récupérer l'utilisateur connecté
- *     description: Retourne l'utilisateur authentifié à partir du JWT envoyé en Bearer ou du cookie de session web.
+ *     tags:
+ *       - Utilisateurs
+ *     summary: Récupérer le profil de l'utilisateur connecté
+ *     description: "Retourne les informations du compte utilisateur authentifié (à partir de l'en-tête `Authorization: Bearer <token>` ou du cookie `cartepro_token`) ainsi que les informations de son entreprise de rattachement le cas échéant."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       '200':
- *         description: Utilisateur connecté.
+ *         description: Profil de l'utilisateur récupéré avec succès.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - user
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/UserSummary'
+ *                 company:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/CompanyDetail'
+ *                   nullable: true
  *       '401':
- *         description: Token manquant ou invalide.
+ *         description: Jeton JWT manquant, expiré ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '403':
- *         description: Compte révoqué.
+ *         description: Compte banni ou révoqué.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '404':
- *         description: Utilisateur introuvable.
+ *         description: Utilisateur introuvable ou compte désactivé.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '503':
- *         description: Service d'authentification temporairement indisponible.
+ *         description: Service d'authentification temporairement indisponible (base de données ou Redis).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request)
 {

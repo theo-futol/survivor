@@ -26,46 +26,83 @@ const transactionBodySchema = z.object({
  * @openapi
  * /api/v1/salaries/{salarieId}/transactions:
  *   get:
+ *     tags:
+ *       - Transactions
  *     summary: Historique des transactions d'un salarié
- *     description: "Retourne les transactions paginées du salarié, de la plus récente à la plus ancienne. Un `ADMIN` consulte n'importe quel salarié, une entreprise `COMPANY` uniquement ses propres salariés, et un `EMPLOYEE` uniquement les siennes."
+ *     description: "Retourne les transactions paginées d'un salarié, de la plus récente à la plus ancienne. Un `ADMIN` peut consulter n'importe quel salarié, une entreprise `COMPANY` uniquement ses propres salariés, et un `EMPLOYEE` uniquement ses propres opérations."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: salarieId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant du salarié"
  *       - in: query
  *         name: page
- *         schema: { type: integer, default: 1 }
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: "Numéro de la page"
  *       - in: query
  *         name: limit
- *         schema: { type: integer, default: 20 }
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: "Nombre de transactions par page"
  *     responses:
  *       '200':
- *         description: Transactions récupérées avec succès.
+ *         description: Transactions du salarié récupérées avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - transactions
+ *                 - meta
  *               properties:
  *                 transactions:
  *                   type: array
- *                   items: { type: object }
+ *                   items:
+ *                     $ref: '#/components/schemas/TransactionDetail'
  *                 meta:
- *                   type: object
- *                   properties:
- *                     page: { type: integer }
- *                     limit: { type: integer }
- *                     totalCount: { type: integer }
- *                     totalPages: { type: integer }
- *                     hasNextPage: { type: boolean }
- *                     hasPrevPage: { type: boolean }
- *       '400': { description: Identifiant ou paramètres de requête invalides. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de consulter les transactions d'un autre salarié. }
- *       '404': { description: Salarié introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *                   $ref: '#/components/schemas/PaginationMetaB'
+ *       '400':
+ *         description: Identifiant de salarié invalide ou paramètres de pagination incorrects.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de consulter les transactions d'un autre salarié."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Salarié introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {
@@ -134,44 +171,112 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * @openapi
  * /api/v1/salaries/{salarieId}/transactions:
  *   post:
- *     summary: Création d'une transaction pour un salarié à partir de son QR code
- *     description: "Encaisse un QR code de paiement présenté par le salarié. Le corps porte le hash SHA-256 du code scanné (`content`) et l'entreprise partenaire (`companyId`) ; le QR code doit appartenir au salarié visé, à cette entreprise, et ne pas être expiré. Le solde est lu sous verrou (`SELECT … FOR UPDATE`) puis recalculé dans une seule transaction PostgreSQL : un `PAYMENT` débite, `REFUND` et `TOPUP` créditent. Un solde final négatif enregistre la transaction avec le statut `REFUSER` sans toucher au solde. Un QR code encaissé (statut `VALIDER`) est consommé (ligne supprimée), il ne peut donc pas être rejoué avant son expiration. La contrainte `transaction_type_matches_company` impose un `companyId` nul pour un `TOPUP`."
+ *     tags:
+ *       - Transactions
+ *     summary: Encaissement d'une transaction par scan QR code
+ *     description: "Encaisse un QR code de paiement présenté par le salarié. Le corps porte le hash SHA-256 du code scanné (`content`) et l'identifiant du partenaire marchand (`companyId`) ; le QR code doit appartenir au salarié visé, à cette entreprise partenaire, et ne pas être expiré. Le solde est lu sous verrou atomique (`SELECT … FOR UPDATE`) puis recalculé dans une seule transaction PostgreSQL : un `PAYMENT` débite le solde, tandis que `REFUND` et `TOPUP` le créditent. Si le solde final devient négatif, la transaction est enregistrée avec le statut `REFUSER` sans modifier le solde (réponse 201). Un QR code validé (statut `VALIDER`) est immédiatement consommé (supprimé) pour empêcher tout rejeu."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: salarieId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant du salarié bénéficiaire"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [amount, type, content, companyId]
+ *             required:
+ *               - amount
+ *               - type
+ *               - content
+ *               - companyId
  *             properties:
- *               amount: { type: number, minimum: 1, description: "Montant en centimes, arrondi au centime le plus proche s'il est décimal." }
- *               type: { type: string, enum: [PAYMENT, REFUND, TOPUP] }
- *               content: { type: string, description: Hash SHA-256 (64 caractères hexadécimaux) du code scanné. }
- *               companyId: { type: string, format: uuid }
+ *               amount:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: "Montant en centimes d'euro (ex: 1500 pour 15,00 €)"
+ *                 example: 1500
+ *               type:
+ *                 type: string
+ *                 enum: [PAYMENT, REFUND, TOPUP]
+ *                 description: "Type de transaction"
+ *                 example: "PAYMENT"
+ *               content:
+ *                 type: string
+ *                 pattern: '^[a-fA-F0-9]{64}$'
+ *                 description: "Empreinte SHA-256 (64 caractères hexadécimaux) du code QR scanné"
+ *                 example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+ *               companyId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: "Identifiant de l'entreprise partenaire réceptrice"
+ *                 example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
  *     responses:
  *       '201':
- *         description: Transaction créée et solde mis à jour.
+ *         description: Transaction traitée avec succès (statut VALIDER ou REFUSER).
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - message
+ *                 - newBalance
+ *                 - status
  *               properties:
- *                 message: { type: string }
- *                 newBalance: { type: number }
- *                 status: { type: string, enum: [REFUSER, VALIDER] }
- *                 companyId: { type: string, format: uuid }
- *       '400': { description: Identifiant ou corps de requête invalide, ou QR code expiré. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou QR code émis pour un autre salarié / une autre entreprise. }
- *       '404': { description: Salarié ou QR code introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *                 message:
+ *                   type: string
+ *                   example: "Transaction created successfully"
+ *                 newBalance:
+ *                   type: integer
+ *                   description: "Nouveau solde du salarié en centimes d'euro"
+ *                   example: 10500
+ *                 status:
+ *                   type: string
+ *                   enum: [VALIDER, REFUSER]
+ *                   description: "Résultat du traitement de la transaction"
+ *                   example: "VALIDER"
+ *                 companyId:
+ *                   type: string
+ *                   format: uuid
+ *                   nullable: true
+ *                   example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *       '400':
+ *         description: "Identifiant ou corps de requête invalide, ou QR code expiré."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou QR code émis pour un autre salarié / une autre entreprise."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Salarié ou QR code introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {

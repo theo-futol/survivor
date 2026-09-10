@@ -49,20 +49,97 @@ async function loadSalarie(salarieId: string, includeInactive = false)
  * @openapi
  * /api/v1/salaries/{salarieId}:
  *   get:
- *     summary: Récupération d'un salarié
- *     description: Un salarié peut consulter uniquement sa propre fiche. Une entreprise peut consulter ses salariés et un administrateur peut consulter tous les salariés.
+ *     tags:
+ *       - Salariés
+ *     summary: Consultation de la fiche d'un salarié
+ *     description: "Retourne les informations du profil d'un salarié. Un salarié (`EMPLOYEE`) ne peut consulter que sa propre fiche ; une entreprise (`COMPANY`) ne consulte que ses propres salariés ; un `ADMIN` peut consulter n'importe quel salarié."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: salarieId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant du salarié"
  *     responses:
- *       '200': { description: Salarié récupéré. }
- *       '401': { description: Session ou token invalide. }
- *       '403': { description: Accès interdit. }
- *       '404': { description: Salarié introuvable. }
+ *       '200':
+ *         description: Fiche du salarié récupérée avec succès.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - id
+ *                 - email
+ *                 - surname
+ *                 - name
+ *                 - balance
+ *                 - companyId
+ *                 - role
+ *                 - createdAt
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   example: "j.dupont@entreprise.fr"
+ *                 surname:
+ *                   type: string
+ *                   example: "Dupont"
+ *                 name:
+ *                   type: string
+ *                   example: "Jean"
+ *                 balance:
+ *                   type: integer
+ *                   description: "Solde en centimes d'euro"
+ *                   example: 12000
+ *                 companyId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                 role:
+ *                   type: string
+ *                   example: "EMPLOYEE"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2026-09-02T10:00:00.000Z"
+ *       '400':
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Accès refusé : consultation non autorisée pour ce compte."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Salarié introuvable ou inactif.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {
@@ -102,44 +179,148 @@ export async function GET(request: Request, { params }: { params: Promise<{ sala
  * @openapi
  * /api/v1/salaries/{salarieId}:
  *   patch:
- *     summary: Mise à jour d'un salarié
- *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `password`, `active` et `accountStatus` ; un salarié modifiant sa propre fiche est limité à `surname`, `name` et `password`, tout autre champ étant refusé par un `400`. `active=false` renseigne `expiredAt` et désactive le compte ; `active=true` remet `expiredAt` à null.\n\n**Vérification du compte** : faire passer `accountStatus` de `PENDING` à `ACCEPTED` déclenche l'envoi au salarié d'un email lui annonçant que son compte est validé, avec un lien vers l'application ; il s'y connecte avec le mot de passe que son entreprise lui a communiqué à la création. L'email part *avant* toute écriture : s'il échoue la réponse est un `502` et le salarié reste `PENDING`. Les autres transitions de statut sont de simples mises à jour."
+ *     tags:
+ *       - Salariés
+ *     summary: Mise à jour partielle d'un salarié
+ *     description: "Met à jour partiellement un salarié. Un `ADMIN` ou l'entreprise employeuse peut modifier `email`, `surname`, `name`, `password`, `active` et `accountStatus` ; un salarié modifiant sa propre fiche est strictement restreint à `surname`, `name` et `password` (toute tentative de modifier un autre champ renvoie une 400). `active=false` renseigne `expiredAt` et désactive le compte ; `active=true` le réactive.\n\n**Vérification du compte** : faire passer `accountStatus` de `PENDING` à `ACCEPTED` déclenche l'envoi d'un email de validation au salarié avec le lien de connexion. L'email est envoyé *avant* toute écriture : en cas d'échec du service mail, l'API répond une 502 et le compte reste `PENDING`."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: salarieId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant du salarié"
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             description: "Champs modifiables du profil salarié"
  *             properties:
- *               email: { type: string, format: email }
- *               surname: { type: string }
- *               name: { type: string }
- *               password: { type: string }
- *               active: { type: boolean }
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "j.dupont@entreprise.fr"
+ *               surname:
+ *                 type: string
+ *                 example: "Dupont"
+ *               name:
+ *                 type: string
+ *                 example: "Jean"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: "Nouveau mot de passe conforme aux règles de complexité"
+ *                 example: "NouveauSecret123!"
+ *               active:
+ *                 type: boolean
+ *                 description: "Activation ou désactivation logique du compte salarié"
+ *                 example: true
  *               accountStatus:
  *                 type: string
  *                 enum: [PENDING, ACCEPTED, REFUSED]
- *                 description: "Réservé à `ADMIN` / `COMPANY`. `PENDING` → `ACCEPTED` vaut vérification du compte et envoie l'email de validation."
+ *                 description: "Réservé ADMIN ou COMPANY. Le passage à ACCEPTED valide le compte et notifie le salarié."
+ *                 example: "ACCEPTED"
  *     responses:
  *       '200':
- *         description: Salarié mis à jour. Le mot de passe haché n'est jamais retourné.
+ *         description: Salarié mis à jour avec succès. Le mot de passe haché n'est jamais retourné.
  *         content:
  *           application/json:
- *             schema: { type: object }
- *       '400': { description: Identifiant ou corps de requête invalide, ou champ interdit à un salarié. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de modifier un autre salarié. }
- *       '404': { description: Salarié introuvable. }
- *       '409': { description: Un utilisateur possède déjà cet email. }
- *       '502': { description: L'email de validation n'a pas pu être envoyé ; aucune modification n'a été enregistrée. }
- *       '500': { description: Erreur serveur interne. }
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - id
+ *                 - email
+ *                 - surname
+ *                 - name
+ *                 - balance
+ *                 - companyId
+ *                 - role
+ *                 - active
+ *                 - createdAt
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   example: "j.dupont@entreprise.fr"
+ *                 surname:
+ *                   type: string
+ *                   example: "Dupont"
+ *                 name:
+ *                   type: string
+ *                   example: "Jean"
+ *                 balance:
+ *                   type: integer
+ *                   description: "Solde en centimes d'euro"
+ *                   example: 12000
+ *                 companyId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                 role:
+ *                   type: string
+ *                   example: "EMPLOYEE"
+ *                 active:
+ *                   type: boolean
+ *                   example: true
+ *                 accountStatus:
+ *                   type: string
+ *                   example: "ACCEPTED"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2026-09-02T10:00:00.000Z"
+ *       '400':
+ *         description: "Identifiant ou corps de requête invalide, ou tentative de modifier un champ interdit à ce rôle."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de modifier un salarié d'une autre entreprise."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Salarié introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: Un utilisateur possède déjà cette adresse email.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '502':
+ *         description: "Échec d'envoi de l'email de validation : la modification n'a pas été appliquée."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {
@@ -232,22 +413,54 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
  * @openapi
  * /api/v1/salaries/{salarieId}:
  *   delete:
- *     summary: Suppression d'un salarié
- *     description: Suppression logique — la ligne est conservée et son champ `expiredAt` est daté, car les transactions immuables la référencent. Le salarié disparaît alors de toutes les lectures. Accessible à un `ADMIN` ou à l'entreprise employeuse.
+ *     tags:
+ *       - Salariés
+ *     summary: Désactivation logique d'un salarié
+ *     description: "Suppression logique du salarié : le champ `expiredAt` est horodaté, rendant le compte immédiatement inactif et invalidant les sessions sans supprimer la ligne historique (nécessaire à la traçabilité des transactions). Accessible à un `ADMIN` ou à l'employeur du salarié."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: salarieId
  *         required: true
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant du salarié à désactiver"
  *     responses:
- *       '204': { description: Salarié supprimé. }
- *       '400': { description: Identifiant invalide. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de supprimer le salarié d'une autre entreprise. }
- *       '404': { description: Salarié introuvable. }
- *       '500': { description: Erreur serveur interne. }
+ *       '204':
+ *         description: Salarié désactivé avec succès (aucun contenu retourné).
+ *       '400':
+ *         description: Identifiant UUID invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de désactiver le salarié d'une autre entreprise."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Salarié introuvable ou déjà inactif.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ salarieId: string }> })
 {

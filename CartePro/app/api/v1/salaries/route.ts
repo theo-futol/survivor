@@ -23,56 +23,129 @@ const includeInactiveSchema = z.enum(['true', 'false']).default('false').transfo
  * @openapi
  * /api/v1/salaries:
  *   get:
+ *     tags:
+ *       - Salariés
  *     summary: Liste paginée des salariés
- *     description: Retourne les salariés. Par défaut, seuls les comptes actifs (`expiredAt` nul) sont inclus ; `includeInactive=true` permet à l'entreprise ou à l'administrateur d'afficher aussi les comptes désactivés. Chaque salarié est enrichi de son statut `active`, de son statut de bannissement (`isBanned`) ainsi que du nombre et du montant total de ses transactions. Un utilisateur `COMPANY` ne voit que les salariés de sa propre entreprise ; un `ADMIN` les voit tous.
+ *     description: "Retourne les salariés rattachés aux entreprises employeurs. Par défaut, seuls les salariés actifs (`expiredAt` nul) sont inclus ; `includeInactive=true` permet d'afficher également les salariés archivés/désactivés. Chaque fiche est enrichie de l'état d'activité (`active`), du statut de bannissement (`isBanned`), ainsi que du nombre et montant cumulé de ses transactions. Une entreprise `COMPANY` est strictement restreinte à ses propres salariés ; un `ADMIN` consulte l'ensemble du personnel."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: employeurId
- *         schema: { type: string, format: uuid }
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: "Identifiant de l'employeur (réservé ADMIN, ignoré pour COMPANY qui est assigné à son propre compte)"
  *       - in: query
  *         name: includeInactive
- *         schema: { type: boolean, default: false }
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: "Inclure les salariés désactivés/supprimés logiquement"
  *       - in: query
  *         name: page
- *         schema: { type: integer, minimum: 1, default: 1 }
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: "Numéro de la page"
  *       - in: query
  *         name: limit
- *         schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: "Nombre de salariés par page"
  *     responses:
  *       '200':
- *         description: Liste récupérée avec succès.
+ *         description: Liste des salariés récupérée avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - data
+ *                 - meta
  *               properties:
  *                 data:
  *                   type: array
  *                   items:
  *                     type: object
+ *                     required:
+ *                       - id
+ *                       - email
+ *                       - surname
+ *                       - name
+ *                       - balance
+ *                       - active
+ *                       - isBanned
+ *                       - transactionCount
+ *                       - transactionTotal
  *                     properties:
- *                       id: { type: string }
- *                       email: { type: string }
- *                       surname: { type: string }
- *                       name: { type: string }
- *                       balance: { type: integer }
- *                       companyId: { type: string, nullable: true }
- *                       active: { type: boolean }
- *                       isBanned: { type: boolean }
- *                       transactionCount: { type: integer }
- *                       transactionTotal: { type: integer }
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                         example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                         example: "j.dupont@entreprise.fr"
+ *                       surname:
+ *                         type: string
+ *                         example: "Dupont"
+ *                       name:
+ *                         type: string
+ *                         example: "Jean"
+ *                       balance:
+ *                         type: integer
+ *                         description: "Solde courant en centimes d'euro"
+ *                         example: 12000
+ *                       companyId:
+ *                         type: string
+ *                         format: uuid
+ *                         nullable: true
+ *                         example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                       active:
+ *                         type: boolean
+ *                         example: true
+ *                       isBanned:
+ *                         type: boolean
+ *                         example: false
+ *                       transactionCount:
+ *                         type: integer
+ *                         example: 5
+ *                       transactionTotal:
+ *                         type: integer
+ *                         description: "Total des transactions en centimes d'euro"
+ *                         example: 8500
  *                 meta:
- *                   type: object
- *                   properties:
- *                     page: { type: integer }
- *                     limit: { type: integer }
- *                     total: { type: integer }
- *       '400': { description: Paramètres de requête invalides. }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de lister les salariés d'une autre entreprise. }
- *       '500': { description: Erreur serveur interne. }
+ *                   $ref: '#/components/schemas/PaginationMetaA'
+ *       '400':
+ *         description: Paramètres de pagination ou identifiant invalides.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de consulter les salariés d'une autre entreprise."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request)
 {
@@ -154,35 +227,134 @@ export async function GET(request: Request)
  * @openapi
  * /api/v1/salaries:
  *   post:
- *     summary: Création d'un salarié
- *     description: "Crée un salarié rattaché à une entreprise. Le mot de passe est choisi par l'employeur dans le corps de la requête ; il doit respecter les règles de complexité (8 à 32 caractères, une majuscule, une minuscule, un chiffre, un caractère spécial) et n'est stocké que haché. Le serveur impose `role = EMPLOYEE`, `balance = 0`, un compte actif et `accountStatus = PENDING` : la connexion est refusée tant qu'un agent n'a pas vérifié le compte (`PATCH /api/v1/salaries/{salarieId}` avec `accountStatus = ACCEPTED`). Aucun contrat ni document n'est demandé à l'entreprise. Un utilisateur `COMPANY` ne peut créer un salarié que dans sa propre entreprise."
+ *     tags:
+ *       - Salariés
+ *     summary: Création d'un compte salarié
+ *     description: "Crée un compte salarié rattaché à une entreprise employeur. Le mot de passe initial est défini par l'employeur lors de la requête et doit respecter les règles de sécurité (8 à 32 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial). Le compte est initialisé avec `role = EMPLOYEE`, `balance = 0` et `accountStatus = PENDING`. L'accès est bloqué jusqu'à validation par un administrateur (`PATCH /api/v1/salaries/{salarieId}` avec `accountStatus = ACCEPTED`). Une entreprise `COMPANY` ne peut créer de salarié que pour son propre compte."
  *     security:
  *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [email, surname, name, password, companyId]
+ *             required:
+ *               - email
+ *               - surname
+ *               - name
+ *               - password
+ *               - companyId
  *             properties:
- *               email: { type: string, format: email }
- *               surname: { type: string, description: "Nom de famille (`nom` dans docs/API.md)." }
- *               name: { type: string, description: "Prénom (`prenom` dans docs/API.md)." }
- *               password: { type: string }
- *               companyId: { type: string, format: uuid, description: "Entreprise employeuse (`employeurId` dans docs/API.md)." }
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "j.dupont@entreprise.fr"
+ *               surname:
+ *                 type: string
+ *                 description: "Nom de famille"
+ *                 example: "Dupont"
+ *               name:
+ *                 type: string
+ *                 description: "Prénom"
+ *                 example: "Jean"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: "Mot de passe provisoire (8 à 32 caractères, majuscule, minuscule, chiffre, symbole)"
+ *                 example: "Secret123!"
+ *               companyId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: "Identifiant de l'entreprise employeuse"
+ *                 example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
  *     responses:
  *       '201':
- *         description: Salarié créé, au statut `PENDING`. Le mot de passe haché n'est jamais retourné.
+ *         description: Salarié créé avec succès au statut PENDING.
  *         content:
  *           application/json:
- *             schema: { type: object }
- *       '400': { description: Corps de requête invalide (mot de passe trop faible…), ou champ non accepté (`accountStatus`…). }
- *       '401': { description: Token manquant ou invalide. }
- *       '403': { description: Rôle insuffisant, ou tentative de créer un salarié dans une autre entreprise. }
- *       '404': { description: Entreprise introuvable. }
- *       '409': { description: Un utilisateur possède déjà cet email. }
- *       '500': { description: Erreur serveur interne. }
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - id
+ *                 - email
+ *                 - surname
+ *                 - name
+ *                 - balance
+ *                 - companyId
+ *                 - role
+ *                 - accountStatus
+ *                 - createdAt
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   example: "j.dupont@entreprise.fr"
+ *                 surname:
+ *                   type: string
+ *                   example: "Dupont"
+ *                 name:
+ *                   type: string
+ *                   example: "Jean"
+ *                 balance:
+ *                   type: integer
+ *                   description: "Solde initial en centimes d'euro"
+ *                   example: 0
+ *                 companyId:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+ *                 role:
+ *                   type: string
+ *                   example: "EMPLOYEE"
+ *                 accountStatus:
+ *                   type: string
+ *                   example: "PENDING"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2026-09-02T10:00:00.000Z"
+ *       '400':
+ *         description: "Corps de requête invalide, mot de passe trop faible ou champs interdits transmis."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '401':
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '403':
+ *         description: "Rôle insuffisant ou tentative de créer un salarié dans une autre entreprise."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '404':
+ *         description: Entreprise employeur introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '409':
+ *         description: Un utilisateur possède déjà cette adresse email.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       '500':
+ *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function POST(request: Request)
 {

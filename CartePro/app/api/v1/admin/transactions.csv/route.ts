@@ -5,23 +5,38 @@ import { authorize } from '@/lib/services/auth_service';
  * @openapi
  * /api/v1/admin/transactions.csv:
  *   get:
- *     summary: Export CSV de l'ensemble des transactions
- *     description: Retourne toutes les transactions au format CSV (`id;date_iso8601;employee_id;partner_id;amount_cents;status`), en pièce jointe téléchargeable. Réservé aux administrateurs.
+ *     tags:
+ *       - Administration
+ *     summary: Export comptable CSV de toutes les transactions
+ *     description: "Exporte l'exhaustivité des transactions de la plateforme sous la forme d'un fichier CSV (`transactions.csv`) téléchargeable. Le fichier utilise le point-virgule comme séparateur avec l'entête : `id;date_iso8601;employee_id;partner_id;amount_cents;status`. Réservé aux administrateurs."
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: Fichier CSV généré avec succès.
+ *         description: "Fichier CSV généré avec succès en pièce jointe téléchargeable."
  *         content:
  *           text/csv:
  *             schema:
  *               type: string
+ *               example: "id;date_iso8601;employee_id;partner_id;amount_cents;status\nc71a3932-d17e-4629-9dc4-1b4d3752eef5;2026-09-02T12:30:00.000Z;9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d;a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11;1850;VALIDER\n"
  *       '401':
- *         description: Token manquant ou invalide.
+ *         description: Jeton manquant ou invalide.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '403':
- *         description: Rôle insuffisant.
+ *         description: Réservé aux administrateurs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '500':
  *         description: Erreur serveur interne.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(request: Request) {
   try {
