@@ -1,17 +1,17 @@
 # Conditions Générales d'Utilisation (CGU)
 
-> **⚠ SIMULATION — Aucune valeur monétaire réelle.** Tous les crédits, soldes, montants et transactions mentionnés dans ce document sont fictifs et servent uniquement à la démonstration du dispositif Ticket Tout.
+> **⚠ SIMULATION — Aucune valeur monétaire réelle.** Tous les crédits, soldes, montants et transactions mentionnés dans ce document sont fictifs et servent uniquement à la démonstration du dispositif Cartepro.
 
 ## Description du site
 
-Ticket Tout est un outil permettant aux employeurs de créditer leurs salariés de crédits *(simulation)* utilisables auprès d'un réseau de partenaires référencés par le Ministère. Le dispositif s'inscrit dans une démarche de valorisation du travail et de soutien à l'économie locale.
+Cartepro est un outil permettant aux employeurs de créditer leurs salariés de crédits *(simulation)* utilisables auprès d'un réseau de partenaires référencés par le Ministère. Le dispositif s'inscrit dans une démarche de valorisation du travail et de soutien à l'économie locale.
 
 Quatre acteurs interagissent : le salarié, l'employeur, le partenaire et l'administration. Le parcours type se déroule ainsi :
 
 1. **Inscription partenaire/employeur** — Le partenaire ou l'employeur crée son compte sur l'espace dédié.
 2. **Validation administrative** — Le Ministère valide la demande et active le compte.
 3. **Inscription salarié** — L'employeur crée un compte pour son salarié, qui reçoit un email d'activation.
-4. **Abondement ministériel** — Le Ministère crédite le compte du salarié *(simulation)* (alimentation du dispositif Ticket Tout).
+4. **Abondement ministériel** — Le Ministère crédite le compte du salarié *(simulation)* (alimentation du dispositif Cartepro).
 5. **Consultation du solde** — Le salarié consulte son solde disponible *(simulation)*.
 6. **Recherche d'un partenaire** — Le salarié recherche et localise un partenaire référencé.
 7. **Génération du QR code** — Le salarié génère un QR code de paiement à présenter au partenaire.
@@ -27,7 +27,7 @@ Quatre types d'accès existent : salarié, employeur, partenaire et administrati
 
 **Le salarié** peut consulter son solde *(simulation)*, générer un QR code pour effectuer des transactions et suivre son historique. Il doit respecter les conditions d'utilisation et ne pas utiliser son compte à des fins frauduleuses. Il a le droit de refuser l'accès à sa localisation, cette option est optionnelle et n'empêche pas l'utilisation du service.
 
-**L'employeur** peut créer un compte pour ses salariés. Il doit fournir des informations exactes et à jour afin de prouver l'éligibilité de ses salariés au dispositif Ticket Tout.
+**L'employeur** peut créer un compte pour ses salariés. Il doit fournir des informations exactes et à jour afin de prouver l'éligibilité de ses salariés au dispositif Cartepro.
 
 **Le partenaire** peut recevoir des paiements *(simulation)* via le QR code du salarié, consulter son tableau de bord financier, abonder les comptes des salariés et gérer ses transactions. Il doit respecter les conditions d'utilisation, fournir des services conformes aux normes en vigueur et ne pas utiliser son compte à des fins frauduleuses.
 
@@ -42,11 +42,11 @@ L'inscription est obligatoire pour les partenaires, les employeurs et les salari
 
 Les partenaires doivent s'assurer que leurs services respectent les normes légales et réglementaires en vigueur. Toute offre de services illégale ou non conforme entraîne la suspension immédiate du compte concerné.
 
-Les employeurs doivent fournir des informations exactes et à jour pour prouver l'éligibilité de leurs salariés au dispositif Ticket Tout. Toute fausse déclaration entraîne la suspension immédiate du compte concerné.
+Les employeurs doivent fournir des informations exactes et à jour pour prouver l'éligibilité de leurs salariés au dispositif Cartepro. Toute fausse déclaration entraîne la suspension immédiate du compte concerné.
 
 ## Droit de la propriété intellectuelle
 
-Ticket Tout est la propriété exclusive de l'éditeur et protégé par le droit de la propriété intellectuelle. Toute reproduction, distribution ou utilisation non autorisée du site ou de son contenu est strictement interdite. Les partenaires sont autorisés à utiliser le site uniquement dans le cadre de leur activité professionnelle et conformément aux présentes conditions. Les sources et marques tiers utilisés sur le site sont la propriété de leurs détenteurs respectifs et sont utilisés avec leur permission.
+Cartepro est la propriété exclusive de l'éditeur et protégé par le droit de la propriété intellectuelle. Toute reproduction, distribution ou utilisation non autorisée du site ou de son contenu est strictement interdite. Les partenaires sont autorisés à utiliser le site uniquement dans le cadre de leur activité professionnelle et conformément aux présentes conditions. Les sources et marques tiers utilisés sur le site sont la propriété de leurs détenteurs respectifs et sont utilisés avec leur permission.
 
 ## Modalités de règlement et de résolution des litiges
 
@@ -60,7 +60,7 @@ Ticket Tout est la propriété exclusive de l'éditeur et protégé par le droit
 
 **Litige entre employeur et salarié** — En cas de désaccord sur l'éligibilité d'un salarié, l'employeur peut contacter l'administration pour obtenir des clarifications. L'administration se réserve le droit de suspendre ou de clôturer un compte employeur en cas de non-respect des conditions d'utilisation.
 
-**Fraudes et abus** — Toute tentative de fraude ou d'abus du dispositif Ticket Tout entraîne la suspension immédiate du compte concerné (peut entraîner un remboursement de la valeur des transactions effectuées) et peut faire l'objet de poursuites judiciaires.
+**Fraudes et abus** — Toute tentative de fraude ou d'abus du dispositif Cartepro entraîne la suspension immédiate du compte concerné (peut entraîner un remboursement de la valeur des transactions effectuées) et peut faire l'objet de poursuites judiciaires.
 
 ---
 

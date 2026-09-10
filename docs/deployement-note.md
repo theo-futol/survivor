@@ -1,4 +1,4 @@
-# Note de déploiement — TicketTout (Ticket Tout)
+# Note de déploiement — Cartepro (Cartepro)
 
 ## Hébergement
 
@@ -45,7 +45,7 @@ Méthodologie et paliers repris de [colonelserver.com — *Server Requirements f
    - RAM de base *(hypothèse propre à cette note)* : composants tournant sur chaque serveur d'après `docker-compose.yml` (Next.js/Node, PostgreSQL, Redis, Garage) ≈ **4 Go**.
    - RAM de trafic : 5 000 utilisateurs concurrents × 60 Mo (moyenne source) ≈ **300 Go** (plage source 30-100 Mo/requête → 150-500 Go).
    - Total ≈ **304 Go** (plage 154-504 Go) si l'on suit la formule de la source à la lettre pour un serveur unique.
-   - *Remarque méthodologique* : le ratio de 60 Mo/requête de la source est calibré sur des CMS classiques (rendu HTML + assets par requête), pas sur une API JSON légère comme celle de TicketTout (routes Next.js + requêtes PostgreSQL, réponses de quelques centaines d'octets — voir [Bande passante réseau estimée](#bande-passante-réseau-estimée)). Ce chiffre est donc probablement très majorant pour ce projet ; à défaut de profilage mémoire réel par requête, on le conserve par prudence, mais il devra être recalibré avec des métriques applicatives réelles.
+   - *Remarque méthodologique* : le ratio de 60 Mo/requête de la source est calibré sur des CMS classiques (rendu HTML + assets par requête), pas sur une API JSON légère comme celle de Cartepro (routes Next.js + requêtes PostgreSQL, réponses de quelques centaines d'octets — voir [Bande passante réseau estimée](#bande-passante-réseau-estimée)). Ce chiffre est donc probablement très majorant pour ce projet ; à défaut de profilage mémoire réel par requête, on le conserve par prudence, mais il devra être recalibré avec des métriques applicatives réelles.
 2. **Répartition retenue** : plutôt qu'un unique serveur à ~304 Go de RAM, la charge est répartie sur des instances plus petites derrière un load balancer — ex. **10 instances de 500 utilisateurs concurrents** chacune : RAM par instance ≈ 4 Go (base) + 500 × 60 Mo (30 Go) ≈ **34 Go**, arrondi à **32 Go RAM / 8 vCPU** par instance (palier "8-12 cœurs — grandes plateformes, SaaS" de la source, avec marge).
 3. **CPU** (paliers de la source) : le palier "8-12 cœurs" retenu par instance correspond au trafic d'une plateforme SaaS à fort usage concurrent, cohérent avec la cible de 5 000 utilisateurs simultanés répartie sur plusieurs instances.
 4. **Base de données** : 5 000 utilisateurs concurrents peuvent générer jusqu'à 5 000 connexions simultanées si chaque requête ouvre sa propre connexion PostgreSQL, très au-delà du `max_connections` par défaut de PostgreSQL (100). Un pooler de connexions (**PgBouncer**) est donc nécessaire pour mutualiser un nombre restreint de connexions réelles vers la base (dimensionnement typique : quelques dizaines à ~200 connexions serveur pour des milliers de connexions clientes en mode `transaction pooling`).

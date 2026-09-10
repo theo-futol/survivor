@@ -1,6 +1,6 @@
 # Fiche de référence — Registre des activités de traitement (RGPD)
 
-### Activité : Ticket Tout — Le dispositif de crédit pour les salariés chez les partenaires référencés par le Ministère
+### Activité : Cartepro — Le dispositif de crédit pour les salariés chez les partenaires référencés par le Ministère
 
 #### Informations générales
 
