@@ -84,11 +84,7 @@ export function SignupForm({ accountType }: { accountType: AccountType }) {
     return (
       <div className="rounded-2xl border bg-secondary p-6 text-center">
         <CheckCircle2 className="mx-auto size-10 text-brand-success" aria-hidden="true" />
-        <h3 className="mt-3 text-xl font-black">Compte créé</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Votre compte {isCompany ? "entreprise" : "partenaire"} {BRAND.name} est enregistré. Votre session est ouverte et votre espace est prêt.
-        </p>
-        <Link href={isCompany ? "/employer" : "/partner"} className={buttonVariants({ className: "mt-5" })}>Accéder à mon espace</Link>
+        <h3 className="mt-3 text-xl font-black">Compte créé, un email de confirmation vous a été envoyé.</h3>
       </div>
     )
   }
