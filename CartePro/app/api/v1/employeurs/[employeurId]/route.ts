@@ -11,6 +11,8 @@ const paramsSchema = z.object({ employeurId: z.uuid() });
  * @openapi
  * /api/v1/employeurs/{employeurId}:
  *   patch:
+ *     tags:
+ *       - Employeurs
  *     summary: Mise à jour d'un employeur
  *     description: >-
  *       Met à jour partiellement un employeur. Un utilisateur `COMPANY` ne peut modifier que sa

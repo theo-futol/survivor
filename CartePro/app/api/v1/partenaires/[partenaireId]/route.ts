@@ -11,6 +11,8 @@ const paramsSchema = z.object({ partenaireId: z.uuid() });
  * @openapi
  * /api/v1/partenaires/{partenaireId}:
  *   patch:
+ *     tags:
+ *       - Partenaires
  *     summary: Mise à jour d'un partenaire
  *     description: >-
  *       Met à jour partiellement un partenaire. Un utilisateur `PARTNER` ne peut modifier que sa
